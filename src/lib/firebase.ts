@@ -4,9 +4,23 @@ import { getFirestore, doc, getDocFromServer } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import firebaseConfig from "../../firebase-applet-config.json";
 
-const app = initializeApp(firebaseConfig);
+const firebaseConfigWithDefaults = {
+  ...firebaseConfig,
+  measurementId: firebaseConfig.measurementId || undefined
+};
+
+let app;
+try {
+  app = initializeApp(firebaseConfigWithDefaults);
+  console.log("Firebase initialized successfully");
+} catch (error) {
+  console.error("Firebase initialization failed:", error);
+  // We'll throw to be caught by the global error boundary
+  throw error;
+}
+
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || "(default)");
 export const storage = getStorage(app, firebaseConfig.storageBucket);
 export const googleProvider = new GoogleAuthProvider();
 

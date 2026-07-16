@@ -267,6 +267,7 @@ function ErrorBoundary({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  console.log("App component rendering start...");
   useEffect(() => {
     console.log("App component initialized");
   }, []);

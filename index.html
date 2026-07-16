@@ -4,10 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Google AI Studio App</title>
+    <script>
+      window.onerror = function(msg, url, line, col, error) {
+        var root = document.getElementById('root');
+        if (root) {
+          root.innerHTML = '<div style="background:#111;color:#ff4444;padding:20px;font-family:monospace;height:100vh;">' +
+            '<h1>Error de Carga Crítico</h1>' +
+            '<p>' + msg + '</p>' +
+            '<pre>' + (error ? error.stack : "") + '</pre>' +
+            '</div>';
+        }
+      };
+    </script>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="src/main.tsx"></script>
+    <div id="root">
+      <div id="loading-fallback" style="background:#0a0a0a;color:#555;height:100vh;display:flex;align-items:center;justify-content:center;font-family:sans-serif;font-size:12px;letter-spacing:4px;text-transform:uppercase;font-weight:bold;">
+        Gianduia Lab: Iniciando Sistema...
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
 
