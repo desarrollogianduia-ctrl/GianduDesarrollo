@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "Ingredient": {
+      "title": "Ingrediente",
+      "description": "Materia prima con información nutricional",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "brand": { "type": "string" },
+        "category": { "type": "string", "enum": ["generico", "especifico"] },
+        "energy": { "type": "number" },
+        "carbs": { "type": "number" },
+        "sugars": { "type": "number" },
+        "proteins": { "type": "number" },
+        "totalFats": { "type": "number" },
+        "saturatedFats": { "type": "number" },
+        "transFats": { "type": "number" },
+        "fiber": { "type": "number" },
+        "sodium": { "type": "number" }
+      },
+      "required": ["name", "category", "energy", "carbs", "proteins", "totalFats", "sodium"]
+    },
+    "Recipe": {
+      "title": "Receta",
+      "description": "Formulación de producto",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["base", "semielaborado", "final"] },
+        "ingredients": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "ingredientId": { "type": "string" },
+              "amount": { "type": "number" },
+              "note": { "type": "string" },
+              "isRecipe": { "type": "boolean" }
+            }
+          }
+        },
+        "servingSize": { "type": "number" },
+        "totalYield": { "type": "number" },
+        "finalYield": { "type": "number" },
+        "portionsPerPackage": { "type": "number" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["name", "ingredients", "servingSize", "finalYield"]
+    },
+    "DevelopmentProject": {
+      "title": "Proyecto de Desarrollo",
+      "description": "Gestión de estado y prioridad de un nuevo producto",
+      "type": "object",
+      "properties": {
+        "productName": { "type": "string" },
+        "area": { "type": "string" },
+        "priority": { "type": "string" },
+        "status": { "type": "string" },
+        "recipeId": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["productName", "area", "priority", "status", "createdBy"]
+    }
+  },
+  "firestore": {
+    "/ingredients/{ingredientId}": {
+      "schema": "Ingredient",
+      "description": "Base de datos global de materias primas"
+    },
+    "/recipes/{recipeId}": {
+      "schema": "Recipe",
+      "description": "Recetas creadas por los usuarios"
+    },
+    "/developments/{devId}": {
+      "schema": "DevelopmentProject",
+      "description": "Proyectos de desarrollo I+D"
+    }
+  }
+}

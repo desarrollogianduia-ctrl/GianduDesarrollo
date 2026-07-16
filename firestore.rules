@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      // Relaxing for development/troubleshooting
+      return isSignedIn();
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Collections ---
+
+    match /developments/{devId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.createdBy == request.auth.uid);
+      allow write: if isSignedIn() && (
+        (request.resource != null && request.resource.data.get('createdBy', request.auth.uid) == request.auth.uid) ||
+        (resource != null && resource.data.get('createdBy', request.auth.uid) == request.auth.uid)
+      );
+    }
+
+    match /ingredients/{ingredientId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    match /recipes/{recipeId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
+      allow write: if isSignedIn() && (
+        (request.resource != null && request.resource.data.get('ownerId', request.auth.uid) == request.auth.uid) ||
+        (resource != null && resource.data.get('ownerId', request.auth.uid) == request.auth.uid)
+      );
+    }
+
+    match /knowledge/{docId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
+      allow write: if isSignedIn() && (
+        (request.resource != null && request.resource.data.get('ownerId', request.auth.uid) == request.auth.uid) ||
+        (resource != null && resource.data.get('ownerId', request.auth.uid) == request.auth.uid)
+      );
+    }
+  }
+}

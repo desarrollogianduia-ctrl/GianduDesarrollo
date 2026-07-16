@@ -1,0 +1,6 @@
+{
+  "name": "Gianduia Lab: Hub de Desarrollo",
+  "description": "Plataforma integral de I+D para la gestión de proyectos de desarrollo, formulación técnica y etiquetado nutricional profesional.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

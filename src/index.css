@@ -1,0 +1,201 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,300&family=JetBrains+Mono:wght@300;400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  --bg: #0d0d0d;
+  --surface: #171717;
+  --border: #262626;
+  --accent: #fb7185; /* rose-400 - more vibrant girly pink */
+  --accent-soft: rgba(251, 113, 133, 0.08);
+  --accent-glass: rgba(251, 113, 133, 0.15);
+  --text-p: #f8fafc;
+  --text-s: #94a3b8;
+  --warning: #000000;
+  --warning-border: #ffffff;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-p);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* Custom Scrollbar Styles */
+.custom-scrollbar {
+  scrollbar-gutter: auto;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.45);
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+.pane {
+  background: var(--bg);
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.pane-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.stat-card {
+  background: var(--surface);
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -20px rgba(251, 113, 133, 0.2);
+}
+
+.label-copy-box {
+  background: var(--surface);
+  padding: 20px;
+  border-radius: 16px;
+  font-size: 11px;
+  color: var(--text-s);
+  border: 1px dashed var(--border);
+  line-height: 1.8;
+}
+
+.nutri-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.nutri-table th {
+  color: var(--text-s);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.nutri-table td {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.ingredient-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  font-size: 13px;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.ingredient-row:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 100px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(251, 113, 133, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 8px 20px rgba(251, 113, 133, 0.4);
+}
+
+.badge {
+  background: var(--accent-soft);
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 9px;
+  color: var(--accent);
+  border: 1px solid var(--accent-glass);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.octagon {
+  background: #000;
+  border: 2px solid #fff;
+  color: #fff;
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 12px;
+  aspect-ratio: 1/1;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.card-chic {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 32px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-chic:hover {
+  border-color: rgba(251, 113, 133, 0.3);
+}
+
+
