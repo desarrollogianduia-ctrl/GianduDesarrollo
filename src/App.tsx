@@ -376,6 +376,7 @@ export default function App() {
   const [trialAnalysis, setTrialAnalysis] =
     useState<TrialAnalysisResult | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const [newTaskText, setNewTaskText] = useState("");
   const [newTaskDeadline, setNewTaskDeadline] = useState("");
@@ -2434,8 +2435,22 @@ export default function App() {
                   Hub de Soluciones Tecnológicas en Alimentos
                 </p>
               </div>
+              
+              {loginError && (
+                <div className="max-w-md bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg text-sm text-center animate-in fade-in zoom-in duration-300">
+                  {loginError}
+                </div>
+              )}
+
               <button
-                onClick={() => signInWithGoogle()}
+                onClick={async () => {
+                  setLoginError(null);
+                  try {
+                    await signInWithGoogle();
+                  } catch (err: any) {
+                    setLoginError(err.message || "Error al iniciar sesión");
+                  }
+                }}
                 className="btn-primary flex items-center gap-3 px-8 transform hover:scale-105 active:scale-95 duration-200"
               >
                 <LogIn size={20} />

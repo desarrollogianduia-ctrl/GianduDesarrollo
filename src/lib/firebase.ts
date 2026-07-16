@@ -26,10 +26,18 @@ export const googleProvider = new GoogleAuthProvider();
 
 export const signInWithGoogle = async () => {
   try {
+    console.log("Attempting sign in with Google...");
     const result = await signInWithPopup(auth, googleProvider);
+    console.log("Sign in successful:", result.user.email);
     return result.user;
-  } catch (error) {
-    console.error("Error signing in with Google", error);
+  } catch (error: any) {
+    console.error("Error signing in with Google:", error);
+    if (error.code === 'auth/unauthorized-domain') {
+      throw new Error("Este dominio no está autorizado en Firebase. Por favor, añade '" + window.location.hostname + "' a los dominios autorizados en la consola de Firebase.");
+    }
+    if (error.code === 'auth/popup-blocked') {
+      throw new Error("El navegador bloqueó la ventana emergente. Por favor, permite las ventanas emergentes para este sitio.");
+    }
     throw error;
   }
 };
