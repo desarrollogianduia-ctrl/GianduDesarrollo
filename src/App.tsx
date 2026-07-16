@@ -80,6 +80,7 @@ import {
   Wrench,
   Clock,
   BookOpen,
+  WifiOff,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
@@ -220,7 +221,56 @@ function ExpandableText({
   );
 }
 
+function ErrorBoundary({ children }: { children: React.ReactNode }) {
+  const [hasError, setHasError] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const handleError = (e: ErrorEvent) => {
+      console.error("Uncaught error:", e.error);
+      setHasError(true);
+      setError(e.error);
+    };
+    window.addEventListener("error", handleError);
+    return () => window.removeEventListener("error", handleError);
+  }, []);
+
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col items-center justify-center p-8 text-center space-y-6">
+        <div className="w-20 h-20 bg-rose-500/20 rounded-full flex items-center justify-center text-rose-500 mb-4 animate-pulse">
+          <AlertTriangle size={40} />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-light italic">Se ha producido un error</h1>
+          <p className="text-[var(--text-s)] uppercase tracking-widest text-[10px] font-bold">
+            Hub de Soluciones Tecnológicas en Alimentos
+          </p>
+        </div>
+        <div className="max-w-md bg-white/5 p-6 rounded-2xl border border-white/10 text-left">
+          <p className="text-xs font-mono text-rose-400/80 leading-relaxed overflow-auto max-h-40 custom-scrollbar">
+            {error?.message || "Error desconocido en el renderizado."}
+          </p>
+        </div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="btn-primary flex items-center gap-2"
+        >
+          <RefreshCw size={16} />
+          <span>Reiniciar Aplicación</span>
+        </button>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 export default function App() {
+  useEffect(() => {
+    console.log("App component initialized");
+  }, []);
+
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [ingredients, setIngredients] =
@@ -667,6 +717,7 @@ export default function App() {
         type: "base",
         ingredients: matchedIngredients,
         servingSize: 100,
+        servingMeasure: "1 porción",
         totalYield: matchedIngredients.reduce(
           (acc, i) => acc + (i.amount || 0),
           0,
@@ -906,6 +957,7 @@ export default function App() {
         type: "base",
         ingredients: matchedIngredients,
         servingSize: 100,
+        servingMeasure: "1 porción",
         totalYield:
           matchedIngredients.reduce((acc, i) => acc + (i.amount || 0), 0) || 1,
         finalYield:
@@ -2154,7 +2206,8 @@ export default function App() {
 
   return (
     <div className="fixed inset-0 flex bg-[var(--bg)] text-[var(--text-p)] font-sans selection:bg-[var(--accent)] selection:text-white overflow-hidden">
-      {/* Global Sidebar Navigation */}
+      <ErrorBoundary>
+        {/* Global Sidebar Navigation */}
       <motion.aside 
         initial={false}
         animate={{ width: isSidebarCollapsed ? 80 : 240 }}
@@ -2364,10 +2417,15 @@ export default function App() {
 
         <div className="flex-1 overflow-hidden flex flex-col">
           {authLoading ? (
-            <div className="flex h-full items-center justify-center">
-              <Loader2 className="animate-spin opacity-20" size={48} />
-            </div>
-          ) : !user ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                  <Loader2 className="animate-spin text-[var(--accent)]" size={48} />
+                  <span className="text-[10px] font-black uppercase tracking-[4px] text-white/20 animate-pulse">
+                    Iniciando Sistema...
+                  </span>
+                </div>
+              </div>
+            ) : !user ? (
             <div className="flex h-full flex-col items-center justify-center gap-6">
               <div className="text-center space-y-2">
                 <h2 className="text-4xl font-light italic">Gianduia Lab</h2>
@@ -4610,6 +4668,7 @@ export default function App() {
                               type: "base",
                               ingredients: [],
                               servingSize: 100,
+                              servingMeasure: "1 porción",
                               totalYield: 0,
                               finalYield: 0,
                               portionsPerPackage: 1,
@@ -4949,6 +5008,21 @@ export default function App() {
                                       className="bg-transparent text-[10px] font-mono font-bold text-white w-12 focus:outline-none"
                                     />
                                     <span className="text-[10px] font-bold text-white/40">g</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 shrink-0">
+                                    <span className="text-[10px] uppercase font-bold text-white/40">Medida:</span>
+                                    <input
+                                      type="text"
+                                      placeholder="Ej: 2 bochas"
+                                      value={selectedRecipe.servingMeasure || ""}
+                                      onChange={(e) => 
+                                        handleUpdateRecipe({
+                                          ...selectedRecipe,
+                                          servingMeasure: e.target.value
+                                        })
+                                      }
+                                      className="bg-transparent text-[10px] font-sans font-bold text-white w-20 focus:outline-none placeholder:text-white/10"
+                                    />
                                   </div>
                                   {selectedRecipe.isTrialFormula && (
                                     <span className="bg-amber-500/10 text-amber-500 border border-amber-500/30 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter whitespace-nowrap">
@@ -6043,11 +6117,31 @@ export default function App() {
                                       </p>
                                     </div>
 
+                                    {/* Advertencias / Octógonos */}
+                                    <div className="bg-black/20 p-6 rounded-2xl border border-white/5">
+                                      <h4 className="text-[10px] uppercase font-bold text-white/40 tracking-widest mb-4 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                                        4. Advertencias (Ley 27.642)
+                                      </h4>
+                                      <div className="flex flex-wrap gap-3">
+                                        {nutritionData.warnings.length > 0 ? (
+                                          nutritionData.warnings.map((w, idx) => (
+                                            <div key={idx} className="bg-black border-2 border-white px-3 py-1.5 text-white text-[9px] font-black tracking-widest flex items-center gap-2">
+                                              <div className="w-2 h-2 bg-white rotate-45" />
+                                              {w}
+                                            </div>
+                                          ))
+                                        ) : (
+                                          <div className="text-[10px] text-white/30 italic">No requiere sellos de advertencia.</div>
+                                        )}
+                                      </div>
+                                    </div>
+
                                     {/* Info Nutricional (UI Table) */}
                                     <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
                                       <h4 className="text-[10px] uppercase font-bold text-[var(--accent)] tracking-widest mb-4 flex items-center gap-2">
                                         <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
-                                        4. Información Nutricional (Formato Cuadro)
+                                        5. Información Nutricional (Formato Cuadro)
                                       </h4>
                                       <div className="overflow-x-auto custom-scrollbar border border-white/5 rounded-xl">
                                         <table className="w-full text-[10px] text-left border-collapse">
@@ -6062,10 +6156,15 @@ export default function App() {
                                           <tbody className="text-white/70">
                                             {[
                                               { n: "Energía (kcal)", id: "energy" },
+                                              { n: "Energía (kJ)", id: "energyKJ" },
                                               { n: "Hidratos (g)", id: "carbs" },
-                                              { n: "- Azúcares (g)", id: "totalSugars" },
+                                              { n: "- Azúcares Tot. (g)", id: "totalSugars" },
+                                              { n: "- Azúcares Añad. (g)", id: "addedSugars" },
                                               { n: "Proteínas (g)", id: "proteins" },
                                               { n: "Grasas Tot. (g)", id: "totalFats" },
+                                              { n: "- Saturadas (g)", id: "saturatedFats" },
+                                              { n: "- Trans (g)", id: "transFats" },
+                                              { n: "Fibra (g)", id: "fiber" },
                                               { n: "Sodio (mg)", id: "sodium" },
                                             ].map((row, ridx) => {
                                               const val100 = (nutritionData.adjustedNutrients as any)[row.id] * (100 / (selectedRecipe.finalYield || 1));
@@ -6090,7 +6189,7 @@ export default function App() {
                                       <div className="flex justify-between items-center mb-4">
                                         <h4 className="text-[10px] uppercase font-bold text-[var(--accent)] tracking-widest flex items-center gap-2">
                                           <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
-                                          5. Texto Final para Marketing (Copy/Paste)
+                                          6. Texto Final para Marketing (Copy/Paste)
                                         </h4>
                                         <button
                                           onClick={copyToClipboard}
@@ -7746,6 +7845,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      </ErrorBoundary>
     </div>
   );
 }
@@ -7759,7 +7859,7 @@ function generateLabelText(recipe: Recipe, data: CalculationResult): string {
     return name;
   }).join(", ");
 
-  const serving = `${recipe.servingSize}g`;
+  const serving = `${recipe.servingSize}g${recipe.servingMeasure ? ` (${recipe.servingMeasure})` : ""}`;
   
   const rows = [
     { n: "Valor Energético (kcal)", id: "energy", u: "" },
@@ -7777,6 +7877,7 @@ function generateLabelText(recipe: Recipe, data: CalculationResult): string {
 
   let tableText = "INFORMACIÓN NUTRICIONAL\n";
   tableText += `Porción: ${serving}\n`;
+  tableText += `Porciones por envase: ${recipe.portionsPerPackage || "~"}\n`;
   tableText += "----------------------------------------------------------------------\n";
   tableText += "Nutriente            | Por 100g      | Por Porción   | %VD (*)\n";
   tableText += "----------------------------------------------------------------------\n";

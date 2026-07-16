@@ -322,6 +322,7 @@ export const INITIAL_RECIPE: Recipe = {
     { ingredientId: 'ing_4', amount: 100 }, // Chips chocolate
   ],
   servingSize: 60, // 60g por porción
+  servingMeasure: '1 bocha',
   totalYield: 1070, // Sum of ingredients
   finalYield: 1000, // Reduced by cooking/processing
   portionsPerPackage: 16,

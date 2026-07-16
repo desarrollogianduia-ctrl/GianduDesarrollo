@@ -67,6 +67,7 @@ export interface Recipe {
   category?: RecipeCategory;
   ingredients: RecipeIngredient[];
   servingSize: number; // grams or ml
+  servingMeasure?: string; // e.g. "1 pote", "2 bochas"
   totalYield: number; // grams or ml
   finalYield: number; // grams or ml
   portionsPerPackage: number;
