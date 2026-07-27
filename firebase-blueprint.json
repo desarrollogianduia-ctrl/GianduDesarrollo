@@ -27,6 +27,7 @@
       "properties": {
         "name": { "type": "string" },
         "type": { "type": "string", "enum": ["base", "semielaborado", "final"] },
+        "category": { "type": "string" },
         "ingredients": {
           "type": "array",
           "items": {
@@ -62,6 +63,28 @@
         "updatedAt": { "type": "number" }
       },
       "required": ["productName", "area", "priority", "status", "createdBy"]
+    },
+    "RecipeAudit": {
+      "title": "Auditoría de Receta",
+      "description": "Registro de conteo cíclico y revisión de recetas",
+      "type": "object",
+      "properties": {
+        "recipeId": { "type": "string" },
+        "recipeName": { "type": "string" },
+        "date": { "type": "number" },
+        "auditorId": { "type": "string" },
+        "status": { "type": "string", "enum": ["ok", "desvio", "arreglado", "problema"] },
+        "notes": { "type": "string" },
+        "isUpdated": { "type": "boolean" },
+        "rnpaStatus": { "type": "string" },
+        "mpStatus": { "type": "string" },
+        "procedureStatus": { "type": "string" },
+        "improvements": { "type": "string" },
+        "deviations": { "type": "string" },
+        "findings": { "type": "string" },
+        "nextReviewDate": { "type": "number" }
+      },
+      "required": ["recipeId", "date", "auditorId", "status"]
     }
   },
   "firestore": {
@@ -76,6 +99,10 @@
     "/developments/{devId}": {
       "schema": "DevelopmentProject",
       "description": "Proyectos de desarrollo I+D"
+    },
+    "/recipeAudits/{auditId}": {
+      "schema": "RecipeAudit",
+      "description": "Logs de revisiones y conteos cíclicos"
     }
   }
 }

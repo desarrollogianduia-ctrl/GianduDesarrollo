@@ -1,0 +1,103 @@
+[
+  {
+    "name": "REC-1-PT-HEL-140-V4",
+    "description": "sustituto castañas de caju con coco y sal siembra",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO BRIE", "amount": 832.3, "unit": "g" },
+      { "name": "CASTAÑAS DE CAJU CON COCO Y SAL PEDIDOS YA", "amount": 61, "unit": "g" },
+      { "name": "VARIEGATO DE HIGOS FICHI", "amount": 106.7, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-141-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO BANANA", "amount": 807, "unit": "g" },
+      { "name": "STRACCIATELLA SEMIAMARGA", "amount": 94, "unit": "g" },
+      { "name": "SALSA TOFFEE SIEMBRA", "amount": 99, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-144-V2",
+    "description": "",
+    "category": "MERIENDA",
+    "ingredients": [
+      { "name": "AGUA", "amount": 673, "unit": "g" },
+      { "name": "AZUCAR", "amount": 192, "unit": "g" },
+      { "name": "DEXTROSA", "amount": 88, "unit": "g" },
+      { "name": "ESTABILIZANTE NEUTRO AGUA", "amount": 2, "unit": "g" },
+      { "name": "AÇAI EN POLVO", "amount": 43, "unit": "g" },
+      { "name": "ACIDO CITRICO", "amount": 2, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-145-V5",
+    "description": "sustituto helado amarena",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO FIOR DI LATTE", "amount": 780, "unit": "g" },
+      { "name": "STRACCIATELLA SEMIAMARGA", "amount": 35, "unit": "g" },
+      { "name": "VARIEGATO AMARENA", "amount": 105, "unit": "g" },
+      { "name": "Cerezas amarena", "amount": 18, "unit": "g" },
+      { "name": "SIEMBRA AMARENA", "amount": 62, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-151-V6",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO FIOR DI LATTE", "amount": 705, "unit": "g" },
+      { "name": "VARIEGATO FRUTOS ROJOS", "amount": 100, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR", "amount": 65, "unit": "g" },
+      { "name": "SIEMBRA SABLE DE ALMENDRAS", "amount": 60, "unit": "g" },
+      { "name": "PLACA MASA SABLEE", "amount": 0.07, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-152-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO MARACUYA MANGO", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-155-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO SAMBAYON AL MALBEC", "amount": 920, "unit": "g" },
+      { "name": "NUEZ GARRAPIÑADA", "amount": 80, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-156-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO DE POMELO ROSADO", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-157-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO LIMONADA CON FR", "amount": 870, "unit": "g" },
+      { "name": "LAJAS DE CHOCOLATE SEMIAMARGO", "amount": 130, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-159-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO MANI", "amount": 860, "unit": "g" },
+      { "name": "SIEMBRA CHOCO LATTE + OVOCIOC + MANI T", "amount": 100, "unit": "g" },
+      { "name": "SIEMBRA SNICKERS TOFFEE + DULCE DE LECHE", "amount": 40, "unit": "g" }
+    ]
+  }
+]

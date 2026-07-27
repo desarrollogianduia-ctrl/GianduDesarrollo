@@ -88,6 +88,7 @@ import * as XLSX from "xlsx";
 import { DataManagementModal } from "./components/DataManagementModal";
 import { DashboardView } from "./components/DashboardView";
 import { NormativasView } from "./components/NormativasView";
+import { RecipeAuditView } from "./components/RecipeAuditView";
 import { AIAssistant } from "./components/AIAssistant";
 import {
   Ingredient,
@@ -104,6 +105,7 @@ import {
   ProjectStatus,
   ProjectTask,
   KnowledgeDocument,
+  RecipeAudit,
 } from "./types";
 import { INITIAL_INGREDIENTS, INITIAL_RECIPE } from "./utils/initialData";
 import { calculateNutrition, roundValue } from "./services/nutritionService";
@@ -135,6 +137,8 @@ import {
   subscribeKnowledgeDocuments,
   saveKnowledgeDocument,
   deleteKnowledgeDocument,
+  subscribeRecipeAudits,
+  saveRecipeAudit,
 } from "./lib/dataService";
 import { COMMON_ALLERGENS, CONVERSION_FACTORS } from "./constants";
 
@@ -177,7 +181,8 @@ type AppView =
   | "developments"
   | "trial_formulas"
   | "asistente_formulacion"
-  | "normativas";
+  | "normativas"
+  | "conteo_ciclico";
 
 interface ExpandableTextProps {
   text?: string;
@@ -279,6 +284,7 @@ export default function App() {
   const [recipes, setRecipes] = useState<Recipe[]>([INITIAL_RECIPE]);
   const [developments, setDevelopments] = useState<DevelopmentProject[]>([]);
   const [knowledgeDocuments, setKnowledgeDocuments] = useState<KnowledgeDocument[]>([]);
+  const [recipeAudits, setRecipeAudits] = useState<RecipeAudit[]>([]);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>(
     INITIAL_RECIPE.id,
   );
@@ -417,10 +423,14 @@ export default function App() {
       const unsubKnowledge = subscribeKnowledgeDocuments(user.uid, (data) => {
         setKnowledgeDocuments(data);
       });
+      const unsubAudits = subscribeRecipeAudits((data) => {
+        setRecipeAudits(data);
+      });
       return () => {
         unsubRecipes();
         unsubDevs();
         unsubKnowledge();
+        unsubAudits();
       };
     }
   }, [user]);
@@ -2245,6 +2255,7 @@ export default function App() {
             { id: "recipes", icon: FlaskConical, label: "Formulación Técnica" },
             { id: "ingredients", icon: Database, label: "Almacén I+D" },
             { id: "guide", icon: FileText, label: "Normativas" },
+            { id: "conteo_ciclico", icon: ClipboardCheck, label: "Conteo Cíclico" },
             { id: "asistente_formulacion", icon: Sparkles, label: "Asistente Formulación" },
           ].map((item) => (
             <button
@@ -2501,6 +2512,29 @@ export default function App() {
                     knowledge={knowledgeDocuments}
                     onSaveKnowledge={handleSaveKnowledgeDoc}
                     onDeleteKnowledge={handleDeleteKnowledgeDoc}
+                  />
+                </motion.div>
+              )}
+
+              {view === "conteo_ciclico" && user && (
+                <motion.div
+                  key="conteo_ciclico"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="h-full overflow-y-auto custom-scrollbar p-8"
+                >
+                  <RecipeAuditView
+                    recipes={recipes}
+                    ingredients={ingredients}
+                    audits={recipeAudits}
+                    onSaveAudit={async (audit) => {
+                      await saveRecipeAudit(audit);
+                    }}
+                    onUpdateRecipe={async (recipe) => {
+                      await saveRecipe(recipe, user.uid);
+                    }}
+                    userId={user.uid}
                   />
                 </motion.div>
               )}

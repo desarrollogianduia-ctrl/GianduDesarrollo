@@ -1,0 +1,133 @@
+[
+  {
+    "name": "REC-1-PT-PAS-320-V1",
+    "description": "",
+    "category": "SEMIFRIO",
+    "ingredients": [
+      { "name": "RELLENO TRUFA ROCHER", "amount": 20, "unit": "g" },
+      { "name": "BAÑO TRUFA ROCHER", "amount": 6, "unit": "g" },
+      { "name": "CUCURUCHO PARTIDO", "amount": 2, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-323-V10",
+    "description": "Se agreg térmico.",
+    "category": "Torta helada",
+    "ingredients": [
+      { "name": "HOJALDRE PLACA COCIDO ROGEL", "amount": 4, "unit": "unit" },
+      { "name": "DULCE DE LECHE FAMILIAR", "amount": 300, "unit": "g" },
+      { "name": "DULCE DE LECHE INTENSO FABRICACION PALETAS", "amount": 440, "unit": "g" },
+      { "name": "STRACCIATELLA BIANCA", "amount": 120, "unit": "g" },
+      { "name": "AGUA", "amount": 23, "unit": "g" },
+      { "name": "CLARA EN POLVO", "amount": 3, "unit": "g" },
+      { "name": "AZUCAR", "amount": 53, "unit": "g" },
+      { "name": "TERMICO TORTERA", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-327-V6",
+    "description": "Se agrega térmico tortera",
+    "category": "TORTA HELADA",
+    "ingredients": [
+      { "name": "MASA SABLEE", "amount": 260, "unit": "g" },
+      { "name": "HELADO LEMON PIE PARA TORTA", "amount": 750, "unit": "g" },
+      { "name": "LEMON CURD", "amount": 385, "unit": "g" },
+      { "name": "AZUCAR", "amount": 23, "unit": "g" },
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 23, "unit": "g" },
+      { "name": "GEL AMARILLO", "amount": 8, "unit": "g" },
+      { "name": "STREUSSEL HORNEADO", "amount": 15, "unit": "g" },
+      { "name": "TERMICO TORTERA", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-328-V1",
+    "description": "",
+    "category": "SEMIFRIO",
+    "ingredients": [
+      { "name": "RELLENO TRUFA CHOCOLATE BLANCO", "amount": 20, "unit": "g" },
+      { "name": "BAÑO TRUFA CHOCOLATE BLANCO", "amount": 6, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-340-V5",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "MASA ROSCA DE PASCUA", "amount": 360, "unit": "g" },
+      { "name": "RELLENO ROSCA DE PASCUA PISTACHO", "amount": 120, "unit": "g" },
+      { "name": "BAÑO ROSCA DE PASCUA PISTACHO", "amount": 60, "unit": "g" },
+      { "name": "GARRAPIÑADA DE PISTACHO", "amount": 20, "unit": "g" },
+      { "name": "GRANA DE PISTACHO", "amount": 20, "unit": "g" },
+      { "name": "MOLDE PAN DULCE", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-341-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "LEVADURA PRENSADA", "amount": 7.1, "unit": "g" },
+      { "name": "AGUA", "amount": 29.7, "unit": "g" },
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 9.4, "unit": "g" },
+      { "name": "ESENCIA PAN DULCE", "amount": 0.5, "unit": "g" },
+      { "name": "TEGRAL PANETTONE", "amount": 78.1, "unit": "g" },
+      { "name": "MANTECA", "amount": 11.7, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA SEMIAMARGO TRONADOR", "amount": 46.9, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-342-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "LEVADURA PRENSADA", "amount": 7, "unit": "g" },
+      { "name": "AGUA", "amount": 29.7, "unit": "g" },
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 9.4, "unit": "g" },
+      { "name": "ESENCIA PAN DULCE", "amount": 0.5, "unit": "g" },
+      { "name": "TEGRAL PANETTONE", "amount": 78.1, "unit": "g" },
+      { "name": "MANTECA", "amount": 11.7, "unit": "g" },
+      { "name": "ALMENDRA PELADA", "amount": 15.6, "unit": "g" },
+      { "name": "CASTAÑAS DE CAJU", "amount": 7.8, "unit": "g" },
+      { "name": "NUEZ CUARTILLO", "amount": 23.4, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-345-V1",
+    "description": "",
+    "category": "SEMIFRIO",
+    "ingredients": [
+      { "name": "RELLENO GIANDUIOTTO", "amount": 17.9, "unit": "g" },
+      { "name": "BAÑO GIANDUIOTTO", "amount": 0.0061, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-346-V2",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 4, "unit": "g" },
+      { "name": "AGUA", "amount": 1, "unit": "g" },
+      { "name": "AZUCAR IMPALPABLE", "amount": 6, "unit": "g" },
+      { "name": "AZUCAR", "amount": 6, "unit": "g" },
+      { "name": "HARINA DE ALMENDRAS S/ PIEL", "amount": 6, "unit": "g" },
+      { "name": "CACAO EN POLVO 22/24", "amount": 0, "unit": "g" },
+      { "name": "GANACHE DE CHOCOLATE", "amount": 15, "unit": "g" },
+      { "name": "SOBRE PARA MACARONS", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-347-V3",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "AZUCAR", "amount": 6, "unit": "g" },
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 4, "unit": "g" },
+      { "name": "AZUCAR IMPALPABLE", "amount": 6, "unit": "g" },
+      { "name": "HARINA DE ALMENDRAS S/ PIEL", "amount": 6, "unit": "g" },
+      { "name": "COLORANTE VERDE GEL", "amount": 0, "unit": "unit" },
+      { "name": "COLORANTE ROJO PASTA", "amount": 0, "unit": "unit" },
+      { "name": "GANACHE PISTACHOS", "amount": 15, "unit": "g" },
+      { "name": "SOBRE PARA MACARONS", "amount": 1, "unit": "unit" }
+    ]
+  }
+]

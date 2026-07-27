@@ -1,0 +1,122 @@
+[
+  {
+    "name": "REC-1-PT-PAS-348-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 4, "unit": "g" },
+      { "name": "AGUA", "amount": 1, "unit": "g" },
+      { "name": "AZUCAR", "amount": 6, "unit": "g" },
+      { "name": "AZUCAR IMPALPABLE", "amount": 6, "unit": "g" },
+      { "name": "HARINA DE ALMENDRAS S/ PIEL", "amount": 6, "unit": "g" },
+      { "name": "GANACHE MARACUYA", "amount": 15, "unit": "g" },
+      { "name": "COLORANTE AMARILLO GEL", "amount": 0, "unit": "unit" },
+      { "name": "SOBRE PARA MACARONS", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-349-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "AZUCAR", "amount": 6, "unit": "g" },
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 4, "unit": "g" },
+      { "name": "AZUCAR IMPALPABLE", "amount": 6, "unit": "g" },
+      { "name": "HARINA DE ALMENDRAS S/ PIEL", "amount": 6, "unit": "g" },
+      { "name": "GANACHE FRAMBUESA", "amount": 15, "unit": "g" },
+      { "name": "COLORANTE ROJO PASTA", "amount": 0, "unit": "unit" },
+      { "name": "SOBRE PARA MACARONS", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-352-V1",
+    "description": "",
+    "category": "SEMIFRIO",
+    "ingredients": [
+      { "name": "RELLENO TRUFA BLANCA Y NUEZ", "amount": 20, "unit": "g" },
+      { "name": "BAÑO TRUFA BLANCA Y NUEZ", "amount": 6, "unit": "g" },
+      { "name": "NUEZ CUARTILLO", "amount": 2, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-355-V1",
+    "description": "",
+    "category": "SEMIFRIO",
+    "ingredients": [
+      { "name": "CUCURUCHO PARTIDO", "amount": 2, "unit": "g" },
+      { "name": "BAÑO TRUFA CHOCOLATE CON LECHE", "amount": 6, "unit": "g" },
+      { "name": "RELLENO TRUFA CHOCOLATE CON LECHE", "amount": 20, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-358-V1",
+    "description": "",
+    "category": "SEMIFRIO",
+    "ingredients": [
+      { "name": "NUEZ CUARTILLO", "amount": 2, "unit": "g" },
+      { "name": "RELLENO TRUFA SEMIAMARGA Y NUEZ", "amount": 20, "unit": "g" },
+      { "name": "BAÑO TRUFA SEMIAMARGA Y NUEZ", "amount": 6, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-360-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "MASA SABLEE", "amount": 65, "unit": "g" },
+      { "name": "CREMA PASTELERA", "amount": 80, "unit": "g" },
+      { "name": "DURAZNO EN ALMIBAR", "amount": 25, "unit": "g" },
+      { "name": "KIWI FRUTA", "amount": 20, "unit": "g" },
+      { "name": "FRUTILLA FRUTA", "amount": 20, "unit": "g" },
+      { "name": "GEL BRILLO EN FRIO", "amount": 5, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-363-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "MASA SABLEE", "amount": 65, "unit": "g" },
+      { "name": "DULCE DE LECHE REPOSTERO", "amount": 50, "unit": "g" },
+      { "name": "FRUTILLA FRUTA", "amount": 55, "unit": "g" },
+      { "name": "GEL BRILLO EN FRIO", "amount": 5, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-365-V3",
+    "description": "Se agrega un 15% más de azúcar.",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "AGUA", "amount": 1, "unit": "g" },
+      { "name": "DULCE DE LECHE REPOSTERO", "amount": 11, "unit": "g" },
+      { "name": "HARINA 0000", "amount": 21, "unit": "g" },
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 23, "unit": "g" },
+      { "name": "POLVO PARA HORNEAR", "amount": 0.5, "unit": "g" },
+      { "name": "ACEITE DE GIRASOL", "amount": 7, "unit": "g" },
+      { "name": "COCO RALLADO", "amount": 4, "unit": "g" },
+      { "name": "AZUCAR", "amount": 16, "unit": "g" },
+      { "name": "MANTECA", "amount": 2, "unit": "g" },
+      { "name": "FRITOLIN", "amount": 0.1, "unit": "unit" },
+      { "name": "SAL FINA", "amount": 0.1, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-368-V1",
+    "description": "",
+    "category": "SEMIFRIO",
+    "ingredients": [
+      { "name": "RELLENO TRUFA SEMIAMARGA", "amount": 20, "unit": "g" },
+      { "name": "BAÑO TRUFA SEMIAMARGA", "amount": 6, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-369-V1",
+    "description": "",
+    "category": "SEMIFRIO",
+    "ingredients": [
+      { "name": "RELLENO TRUFA DE COCO", "amount": 20, "unit": "g" },
+      { "name": "BAÑO TRUFA DE COCO", "amount": 6, "unit": "g" },
+      { "name": "COCO RALLADO", "amount": 2, "unit": "g" }
+    ]
+  }
+]

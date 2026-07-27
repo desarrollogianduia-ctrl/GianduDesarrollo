@@ -1,0 +1,99 @@
+[
+  {
+    "name": "REC-1-PT-FRA-074-V1",
+    "description": "",
+    "category": "INSUMOS",
+    "ingredients": [
+      { "name": "MIX DE SEMILLAS", "amount": 100, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-101-V3",
+    "description": "Se modifica siembra",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE INTENSO", "amount": 918, "unit": "g" },
+      { "name": "HOJALDRE PLACA + MEZCLA ROGEL", "amount": 0.075, "unit": "unit" },
+      { "name": "MERENGUE ITALIANO", "amount": 7, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-102-V2",
+    "description": "cambio por gianduiella casera",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO GIANDUIA", "amount": 920, "unit": "g" },
+      { "name": "VETEADO GIANDUIELLA CASERA MELANGER", "amount": 80, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-103-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO MASCARPONE", "amount": 796, "unit": "g" },
+      { "name": "OREO PROCESADAS", "amount": 56, "unit": "g" },
+      { "name": "VARIEGATO FRUTOS ROJOS", "amount": 148, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-106-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO CREMA DE LIMON", "amount": 820, "unit": "g" },
+      { "name": "LEMON CURD", "amount": 116, "unit": "g" },
+      { "name": "STREUSSEL HORNEADO", "amount": 56, "unit": "g" },
+      { "name": "MERENGUE ITALIANO", "amount": 8, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-110-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO DE COCO", "amount": 763, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR LA RESISTENCIA", "amount": 172, "unit": "g" },
+      { "name": "STREUSSEL HORNEADO", "amount": 34.5, "unit": "g" },
+      { "name": "STREUSEL DE COCO", "amount": 31, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-111-V3",
+    "description": "Se cambia la base a fior di latte",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "DULCE DE LECHE FAMILIAR", "amount": 60, "unit": "g" },
+      { "name": "OREO PROCESADAS", "amount": 45, "unit": "g" },
+      { "name": "HELADO FIOR DI LATTE", "amount": 887, "unit": "g" },
+      { "name": "GALLETITAS OREO X PAQUETE (600GR)", "amount": 8, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-113-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO FRUTILLA", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-114-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO LIMON", "amount": 995.9, "unit": "g" },
+      { "name": "CASCARITAS DE LIMON MACERADAS", "amount": 4.1, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-116-V2",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE SUAVE", "amount": 915, "unit": "g" },
+      { "name": "CACAO EN POLVO 22/24", "amount": 5, "unit": "g" },
+      { "name": "SIEMBRA CHOCOTORTA", "amount": 80, "unit": "g" }
+    ]
+  }
+]

@@ -1,0 +1,101 @@
+[
+  {
+    "name": "REC-1-PT-HEL-191-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BLANCO", "amount": 884, "unit": "g" },
+      { "name": "STREUSSEL HORNEADO", "amount": 56, "unit": "g" },
+      { "name": "PISTACHETTA", "amount": 60, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-192-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO MAR DEL PLATA", "amount": 761, "unit": "g" },
+      { "name": "SIEMBRA MAR DEL PLATA DULCE DE LECHE", "amount": 133, "unit": "g" },
+      { "name": "SIEMBRA MAR DEL PLATA CHOCOLATE", "amount": 106, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-193-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BELGA", "amount": 795.2, "unit": "g" },
+      { "name": "SIEMBRA DUBAI", "amount": 81.1, "unit": "g" },
+      { "name": "VARIEGATO DE PISTACHO", "amount": 112.3, "unit": "g" },
+      { "name": "KATAIFI HORNEADO", "amount": 5.2, "unit": "g" },
+      { "name": "GALLATELLA CASERA", "amount": 4.2, "unit": "g" },
+      { "name": "VARIEGATO CHOCOLATE CON LECHE", "amount": 2.1, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-194-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO SALTY CARAMEL", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-195-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO MANDORLATTA", "amount": 867.1, "unit": "g" },
+      { "name": "SIEMBRA MANDORLATTA", "amount": 132.9, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-196-V2",
+    "description": "Se cambia gianduiella 50/50 por gianduiella",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO DE PANETTONE", "amount": 840, "unit": "g" },
+      { "name": "PISTACHETTA", "amount": 30, "unit": "g" },
+      { "name": "PANETTONE SIEMBRA", "amount": 50, "unit": "g" },
+      { "name": "VETEADO GIANDUIELLA CASERA MELANGER", "amount": 30, "unit": "g" },
+      { "name": "MIX FRUTOS SECOS (PANETTONE)", "amount": 50, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-197-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE 70 AL AGUA", "amount": 979, "unit": "g" },
+      { "name": "NUTTY WOW", "amount": 21, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-198-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO MANDARINA Y KIWI", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-199-V1",
+    "description": "Se crea receta en sistema",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE SUAVE", "amount": 814, "unit": "g" },
+      { "name": "CHOCOLATE EN RAMA BLANCO", "amount": 72, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR LA RESISTENCIA", "amount": 114, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-200-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "ESPEJO LET'S POP", "amount": 120, "unit": "g" },
+      { "name": "SIEMBRA LET'S POP", "amount": 115, "unit": "g" },
+      { "name": "HELADO LET'S POP", "amount": 765, "unit": "g" }
+    ]
+  }
+]

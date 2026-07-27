@@ -1,0 +1,106 @@
+[
+  {
+    "name": "REC-1-PT-HEL-606-V6",
+    "description": "Se modifica la receta",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE SUAVE", "amount": 810, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR LA RESISTENCIA", "amount": 90, "unit": "g" },
+      { "name": "SIEMBRA CHOQUCAKE", "amount": 90, "unit": "g" },
+      { "name": "MOROCHITAS PROCESADAS", "amount": 30, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.135, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-607-V6",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE INTENSO", "amount": 832, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR LA RESISTENCIA", "amount": 100, "unit": "g" },
+      { "name": "HOJALDRE PARTIDO", "amount": 50, "unit": "g" },
+      { "name": "MERENGUITOS", "amount": 18, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.14, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-608-V3",
+    "description": "Se agrega campo editable",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO MASCARPONE", "amount": 850, "unit": "g" },
+      { "name": "VARIEGATO FRUTOS ROJOS", "amount": 150, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.131, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-609-V3",
+    "description": "arreglo ingrediente balde",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO SAMBAYON", "amount": 955, "unit": "g" },
+      { "name": "NUEZ GARRAPIÑADA", "amount": 45, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.149, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-610-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO BON O BON", "amount": 895, "unit": "g" },
+      { "name": "VARIEGATO BOMBON", "amount": 105, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-611-V5",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO BANANA", "amount": 810, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR LA RESISTENCIA", "amount": 100, "unit": "g" },
+      { "name": "VETEADO GIANDUIELLA CASERA MELANGER", "amount": 90, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.137, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-612-V3",
+    "description": "Se agrega cantidad editable",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO MARACUYA MANGO", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.142, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-613-V2",
+    "description": "Se agrega balde reforzado y campo editable.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO FRAMBUESA", "amount": 916, "unit": "g" },
+      { "name": "STRACCIATELLA SEMIAMARGA", "amount": 84, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.151, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-614-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO VAINILLA DE LA NONNA", "amount": 825, "unit": "g" },
+      { "name": "VARIEGATO CARAMELO", "amount": 95, "unit": "g" },
+      { "name": "AZUCAR", "amount": 40, "unit": "g" },
+      { "name": "NUEZ PECAN", "amount": 40, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-615-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO LEMON VAINILLA", "amount": 1000, "unit": "g" },
+      { "name": "STREUSSEL HORNEADO", "amount": 200, "unit": "g" },
+      { "name": "VETEADO LEMON PIE", "amount": 100, "unit": "g" }
+    ]
+  }
+]

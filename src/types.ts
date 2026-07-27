@@ -21,7 +21,7 @@ export interface NutrientValues {
 export type IngredientCategory = 'generico' | 'especifico';
 export type FunctionalGroup = 'azucares' | 'lacteos' | 'chocolates' | 'neutros' | 'frutas' | 'pastas' | 'aceites' | 'frutos_secos' | 'aditivos' | 'miscelaneos' | 'otros';
 export type RecipeType = 'base' | 'semielaborado' | 'final';
-export type RecipeCategory = 'semielaborado' | 'pasteleria' | 'paletas' | 'chocolateria' | 'vitrina' | 'popolo' | 'helados';
+export type RecipeCategory = 'semielaborado' | 'pasteleria' | 'paletas' | 'chocolateria' | 'vitrina' | 'popolo' | 'helados' | 'sin_definir';
 export type DevelopmentStatus = 'formulacion' | 'informacion_nutricional' | 'creado_en_sistema' | 'finalizado';
 
 export type AllergenType = 'contiene' | 'puede_contener' | 'derivado_de';
@@ -80,6 +80,8 @@ export interface Recipe {
   isSatisfactory?: boolean; // New: was it satisfactory?
   trialCode?: string; // New: links to the specific trial code, e.g. DE-GI-HELA-001A
   isArchived?: boolean; // New: indicates if it's archived
+  stock?: number; // Current physical stock
+  priority?: 'baja' | 'media' | 'alta'; // Priority for auditing
 }
 
 export interface CalculationResult {
@@ -162,4 +164,31 @@ export interface DevelopmentProject {
   prodTrialEndTime?: string;
   tasks?: ProjectTask[];
   sensoryAnalysis?: SensoryAnalysis;
+}
+
+export type AuditStatus = 'ok' | 'desvio' | 'arreglado' | 'problema';
+export type RNPAStatus = 'al_dia' | 'vencido' | 'pendiente' | 'no_aplica';
+export type MPStatus = 'al_dia' | 'faltante_ficha' | 'faltante_cert' | 'no_aplica';
+export type ProcedureStatus = 'ok' | 'siguen_hoja' | 'modificar' | 'faltante';
+
+export interface RecipeAudit {
+  id: string;
+  recipeId: string;
+  recipeName: string;
+  recipeType: RecipeType;
+  date: number;
+  auditorId: string;
+  status: AuditStatus;
+  notes: string;
+  isUpdated: boolean;
+  rnpaStatus: RNPAStatus;
+  mpStatus: MPStatus;
+  procedureStatus: ProcedureStatus;
+  improvements?: string;
+  deviations?: string;
+  findings?: string;
+  nextReviewDate?: number;
+  systemCount?: number;
+  physicalCount?: number;
+  adjustmentReason?: string;
 }

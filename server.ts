@@ -24,7 +24,7 @@ function getGenAI() {
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY environment variable is required");
     }
-    genAI = new GoogleGenAI(apiKey);
+    genAI = new GoogleGenAI({ apiKey });
   }
   return genAI;
 }

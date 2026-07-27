@@ -1,0 +1,122 @@
+[
+  {
+    "name": "REC-1-PT-PAL-300-V3",
+    "description": "arreglo de ingredientes",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "DULCE DE LECHE INTENSO FABRICACION PALETAS", "amount": 69, "unit": "g" },
+      { "name": "BAÑO CHOCOLATE BLANCO", "amount": 40, "unit": "g" },
+      { "name": "BAÑO EVENTOS", "amount": 150, "unit": "g" },
+      { "name": "PASTA AMERICANA AMARILLA", "amount": 5, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-058-V2",
+    "description": "Se agrega masa almendras en lugar de productos individuales.",
+    "category": "SEMIELABORADO",
+    "ingredients": [
+      { "name": "MASA ALMENDRAS", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-304-V3",
+    "description": "",
+    "category": "SEMIFRIO",
+    "ingredients": [
+      { "name": "GALLETITAS CHOCOLINAS", "amount": 75, "unit": "g" },
+      { "name": "ALMIBAR DE CAFÉ", "amount": 10, "unit": "g" },
+      { "name": "CREMA CHOCOTORTA", "amount": 180, "unit": "g" },
+      { "name": "CACAO EN POLVO 22/24", "amount": 3, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-305-V1",
+    "description": "",
+    "category": "SEMIFRIO",
+    "ingredients": [
+      { "name": "BASE OREO CHEESECAKE", "amount": 30, "unit": "g" },
+      { "name": "CREMA CHEESECAKE", "amount": 120, "unit": "g" },
+      { "name": "COULIS CHEESECAKE", "amount": 32, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-306-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "MANTECOL (POSTRE DE MANI)", "amount": 15, "unit": "g" },
+      { "name": "GALLETITAS MOROCHITAS", "amount": 15, "unit": "g" },
+      { "name": "NUTTY", "amount": 10, "unit": "g" },
+      { "name": "DULCE DE LECHE REPOSTERO", "amount": 35, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA BLANCO MAPSA COBBL", "amount": 2, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA SEMIAMARGO TRONADOR", "amount": 2, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-310-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "MASA SABLEE", "amount": 35, "unit": "g" },
+      { "name": "MERENGUE ITALIANO", "amount": 5, "unit": "g" },
+      { "name": "LEMON CURD", "amount": 65, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-313-V6",
+    "description": "Se arregla sustito de higo congelado por higo en almibar.",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "ARENILLA MALFATTA", "amount": 92, "unit": "g" },
+      { "name": "AZUCAR", "amount": 32, "unit": "g" },
+      { "name": "ESENCIA DE VAINILLA", "amount": 2, "unit": "g" },
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 39, "unit": "g" },
+      { "name": "MANZANA VERDE X18KG/CAJON", "amount": 21, "unit": "g" },
+      { "name": "MERMELADA DE HIGOS", "amount": 7, "unit": "g" },
+      { "name": "FRITOLIN", "amount": 0.0001, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-314-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "LEVADURA PRENSADA", "amount": 25, "unit": "g" },
+      { "name": "AGUA", "amount": 275, "unit": "g" },
+      { "name": "LECHE EN POLVO ENTERA", "amount": 26, "unit": "g" },
+      { "name": "MIEL", "amount": 30, "unit": "g" },
+      { "name": "HARINA 000", "amount": 500, "unit": "g" },
+      { "name": "SAL FINA", "amount": 10, "unit": "g" },
+      { "name": "MANTECA", "amount": 40, "unit": "g" },
+      { "name": "NUEZ CUARTILLO", "amount": 90, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-315-V4",
+    "description": "Se agrega un 15% más de azúcar.",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "LEVADURA PRENSADA", "amount": 5, "unit": "g" },
+      { "name": "AGUA", "amount": 19, "unit": "g" },
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 6, "unit": "g" },
+      { "name": "ESENCIA DE VAINILLA", "amount": 1, "unit": "g" },
+      { "name": "HARINA 0000", "amount": 61, "unit": "g" },
+      { "name": "MANTECA", "amount": 11, "unit": "g" },
+      { "name": "AZUCAR", "amount": 6, "unit": "g" },
+      { "name": "SAL FINA", "amount": 1, "unit": "g" },
+      { "name": "LECITINA DE SOJA", "amount": 1, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-317-V1",
+    "description": "",
+    "category": "SEMIFRIO",
+    "ingredients": [
+      { "name": "PASTILLA DUO ROSMARINO", "amount": 1, "unit": "unit" },
+      { "name": "BASE DUO ROSMARINO", "amount": 14.4, "unit": "g" },
+      { "name": "BAÑO PARCIAL ROSMARINIO", "amount": 15, "unit": "g" },
+      { "name": "DECO VERDE ROSMARINO", "amount": 5, "unit": "g" },
+      { "name": "DECO SUPERIOR ROSMARINO", "amount": 2, "unit": "g" }
+    ]
+  }
+]

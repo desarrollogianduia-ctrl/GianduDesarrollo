@@ -1,0 +1,96 @@
+[
+  {
+    "name": "REC-1-PT-HEL-626-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BELGA", "amount": 800, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR", "amount": 100, "unit": "g" },
+      { "name": "MERENGUITOS", "amount": 100, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-627-V3",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BELGA", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.139, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-628-V2",
+    "description": "Se agrega balde reforzado y campo modificable.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO CREMA DE LIMON", "amount": 810, "unit": "g" },
+      { "name": "STREUSSEL HORNEADO", "amount": 56, "unit": "g" },
+      { "name": "LEMON CURD", "amount": 116, "unit": "g" },
+      { "name": "MERENGUITOS", "amount": 18, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.132, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-629-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO CABSHA", "amount": 860, "unit": "g" },
+      { "name": "SIEMBRA CABSHA HELADOS", "amount": 140, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-630-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO CHANTILLY", "amount": 900, "unit": "g" },
+      { "name": "STRACCIATELLA SEMIAMARGA", "amount": 100, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-631-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO DE COCO", "amount": 675, "unit": "g" },
+      { "name": "DULCE DE LECHE HELADERO (PASCUALITA)", "amount": 325, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-632-V3",
+    "description": "Se agrega balde reforzado.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO FIOR DI LATTE", "amount": 1000, "unit": "g" },
+      { "name": "OREO PROCESADAS", "amount": 70, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.142, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-634-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BLANCO", "amount": 900, "unit": "g" },
+      { "name": "CHOCOLATE BLANCO PROCESADO", "amount": 100, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-635-V2",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO SAMBAYON", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.138, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-637-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO DE SORBET DE MARACUYA", "amount": 1000, "unit": "g" }
+    ]
+  }
+]

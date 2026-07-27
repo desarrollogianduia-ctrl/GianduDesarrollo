@@ -1,0 +1,131 @@
+[
+  {
+    "name": "REC-1-PT-PAL-221-V2",
+    "description": "cambio a helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "KINDOVO FABRICACION PALETAS", "amount": 70, "unit": "g" },
+      { "name": "BAÑO CHOCOLATE BLANCO", "amount": 40, "unit": "g" },
+      { "name": "BAÑO HUELLA CHOCOLATE CON LECHE", "amount": 3, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-228-V7",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "CHANTILLY FABRICACION  PALETAS", "amount": 68, "unit": "g" },
+      { "name": "OREO PROCESADAS", "amount": 7, "unit": "g" },
+      { "name": "BAÑO COBERTURA ROSA", "amount": 40, "unit": "g" },
+      { "name": "PASTA AMERICANA BLANCA", "amount": 5, "unit": "g" },
+      { "name": "PASTA AMERICANA ROSA", "amount": 5, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-229-V7",
+    "description": "Se agrega manga negra.",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "CHANTILLY FABRICACION  PALETAS", "amount": 69, "unit": "g" },
+      { "name": "OREO PROCESADAS", "amount": 7, "unit": "g" },
+      { "name": "BAÑO CHOCOLATE BLANCO", "amount": 40, "unit": "g" },
+      { "name": "PASTA AMERICANA ROJA", "amount": 5, "unit": "g" },
+      { "name": "PASTA AMERICANA AMARILLA", "amount": 5, "unit": "g" },
+      { "name": "MANGA NEGRA", "amount": 3, "unit": "g" },
+      { "name": "PASTA AMERICANA NEGRA", "amount": 3, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-231-V3",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "CHANTILLY FABRICACION  PALETAS", "amount": 60, "unit": "g" },
+      { "name": "VETEADO FRUTILLA", "amount": 15, "unit": "g" },
+      { "name": "BAÑO FRUTILLA CHANTY", "amount": 40, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-234-V6",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "DULCE DE LECHE SUAVE FABRICACION PALETAS", "amount": 70, "unit": "g" },
+      { "name": "BAÑO AMARILLO", "amount": 33, "unit": "g" },
+      { "name": "PASTA AMERICANA BLANCA", "amount": 2, "unit": "g" },
+      { "name": "PASTA AMERICANA ROJA", "amount": 2, "unit": "g" },
+      { "name": "PASTA AMERICANA AZUL", "amount": 2, "unit": "g" },
+      { "name": "PASTA AMERICANA NEGRA", "amount": 2, "unit": "g" },
+      { "name": "PASTA AMERICANA ROJA", "amount": 1, "unit": "g" },
+      { "name": "PASTA AMERICANA BLANCA", "amount": 1, "unit": "g" },
+      { "name": "PASTA AMERICANA BLANCA", "amount": 2, "unit": "g" },
+      { "name": "PASTA AMERICANA NEGRA", "amount": 0.8, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-237-V1",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "NOCCIOLA PALETAS", "amount": 75, "unit": "g" },
+      { "name": "NUTTY", "amount": 20, "unit": "g" },
+      { "name": "CHOCOLATE BLANCO PARA PINTAR", "amount": 0.3, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-238-V2",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PISTACHOS PEPAS CRUDAS Y PELADAS", "amount": 3, "unit": "g" },
+      { "name": "MACARON PISTACHO (S. PALETA)", "amount": 1, "unit": "unit" },
+      { "name": "PISTACHO FRABRICACION PALETAS", "amount": 63, "unit": "g" },
+      { "name": "BAÑO PISTACCIO", "amount": 23, "unit": "g" },
+      { "name": "PASTILLA PISTACCIO", "amount": 10, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-246-V1",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "MINIPALITOS", "amount": 1, "unit": "unit" },
+      { "name": "CHANTILLY PALETAS", "amount": 35, "unit": "g" },
+      { "name": "BAÑO AMARILLO", "amount": 18, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA SEMIAMARGO TRONADOR", "amount": 1, "unit": "g" },
+      { "name": "PASTA AMERICANA BLANCA", "amount": 3, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-251-V3",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "DULCE DE LECHE SUAVE FABRICACION PALETAS", "amount": 48, "unit": "g" },
+      { "name": "BAÑO CHOCOLATE BLANCO", "amount": 30, "unit": "g" },
+      { "name": "CREMA DE LECHE 44%", "amount": 7.5, "unit": "g" },
+      { "name": "LECHE CONDENSADA", "amount": 15, "unit": "g" },
+      { "name": "STRACCIATELLA DULCE DE LECHE", "amount": 6, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA BLANCO MAPSA COBBL", "amount": 7.5, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-255-V3",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "MINIPALITOS", "amount": 1, "unit": "unit" },
+      { "name": "KINDOVO FABRICACION PALETAS", "amount": 35, "unit": "g" },
+      { "name": "BAÑO COBERTURA ROJO", "amount": 18, "unit": "g" },
+      { "name": "BAÑO HUELLA CHOCOLATE AZUL", "amount": 6, "unit": "g" },
+      { "name": "PASTA AMERICANA BLANCA", "amount": 3, "unit": "g" }
+    ]
+  }
+]

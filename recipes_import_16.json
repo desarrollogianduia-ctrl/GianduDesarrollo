@@ -1,0 +1,98 @@
+[
+  {
+    "name": "REC-1-PT-HEL-661-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO MASCARPONE", "amount": 940, "unit": "g" },
+      { "name": "SIEMBRA RED VELVET", "amount": 60, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-662-V2",
+    "description": "Se agrega balde reforzado.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO DE CANELA", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.152, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-677-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO BANANA", "amount": 925, "unit": "g" },
+      { "name": "FRUTILLAS POCHÉ", "amount": 37.5, "unit": "g" },
+      { "name": "VETEADO FRUTILLA", "amount": 37.5, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-678-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE SUAVE", "amount": 849, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR LA RESISTENCIA", "amount": 80, "unit": "g" },
+      { "name": "VAUQUITA SNACK", "amount": 71, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-679-V2",
+    "description": "",
+    "category": "AXION LOG",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BELGA", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.139, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-680-V2",
+    "description": "Se agrega el balde a la receta",
+    "category": "AXION LOG",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE INTENSO", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.151, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-681-V3",
+    "description": "Se agrega el balde a la receta",
+    "category": "AXION LOG",
+    "ingredients": [
+      { "name": "HELADO FIOR DI LATTE", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.159, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-682-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO DE COCO", "amount": 840, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR LA RESISTENCIA", "amount": 70, "unit": "g" },
+      { "name": "STREUSSEL HORNEADO", "amount": 45, "unit": "g" },
+      { "name": "STREUSEL DE COCO", "amount": 45, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-683-V3",
+    "description": "Se agrega balde reforzado",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BELGA", "amount": 850, "unit": "g" },
+      { "name": "SIEMBRA DUBAI", "amount": 150, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.136, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-684-V3",
+    "description": "arreglo ingrediente balde",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO CREMA DE LIMON", "amount": 850, "unit": "g" },
+      { "name": "VARIEGATO FRUTOS ROJOS", "amount": 150, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.132, "unit": "unit" }
+    ]
+  }
+]

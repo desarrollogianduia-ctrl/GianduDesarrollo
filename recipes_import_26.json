@@ -1,0 +1,106 @@
+[
+  {
+    "name": "REC-1-PT-PAS-373-V2",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "GALLETITAS CHOCOLINAS", "amount": 25, "unit": "g" },
+      { "name": "MANTECA", "amount": 10, "unit": "g" },
+      { "name": "CREMA CHOCOTORTA", "amount": 100, "unit": "g" },
+      { "name": "GALLETITAS CHOCOLINAS", "amount": 15, "unit": "g" },
+      { "name": "CACAO EN POLVO 22/24", "amount": 1, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-375-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "HARINA DE ALMENDRAS S/ PIEL", "amount": 200, "unit": "g" },
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 540, "unit": "g" },
+      { "name": "AZUCAR IMPALPABLE", "amount": 200, "unit": "g" },
+      { "name": "HARINA 0000", "amount": 250, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-380-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "MANTECA", "amount": 350, "unit": "g" },
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 420, "unit": "g" },
+      { "name": "AZUCAR", "amount": 450, "unit": "g" },
+      { "name": "HARINA 0000", "amount": 500, "unit": "g" },
+      { "name": "COCO RALLADO", "amount": 400, "unit": "g" },
+      { "name": "POLVO PARA HORNEAR", "amount": 10, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-385-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "MANTECA", "amount": 180, "unit": "g" },
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 120, "unit": "g" },
+      { "name": "HARINA 0000", "amount": 450, "unit": "g" },
+      { "name": "AZUCAR IMPALPABLE", "amount": 180, "unit": "g" },
+      { "name": "COCO RALLADO", "amount": 150, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-390-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "LECHE ENTERA", "amount": 1000, "unit": "g" },
+      { "name": "AZUCAR", "amount": 200, "unit": "g" },
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 120, "unit": "g" },
+      { "name": "ALMIDON DE MAIZ", "amount": 80, "unit": "g" },
+      { "name": "ESENCIA DE VAINILLA", "amount": 10, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-393-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "FRUTILLA FRUTA", "amount": 1000, "unit": "g" },
+      { "name": "AZUCAR", "amount": 500, "unit": "g" },
+      { "name": "JUGO DE LIMON EXPRIMIDO", "amount": 50, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-395-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "AZUCAR", "amount": 1000, "unit": "g" },
+      { "name": "AGUA", "amount": 300, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAS-398-V1",
+    "description": "",
+    "category": "HORNEADO",
+    "ingredients": [
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 1000, "unit": "g" },
+      { "name": "AZUCAR", "amount": 2000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-4-SE-HEL-017-V1",
+    "description": "",
+    "category": "SEMIELABORADO",
+    "ingredients": [
+      { "name": "HELADO VAINILLA", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-4-SE-HEL-018-V1",
+    "description": "",
+    "category": "SEMIELABORADO",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BELGA", "amount": 1000, "unit": "g" }
+    ]
+  }
+]

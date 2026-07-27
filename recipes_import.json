@@ -1,0 +1,22 @@
+[
+  {
+    "name": "REC-1-COL_EVENTP-V3",
+    "description": "Se crea la receta",
+    "category": "SEMIELABORADO",
+    "ingredients": [
+      { "name": "COLORANTE ROJO POLVO", "amount": 1.2, "unit": "g" },
+      { "name": "MANTECA DE CACAO (PASTA DE CHOCOLATE BLANCO)", "amount": 499.4, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA BLANCO MAPSA COBBL", "amount": 499.4, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-GEN_EVENTM-V5",
+    "description": "",
+    "category": "PALETAS EVENTOS",
+    "ingredients": [
+      { "name": "KINDOVO PALETAS", "amount": 35, "unit": "g" },
+      { "name": "BAÑO AMARILLO", "amount": 18, "unit": "g" },
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" }
+    ]
+  }
+]

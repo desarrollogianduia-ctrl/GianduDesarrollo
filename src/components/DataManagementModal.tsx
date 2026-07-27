@@ -155,7 +155,7 @@ export const DataManagementModal: React.FC<DataManagementModalProps> = ({
             if (name.toLowerCase().includes("ingredient")) {
               importedData.ingredients = json.map((row: any) => ({
                 id: row.ID || row.id || `ing_${Math.random().toString(36).substr(2, 9)}`,
-                name: row.Nombre || row.name || "Sin nombre",
+                name: row.Nombre || row.name || row.Name || "Sin nombre",
                 energy: Number(row.Energia_kcal || row.energy || 0),
                 carbs: Number(row.Carbohidratos_g || row.carbs || 0),
                 sugars: Number(row.Azucares_g || row.sugars || 0),
@@ -167,6 +167,21 @@ export const DataManagementModal: React.FC<DataManagementModalProps> = ({
                 sodium: Number(row.Sodio_mg || row.sodium || 0),
                 category: row.Categoria || row.category || "generico",
                 isGlutenFree: row.SinTACC === "SI" || row.isGlutenFree === true
+              }));
+            }
+            
+            if (name.toLowerCase().includes("receta") || name.toLowerCase().includes("recipe")) {
+              importedData.recipes = json.map((row: any) => ({
+                id: row.ID || row.id || `rec_${Math.random().toString(36).substr(2, 9)}`,
+                name: row.Nombre || row.name || row.Name || "Sin nombre",
+                type: (row.Tipo || row.type || "semielaborado") as any,
+                category: (row.Categoria || row.category || "semielaborado") as any,
+                status: (row.Estado || row.status || "formulacion") as any,
+                finalYield: Number(row.RindeFinal_g || row.finalYield || 1000),
+                totalYield: Number(row.RindeFinal_g || row.finalYield || 1000),
+                servingSize: 100,
+                portionsPerPackage: Number(row.Porciones || row.portionsPerPackage || 1),
+                ingredients: [] // Ingredients will need to be mapped if they are in the same sheet or a separate one
               }));
             }
           });

@@ -1,0 +1,99 @@
+[
+  {
+    "name": "REC-1-PT-HEL-201-V2",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO FRAGOLA Y PANNA", "amount": 835, "unit": "g" },
+      { "name": "FRUTILLAS POCHÉ", "amount": 100, "unit": "g" },
+      { "name": "VARIEGATO CHOCOLATE CON LECHE", "amount": 65, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-202-V2",
+    "description": "Se agrega mezcla amoretta white",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO FIOR DI LATTE", "amount": 801, "unit": "g" },
+      { "name": "PLACA TRES LECHES", "amount": 0.033, "unit": "unit" },
+      { "name": "MEZCLA AMORETTA WHITE", "amount": 151, "unit": "g" },
+      { "name": "LECHE EN POLVO ENTERA", "amount": 15, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-203-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO VAINILLA", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-205-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BLANCO FRANGIPANE", "amount": 1000, "unit": "g" },
+      { "name": "VARIEGATO DE FRAMBUESA", "amount": 0, "unit": "g" },
+      { "name": "VARIEGATO DE PISTACHO", "amount": 0, "unit": "g" },
+      { "name": "GRANA DE PISTACHO", "amount": 0, "unit": "g" },
+      { "name": "STREUSSEL HORNEADO", "amount": 0, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-600-V2",
+    "description": "Se agrega balde y campo editable.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO FRUTILLA VEGANA", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.149, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-601-V2",
+    "description": "Se agrega balde reforzado.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO LIMON", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.15, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-602-V3",
+    "description": "Se agrega cantidad editable",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO NARANJILLA", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-603-V5",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO FIOR DI LATTE", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.15, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-604-V3",
+    "description": "Se agrega balde reforzado",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE INTENSO", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.163, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-605-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE INTENSO", "amount": 1000, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR", "amount": 107, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA BLANCO MAPSA COBBL", "amount": 50, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA SEMIAMARGO TRONADOR", "amount": 50, "unit": "g" }
+    ]
+  }
+]

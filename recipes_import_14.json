@@ -1,0 +1,99 @@
+[
+  {
+    "name": "REC-1-PT-HEL-638-V3",
+    "description": "Se agrega balde reforzado",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO BANANA", "amount": 850, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR LA RESISTENCIA", "amount": 150, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.136, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-639-V6",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO FIOR DI LATTE", "amount": 800, "unit": "g" },
+      { "name": "OREO PROCESADAS", "amount": 100, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR LA RESISTENCIA", "amount": 100, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.145, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-641-V4",
+    "description": "Se agrega balde reforzado and campo editable.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO FRAGOLA Y PANNA", "amount": 900, "unit": "g" },
+      { "name": "SIEMBRA FRUTILLA A LA CREMA", "amount": 100, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.134, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-642-V4",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO CADBURY", "amount": 820, "unit": "g" },
+      { "name": "SIEMBRA CADBURY", "amount": 180, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.136, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-643-V2",
+    "description": "Se agrega balde reforzado.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO VAINILLA DE LA NONNA", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.156, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-644-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO FLAN", "amount": 900, "unit": "g" },
+      { "name": "SIEMBRA FLAN", "amount": 100, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-645-V2",
+    "description": "Se agrega balde reforzado.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO CREMA DE LIMON", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.147, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-646-V3",
+    "description": "cantidad editable balde",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BELGA", "amount": 920, "unit": "g" },
+      { "name": "CHOCOLATE EN RAMA BLANCO", "amount": 80, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.145, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-647-V5",
+    "description": "Se agrega balde reforzado",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE INTENSO", "amount": 900, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR LA RESISTENCIA", "amount": 100, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.143, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-648-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO LIMONADA CON FR", "amount": 980, "unit": "g" },
+      { "name": "LAJAS DE CHOCOLATE SEMIAMARGO", "amount": 20, "unit": "g" }
+    ]
+  }
+]

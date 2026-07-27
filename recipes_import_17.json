@@ -1,0 +1,106 @@
+[
+  {
+    "name": "REC-1-PT-HEL-685-V3",
+    "description": "arreglo ingrediente balde",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO SAMBAYON AL MALBEC", "amount": 920, "unit": "g" },
+      { "name": "NUEZ GARRAPIÑADA", "amount": 80, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.138, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-769-V2",
+    "description": "Se agregan insumos.",
+    "category": "PINTAS",
+    "ingredients": [
+      { "name": "HELADO PISTACHO PINTA", "amount": 390, "unit": "g" },
+      { "name": "MACARON PISTACHO PARA PINTA", "amount": 0.015, "unit": "unit" },
+      { "name": "VARIEGATO DE PISTACHO", "amount": 70, "unit": "g" },
+      { "name": "TAPA ALUMINIO LOGO GIANDUIA", "amount": 1, "unit": "unit" },
+      { "name": "TAPA NEGRA 089 ALTEC", "amount": 1, "unit": "unit" },
+      { "name": "FRASCOS PLASTICOS FRA-529 ALTEC", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-802-V6",
+    "description": "Se agregan insumos.",
+    "category": "PINTAS",
+    "ingredients": [
+      { "name": "AVELLANAS TOSTADAS", "amount": 25, "unit": "g" },
+      { "name": "VETEADO GIANDUIELLA CASERA MELANGER", "amount": 90, "unit": "g" },
+      { "name": "HELADO GIANDUIA PINTA", "amount": 360, "unit": "g" },
+      { "name": "TAPA NEGRA 089 ALTEC", "amount": 0.525, "unit": "unit" },
+      { "name": "FRASCOS PLASTICOS FRA-529 ALTEC", "amount": 1, "unit": "unit" },
+      { "name": "TAPA ALUMINIO LOGO GIANDUIA", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-803-V3",
+    "description": "Se agregan insumos.",
+    "category": "PINTAS",
+    "ingredients": [
+      { "name": "HELADO CHEESECAKE PINTA", "amount": 370, "unit": "g" },
+      { "name": "VARIEGATO FRUTOS ROJOS", "amount": 45, "unit": "g" },
+      { "name": "OREO PROCESADAS", "amount": 25, "unit": "g" },
+      { "name": "TAPA ALUMINIO LOGO GIANDUIA", "amount": 1, "unit": "unit" },
+      { "name": "TAPA NEGRA 089 ALTEC", "amount": 1, "unit": "unit" },
+      { "name": "FRASCOS PLASTICOS FRA-529 ALTEC", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-873-V6",
+    "description": "Se agregan insumos.",
+    "category": "PINTAS",
+    "ingredients": [
+      { "name": "HELADO CADBURY PINTA", "amount": 360, "unit": "g" },
+      { "name": "CHOCOLATE CADBURYPROCESADO PARA PINTA", "amount": 40, "unit": "g" },
+      { "name": "SIEMBRA CADBURY", "amount": 35, "unit": "g" },
+      { "name": "VARIEGATO CHOCOLATE CON LECHE", "amount": 35, "unit": "g" },
+      { "name": "TAPA ALUMINIO LOGO GIANDUIA", "amount": 1, "unit": "unit" },
+      { "name": "FRASCOS PLASTICOS FRA-529 ALTEC", "amount": 1, "unit": "unit" },
+      { "name": "TAPA NEGRA 089 ALTEC", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-PRU-V1",
+    "description": "",
+    "category": "PRUEBA",
+    "ingredients": [
+      { "name": "HELADO GIANDUIA", "amount": 920, "unit": "g" },
+      { "name": "VETEADO GIANDUIELLA CASERA MELANGER", "amount": 80, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-MIX-901-V1",
+    "description": "",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO CHANTILLY", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-MIX-902-V1",
+    "description": "",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BELGA", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-MIX-903-V1",
+    "description": "",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO FRUTILLA", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-MIX-904-V1",
+    "description": "",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO SAMBAYON AL MALBEC", "amount": 1000, "unit": "g" }
+    ]
+  }
+]

@@ -8,7 +8,9 @@ import {
   PieChart as PieChartIcon, 
   Activity,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  ClipboardCheck,
+  ChevronRight
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -23,6 +25,8 @@ import {
   Pie
 } from 'recharts';
 import { DevelopmentProject, Recipe, ProductArea } from '../types';
+import { format, isPast, addDays, startOfDay } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface DashboardViewProps {
   developments: DevelopmentProject[];
@@ -87,6 +91,16 @@ export function DashboardView({ developments, recipes }: DashboardViewProps) {
       .slice(0, 8);
   }, [developments]);
 
+  const auditStats = useMemo(() => {
+    const auditable = recipes.filter(r => r.type !== 'base');
+    const audited = new Set(activeDevs.filter(d => d.status === 'finalizado').map(d => d.recipeId)).size; // simplified
+    return {
+      total: auditable.length,
+      audited: audited,
+      percent: auditable.length > 0 ? (audited / auditable.length) * 100 : 0
+    };
+  }, [recipes, activeDevs]);
+
   return (
     <div className="space-y-8 pb-10">
       {/* Key Metrics */}
@@ -107,11 +121,11 @@ export function DashboardView({ developments, recipes }: DashboardViewProps) {
             color: 'text-blue-400' 
           },
           { 
-            label: 'Vencimientos Próximos', 
-            value: upcomingDeadlines.length, 
-            sub: 'Tareas con fecha',
-            icon: Calendar, 
-            color: 'text-amber-400' 
+            label: 'Auditoría Cíclica', 
+            value: `${Math.round(auditStats.percent)}%`, 
+            sub: 'Cobertura de control',
+            icon: ClipboardCheck, 
+            color: 'text-purple-400' 
           },
           { 
             label: 'Pendiente Cómputos', 

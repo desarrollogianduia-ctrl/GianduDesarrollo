@@ -1,0 +1,107 @@
+[
+  {
+    "name": "REC-1-PT-HEL-649-V2",
+    "description": "Se cambia gianduiella 50/50 por gianduiella casera.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO MANI", "amount": 660, "unit": "g" },
+      { "name": "POSTRE DE MANI PARTIDO", "amount": 110, "unit": "g" },
+      { "name": "VETEADO GIANDUIELLA CASERA MELANGER", "amount": 230, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-652-V2",
+    "description": "Se agrega balde reforzado.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO RAFFAELLO", "amount": 885, "unit": "g" },
+      { "name": "SIEMBRA RAFFAELLO", "amount": 115, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.142, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-653-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "BASE NEUTRA PALETAS", "amount": 926, "unit": "g" },
+      { "name": "PASTA MANI SALADO", "amount": 74, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-654-V2",
+    "description": "Se agrega balde y campo editable.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "SIEMBRA KINBUENO GIANDUIA", "amount": 65, "unit": "g" },
+      { "name": "HELADO KINBUENO", "amount": 935, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.14, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-655-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO DE MENTA", "amount": 940, "unit": "g" },
+      { "name": "LAJAS DE CHOCOLATE SEMIAMARGO", "amount": 60, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-656-V1",
+    "description": "",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "AGUA", "amount": 175, "unit": "g" },
+      { "name": "AZUCAR", "amount": 170, "unit": "g" },
+      { "name": "DEXTROSA", "amount": 49.5, "unit": "g" },
+      { "name": "MALTODEXTRINA", "amount": 10, "unit": "g" },
+      { "name": "INTEGRATORE CON FIBRA VEGETAL", "amount": 6, "unit": "g" },
+      { "name": "DBF MASTER 50 BASE FRUTAL", "amount": 33.5, "unit": "g" },
+      { "name": "MANDARINA FRUTA", "amount": 471, "unit": "g" },
+      { "name": "PASTA MANDARINA", "amount": 25, "unit": "g" },
+      { "name": "JUGO DE LIMON EXPRIMIDO", "amount": 60, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-657-V2",
+    "description": "Se agrega balde reforzado.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "ALMENDRAS GARRAPIÑADAS S/ MANT BALDE", "amount": 0.06, "unit": "unit" },
+      { "name": "HELADO CHOCOLATE BELGA", "amount": 940, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.146, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-658-V3",
+    "description": "cantidad editable balde",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO MAR DEL PLATA", "amount": 800, "unit": "g" },
+      { "name": "SIEMBRA MAR DEL PLATA CHOCOLATE", "amount": 100, "unit": "g" },
+      { "name": "SIEMBRA MAR DEL PLATA DULCE DE LECHE", "amount": 100, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.144, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-659-V3",
+    "description": "Se agrega balde reforzado.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO SALTY CARAMEL", "amount": 850, "unit": "g" },
+      { "name": "STREUSSEL HORNEADO", "amount": 85, "unit": "g" },
+      { "name": "SALSA TOFFEE SIEMBRA", "amount": 65, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.13, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-660-V12",
+    "description": "Se restauró la receta: REC-1-PT-HEL-660-V1 Version: 1",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO AFFOGATO", "amount": 900, "unit": "g" },
+      { "name": "OVOLATTE", "amount": 100, "unit": "g" }
+    ]
+  }
+]

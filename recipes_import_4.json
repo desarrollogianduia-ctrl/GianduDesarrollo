@@ -1,0 +1,112 @@
+[
+  {
+    "name": "REC-1-PT-CH-B002-V1",
+    "description": "",
+    "category": "BOMBONES",
+    "ingredients": [
+      { "name": "MANTECA DE CACAO (PASTA DE CHOCOLATE BLANCO)", "amount": 1.8, "unit": "g" },
+      { "name": "GLUCOSA LIQUIDA", "amount": 1.6, "unit": "g" },
+      { "name": "MIELINA (AZUCAR INVERTIDO)", "amount": 0.3, "unit": "g" },
+      { "name": "MANTECA", "amount": 9.8, "unit": "g" },
+      { "name": "PULPA MARACUYÁ CON SEMILLAS", "amount": 2.7, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA C/LECHE TRONADOR", "amount": 5.8, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-CH-B003-V1",
+    "description": "",
+    "category": "BOMBONES",
+    "ingredients": [
+      { "name": "MANTECA DE CACAO (PASTA DE CHOCOLATE BLANCO)", "amount": 0.5, "unit": "g" },
+      { "name": "RELLENO BOMBON LIMÓN", "amount": 6, "unit": "g" },
+      { "name": "RELLENO BOMBON FRAMBUESA", "amount": 1.5, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA BLANCO FENIX", "amount": 4, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-CH-C001-V1",
+    "description": "",
+    "category": "BOMBONES",
+    "ingredients": [
+      { "name": "BOMBON DE CHOCOLATE SEMIAMARGO RELLENO DE PISTACHO", "amount": 3, "unit": "unit" },
+      { "name": "BOMBON DE CHOCOLATE CON LECHE Y MANGO", "amount": 2, "unit": "unit" },
+      { "name": "BOMBON DE CHOCOLATE BLANCO, LIMON Y FRAMBUESA", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-CH-F002-V4",
+    "description": "",
+    "category": "FRUTILLAS BAÑADAS",
+    "ingredients": [
+      { "name": "FRUTILLAS CON CHOCOLATE Y CACAO", "amount": 160, "unit": "g" },
+      { "name": "TAPA ALUMINIO FRUTILLAS CON CACAO", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-CH-F003-V5",
+    "description": "",
+    "category": "FRUTILLAS BAÑADAS",
+    "ingredients": [
+      { "name": "FRUTILLAS CON PISTACHO", "amount": 160, "unit": "g" },
+      { "name": "TAPA DE ALUMINIO FRUTILLAS CON PISTACHO", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-CH-H001-V3",
+    "description": "",
+    "category": "PASCUA",
+    "ingredients": [
+      { "name": "CARCASA HUEVO DE KINDER", "amount": 2000, "unit": "g" },
+      { "name": "KINDOVO PALETAS", "amount": 220, "unit": "g" },
+      { "name": "GALLATELLA CASERA", "amount": 50, "unit": "g" },
+      { "name": "KINDER BARRITA", "amount": 1, "unit": "unit" },
+      { "name": "MEDIA BARRA  - CAJA DE TELGOPOR", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-CH-H002-V7",
+    "description": "",
+    "category": "PASCUA",
+    "ingredients": [
+      { "name": "CARCASA HUEVO DE FRAGOLA", "amount": 2000, "unit": "g" },
+      { "name": "FRAGOLA CON CHOCOLATE CON LECHE Y FRUTILLA", "amount": 220, "unit": "g" },
+      { "name": "FRUTILLAS CON CHOCOLATE Y CACAO", "amount": 51, "unit": "g" },
+      { "name": "BAÑO HUEVO DE PASCUA FRAGOLA", "amount": 160, "unit": "g" },
+      { "name": "VARIEGATO CHOCOLATE CON LECHE", "amount": 50, "unit": "g" },
+      { "name": "MEDIA BARRA  - CAJA DE TELGOPOR", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-CH-H003-V3",
+    "description": "",
+    "category": "PASCUA",
+    "ingredients": [
+      { "name": "CARCASA HUEVO DE PISTACHO", "amount": 2000, "unit": "g" },
+      { "name": "PISTACHO MACARON BACHA", "amount": 220, "unit": "g" },
+      { "name": "VARIEGATO DE PISTACHO", "amount": 55, "unit": "g" },
+      { "name": "GARRAPIÑADA DE PISTACHO", "amount": 20, "unit": "g" },
+      { "name": "BAÑO HUEVO DE PISTACHO", "amount": 0.14, "unit": "unit" },
+      { "name": "GRANA DE PISTACHO", "amount": 50, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-CH-T001-V2",
+    "description": "Se agregan colorantes.",
+    "category": "TABLETA",
+    "ingredients": [
+      { "name": "CHOCOLATE COBERTURA CON LECHE 823", "amount": 80, "unit": "g" },
+      { "name": "RELLENO  DUBAI", "amount": 25, "unit": "g" },
+      { "name": "PINTURA VERDE DUBAI", "amount": 0.3, "unit": "g" },
+      { "name": "PINTURA AMARILLO DUBAI", "amount": 0.3, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-FRA-013-V1",
+    "description": "",
+    "category": "RISTO POPOLO",
+    "ingredients": [
+      { "name": "AZUCAR", "amount": 500, "unit": "g" },
+      { "name": "ALMENDRA PELADA", "amount": 500, "unit": "g" }
+    ]
+  }
+]

@@ -1,0 +1,115 @@
+[
+  {
+    "name": "REC-1-PT-PAL-202-V6",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "CHEESECAKE BACHA", "amount": 80, "unit": "g" },
+      { "name": "OREO PROCESADA PASTELERIA", "amount": 4.2, "unit": "g" },
+      { "name": "MANTECA", "amount": 0.7, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-203-V1",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "LEMON CURD", "amount": 30, "unit": "g" },
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "MOUSSE DE LIMON PALETAS", "amount": 52, "unit": "g" },
+      { "name": "BAÑO LEMON PIE", "amount": 32, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-205-V3",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "HOJALDRE PARTIDO", "amount": 1, "unit": "g" },
+      { "name": "MERENGUE COCIDO PALETAS", "amount": 2, "unit": "g" },
+      { "name": "DULCE DE LECHE INTENSO FABRICACION PALETAS", "amount": 60, "unit": "g" },
+      { "name": "DULCE DE LECHE REPOSTERO", "amount": 5, "unit": "g" },
+      { "name": "BAÑO STRACCIATELLA DULCE DE LECHE", "amount": 23, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-209-V4",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "GALLETITAS CHOCOLINAS", "amount": 6, "unit": "g" },
+      { "name": "DULCE DE LECHE SUAVE FABRICACION PALETAS", "amount": 54, "unit": "g" },
+      { "name": "CREMA CHOCOTORTA", "amount": 10, "unit": "g" },
+      { "name": "ALMIBAR DE CAFÉ", "amount": 4, "unit": "g" },
+      { "name": "CACAO EN POLVO 22/24", "amount": 5, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-210-V1",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "RODAJA DURAZNO", "amount": 4, "unit": "g" },
+      { "name": "MONEDA KIWI EN AZUC", "amount": 3, "unit": "g" },
+      { "name": "FRUTOS ROJOS MIXEADOS", "amount": 3, "unit": "g" },
+      { "name": "FRUTILLA PALETAS", "amount": 60, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-212-V2",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "CHOCOLATE BLANCO FABRICACION PALETAS", "amount": 80, "unit": "g" },
+      { "name": "BAÑO CHOCOLATE BLANCO CROCK", "amount": 40, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-213-V2",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "GIANDUIA FABRICACION PALETAS", "amount": 60, "unit": "g" },
+      { "name": "BAÑO ROCHER", "amount": 30, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-216-V2",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "DULCE DE LECHE INTENSO FABRICACION PALETAS", "amount": 75, "unit": "g" },
+      { "name": "BAÑO ROCHER", "amount": 40, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-219-V1",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "CABSHA PALETAS", "amount": 90, "unit": "g" },
+      { "name": "BAÑO STRACCIATELLA CABSHA", "amount": 20, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA BLANCO MAPSA COBBL", "amount": 1.5, "unit": "g" },
+      { "name": "SIEMBRA CABSHA PALETAS", "amount": 20, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA SEMIAMARGO TRONADOR", "amount": 1.5, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-220-V2",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "KINDOVO FABRICACION PALETAS", "amount": 70, "unit": "g" },
+      { "name": "BAÑO PALETA KINDER N", "amount": 40, "unit": "g" },
+      { "name": "BAÑO HUELLA CHOCOLATE BLANCO", "amount": 3, "unit": "g" }
+    ]
+  }
+]

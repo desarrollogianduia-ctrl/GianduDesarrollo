@@ -1,0 +1,99 @@
+[
+  {
+    "name": "REC-1-PT-HEL-164-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO SALTY CARAMEL", "amount": 870, "unit": "g" },
+      { "name": "STREUSSEL HORNEADO", "amount": 40, "unit": "g" },
+      { "name": "SIEMBRA TOFFEE SIN MATECA + AMORETTA CARAMELO", "amount": 90, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-168-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO KINBUENO", "amount": 890, "unit": "g" },
+      { "name": "SIEMBRA KINBUENO GIANDUIA", "amount": 110, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-169-V3",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "MACARON PISTACHO (S. HELADO)", "amount": 0.46, "unit": "unit" },
+      { "name": "HELADO PISTACHOS", "amount": 880, "unit": "g" },
+      { "name": "VARIEGATO DE PISTACHO", "amount": 80, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-173-V2",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO CADBURY", "amount": 792.8, "unit": "g" },
+      { "name": "SIEMBRA CADBURY", "amount": 57.2, "unit": "g" },
+      { "name": "VARIEGATO CHOCOLATE CON LECHE", "amount": 94, "unit": "g" },
+      { "name": "CHOCOLATE CADBURY PROCESADO", "amount": 56, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-176-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BELGA", "amount": 934, "unit": "g" },
+      { "name": "CHOCOLATE EN RAMA BLANCO", "amount": 66, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-178-V2",
+    "description": "Se cambia ovolatte por variegato choco con leche",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO CHOCOLATE BELGA", "amount": 840, "unit": "g" },
+      { "name": "MACARON CHOCOLATE (S. HELADO)", "amount": 0.046, "unit": "unit" },
+      { "name": "VARIEGATO CHOCOLATE CON LECHE", "amount": 66.2, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-183-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO DE MELÓN", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-185-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO FLAN", "amount": 843.6, "unit": "g" },
+      { "name": "SIEMBRA FLAN", "amount": 99.3, "unit": "g" },
+      { "name": "VARIEGATO CARAMELO", "amount": 23.1, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR", "amount": 17, "unit": "g" },
+      { "name": "CARAMELO PARTIDO", "amount": 17, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-186-V2",
+    "description": "Se cambia gianduiella 50/50 por casera.",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE INTENSO", "amount": 880, "unit": "g" },
+      { "name": "VETEADO GIANDUIELLA CASERA MELANGER", "amount": 60, "unit": "g" },
+      { "name": "SIEMBRA TOFFI LUSSO", "amount": 60, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-189-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO LIMONADA MENTA Y JEN", "amount": 1000, "unit": "g" }
+    ]
+  }
+]

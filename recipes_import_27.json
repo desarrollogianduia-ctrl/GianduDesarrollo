@@ -1,0 +1,35 @@
+[
+  {
+    "name": "REC-4-SE-HEL-025-V1",
+    "description": "",
+    "category": "SEMIELABORADO",
+    "ingredients": [
+      { "name": "HELADO FIOR DI LATTE", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-4-SE-HEL-042-V1",
+    "description": "",
+    "category": "SEMIELABORADO",
+    "ingredients": [
+      { "name": "HELADO SAMBAYON", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-4-SE-HEL-047-V1",
+    "description": "",
+    "category": "SEMIELABORADO",
+    "ingredients": [
+      { "name": "HELADO PISTACHOS", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-4-SE-HEL-048-V2",
+    "description": "Se agrega balde y campo editable.",
+    "category": "BALDE",
+    "ingredients": [
+      { "name": "HELADO FRUTILLA VEGANA", "amount": 1000, "unit": "g" },
+      { "name": "BALDE PARA HELADO (REFORZADOS)", "amount": 0.149, "unit": "unit" }
+    ]
+  }
+]

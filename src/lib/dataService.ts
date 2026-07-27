@@ -12,7 +12,28 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "./firebase";
-import { Ingredient, Recipe, DevelopmentProject, KnowledgeDocument } from "../types";
+import { Ingredient, Recipe, DevelopmentProject, KnowledgeDocument, RecipeAudit } from "../types";
+
+export const subscribeRecipeAudits = (callback: (audits: RecipeAudit[]) => void) => {
+  return onSnapshot(collection(db, "recipeAudits"), (snapshot) => {
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RecipeAudit));
+    callback(data);
+  }, (error) => {
+    handleFirestoreError(error, 'list', 'recipeAudits');
+  });
+};
+
+export const saveRecipeAudit = async (audit: RecipeAudit) => {
+  const path = `recipeAudits/${audit.id}`;
+  try {
+    const auditRef = doc(db, "recipeAudits", audit.id);
+    const data = cleanData(audit);
+    await setDoc(auditRef, data);
+  } catch (error) {
+    if (error instanceof FirestoreError) handleFirestoreError(error, 'write', path);
+    throw error;
+  }
+};
 
 export const subscribeKnowledgeDocuments = (userId: string, callback: (docs: KnowledgeDocument[]) => void) => {
   const q = query(collection(db, "knowledge"), where("ownerId", "==", userId));

@@ -1,0 +1,96 @@
+[
+  {
+    "name": "REC-1-IN-SUC-067-V2",
+    "description": "Se agrega cascara de naranja",
+    "category": "INSUMO VENDIBLE",
+    "ingredients": [
+      { "name": "AZUCAR", "amount": 500, "unit": "g" },
+      { "name": "AGUA", "amount": 400, "unit": "g" },
+      { "name": "JUGO DE NARANJA EXPRIMIDO", "amount": 100, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-IN-SUC-069-V5",
+    "description": "",
+    "category": "INSUMO VENDIBLE",
+    "ingredients": [
+      { "name": "COCO RALLADO", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-MP-FS-H002-V1",
+    "description": "",
+    "category": "MATERIA PRIMA",
+    "ingredients": [
+      { "name": "PISTACHOS PEPAS CRUDAS Y PELADAS", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-MP-HO-A004-V1",
+    "description": "",
+    "category": "INSUMO VENDIBLE",
+    "ingredients": [
+      { "name": "ACEITE DE OLIVA", "amount": 250, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-MP-HO-H007-V5",
+    "description": "",
+    "category": "SEMIELABORADO",
+    "ingredients": [
+      { "name": "HOJALDRE PLACA CRUDO", "amount": 70, "unit": "g" },
+      { "name": "FRITOLIN", "amount": 0.008, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-MP-LC-H002-V1",
+    "description": "",
+    "category": "MATERIA PRIMA",
+    "ingredients": [
+      { "name": "HUEVOS (60GR POR UNIDAD)", "amount": 36, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-CH-720-V1",
+    "description": "",
+    "category": "",
+    "ingredients": [
+      { "name": "AZUCAR", "amount": 2.9, "unit": "g" },
+      { "name": "NUEZ CUARTILLO", "amount": 2.9, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA BLANCO FENIX", "amount": 18, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA DULCEY VALRHONA", "amount": 70, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-CH-722-V1",
+    "description": "",
+    "category": "",
+    "ingredients": [
+      { "name": "CHOCOLATE COBERTURA SEMIAMARGO", "amount": 88, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-CH-725-V1",
+    "description": "",
+    "category": "",
+    "ingredients": [
+      { "name": "PISTACHOS PEPAS CRUDAS Y PELADAS", "amount": 50, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA BLANCO MAPSA COBBL", "amount": 110, "unit": "g" },
+      { "name": "PISTACHETTA", "amount": 50, "unit": "g" },
+      { "name": "CHOCOLATE DUBAI", "amount": 200, "unit": "g" },
+      { "name": "KATAIFI HORNEADO", "amount": 20, "unit": "g" },
+      { "name": "PISTACHO TOSTADO", "amount": 12, "unit": "g" },
+      { "name": "SE-PAS-B013", "amount": 0.14, "unit": "" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-CH-B001-V1",
+    "description": "",
+    "category": "BOMBONES",
+    "ingredients": [
+      { "name": "MANTECA DE CACAO (PASTA DE CHOCOLATE BLANCO)", "amount": 0.5, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA SEMIAMARGO", "amount": 4, "unit": "g" },
+      { "name": "RELLENO BOMBON FRAMBUESA", "amount": 7.5, "unit": "g" }
+    ]
+  }
+]

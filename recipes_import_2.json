@@ -1,0 +1,87 @@
+[
+  {
+    "name": "REC-1-GEN_EVENTO-V10",
+    "description": "",
+    "category": "PALETAS EVENTOS",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "CADBURY PALETAS", "amount": 65, "unit": "g" },
+      { "name": "BAÑO EVENTOS", "amount": 30, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-IN-SU-064-V1",
+    "description": "",
+    "category": "",
+    "ingredients": [
+      { "name": "MINI PAN DULCE CHOCOCHIPS", "amount": 1, "unit": "unit" },
+      { "name": "VINO PARA CAJA NAVIDEÑA", "amount": 1, "unit": "unit" },
+      { "name": "IN-SU-063", "amount": 1, "unit": "" }
+    ]
+  },
+  {
+    "name": "REC-1-IN-SU-065-V1",
+    "description": "",
+    "category": "",
+    "ingredients": [
+      { "name": "FRUTILLAS CONGELADA IQF CAJA XKG", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-IN-SU-071-V1",
+    "description": "",
+    "category": "",
+    "ingredients": [
+      { "name": "MEDIALUNAS SALADAS x24 UNIDADES", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-IN-SUC-024-V2",
+    "description": "Se cambia peso.",
+    "category": "semifrio",
+    "ingredients": [
+      { "name": "JAMON COCIDO", "amount": 20, "unit": "g" },
+      { "name": "QUESO BARRA", "amount": 30, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-IN-SUC-028-V1",
+    "description": "",
+    "category": "INSUMO VENDIBLE",
+    "ingredients": [
+      { "name": "PISTACHOS PEPAS CRUDAS Y PELADAS", "amount": 100, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-IN-SUC-054-V2",
+    "description": "cambio cantidad a 1 kilo",
+    "category": "INSUMO VENDIBLE",
+    "ingredients": [
+      { "name": "ALMIBAR P/ MEDIALUNAS", "amount": 1000, "unit": "ml" }
+    ]
+  },
+  {
+    "name": "REC-1-IN-SUC-059-V1",
+    "description": "",
+    "category": "INSUMOS",
+    "ingredients": [
+      { "name": "FRUTILLAS CONGELADA IQF CAJA XKG", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-IN-SUC-063-V1",
+    "description": "",
+    "category": "INSUMOS",
+    "ingredients": [
+      { "name": "MEDIALUNAS DULCES CON DESCUENTO", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-IN-SUC-066-V2",
+    "description": "Se agregan cantidades.",
+    "category": "INSUMO VENDIBLE",
+    "ingredients": [
+      { "name": "AVELLANAS TOSTADAS", "amount": 100, "unit": "g" }
+    ]
+  }
+]

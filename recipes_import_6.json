@@ -1,0 +1,96 @@
+[
+  {
+    "name": "REC-1-PT-HEL-118-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO FRAMBUESA", "amount": 915.7, "unit": "g" },
+      { "name": "STRACCIATELLA SEMIAMARGA", "amount": 84.3, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-119-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO SAMBAYON", "amount": 910, "unit": "g" },
+      { "name": "STRACCIATELLA SEMIAMARGA", "amount": 90, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-120-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO TIRAMISU", "amount": 919, "unit": "g" },
+      { "name": "SIEMBRA TIRAMISU", "amount": 78, "unit": "g" },
+      { "name": "CACAO EN POLVO 22/24", "amount": 3, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-124-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO NARANJILLA", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-125-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE SUAVE", "amount": 825, "unit": "g" },
+      { "name": "DULCE DE LECHE FAMILIAR LA RESISTENCIA", "amount": 114, "unit": "g" },
+      { "name": "VAUQUITA SNACK", "amount": 61, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-127-V8",
+    "description": "receta modificada para fabricacion de mix",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "MIX RAFFAELO", "amount": 885, "unit": "g" },
+      { "name": "TARRO SIEMBRA RAFFAELLO 400GR", "amount": 115, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-129-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO LEMON VAINILLA", "amount": 1000, "unit": "g" },
+      { "name": "VETEADO LEMON PIE", "amount": 100, "unit": "g" },
+      { "name": "STREUSSEL HORNEADO", "amount": 200, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-130-V2",
+    "description": "Se modifican cantidades",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO PISTACHOS", "amount": 866, "unit": "g" },
+      { "name": "VARIEGATO FRUTOS ROJOS", "amount": 84, "unit": "g" },
+      { "name": "STREUSSEL HORNEADO", "amount": 50, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-131-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO CABSHA", "amount": 880, "unit": "g" },
+      { "name": "SIEMBRA CABSHA HELADOS", "amount": 120, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-HEL-134-V1",
+    "description": "",
+    "category": "BACHA",
+    "ingredients": [
+      { "name": "HELADO BASE OLEOSA", "amount": 1000, "unit": "g" },
+      { "name": "PASTA AVELLANAS NOCCIOLA", "amount": 80, "unit": "g" },
+      { "name": "MIELINA (AZUCAR INVERTIDO)", "amount": 4, "unit": "g" }
+    ]
+  }
+]

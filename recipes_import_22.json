@@ -1,0 +1,117 @@
+[
+  {
+    "name": "REC-1-PT-PAL-275-V2",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS LB",
+    "ingredients": [
+      { "name": "GIANDUIA FABRICACION PALETAS", "amount": 78, "unit": "g" },
+      { "name": "BAÑO CHOCOLATE CON LECHE", "amount": 42, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-276-V1",
+    "description": "",
+    "category": "SEMIELABORADO",
+    "ingredients": [
+      { "name": "CHOCOLATE EN RAMA", "amount": 50, "unit": "g" },
+      { "name": "BAÑO CHOCOLATE BLANCO", "amount": 30, "unit": "g" },
+      { "name": "BAÑO STRACCIATELLA CABSHA", "amount": 0, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-277-V2",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "FRAMBUESA FRABRICACION PALETAS", "amount": 70, "unit": "g" },
+      { "name": "BAÑO CHOCOLATE BLANCO", "amount": 25, "unit": "g" },
+      { "name": "BAÑO CHOCOLATE CON LECHE", "amount": 15, "unit": "g" },
+      { "name": "FRAMBUESA LIOFILIZADA", "amount": 0.3, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-278-V1",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "BAÑO CHOCOLATE BLANCO", "amount": 35, "unit": "g" },
+      { "name": "YOGURT PALETAS", "amount": 0.048, "unit": "unit" },
+      { "name": "VARIEGATO DE MARACUYA", "amount": 30, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-279-V3",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "CHOCOLATE BELGA FABRICACION PALETAS", "amount": 60, "unit": "g" },
+      { "name": "SIEMBRA DUBAI", "amount": 30, "unit": "g" },
+      { "name": "BAÑO PISTACCIO", "amount": 25, "unit": "g" },
+      { "name": "PINTURA AMARILLO DUBAI", "amount": 0.3, "unit": "g" },
+      { "name": "PINTURA VERDE DUBAI", "amount": 0.2, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-280-V6",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "CHANTILLY FABRICACION  PALETAS", "amount": 38, "unit": "g" },
+      { "name": "OREO PROCESADAS", "amount": 4, "unit": "g" },
+      { "name": "PASTA AMERICANA ROJA", "amount": 3, "unit": "g" },
+      { "name": "PASTA AMERICANA BLANCA", "amount": 3, "unit": "g" },
+      { "name": "BAÑO BARBIE", "amount": 19, "unit": "g" },
+      { "name": "COLORANTE GLITTER", "amount": 1, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-281-V4",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "CHOCOLATE BELGA FABRICACION PALETAS", "amount": 42, "unit": "g" },
+      { "name": "BAÑO COBERTURA ROJO", "amount": 12, "unit": "g" },
+      { "name": "BAÑO NEGRO", "amount": 10, "unit": "g" },
+      { "name": "PASTA AMERICANA AMARILLA", "amount": 5, "unit": "g" },
+      { "name": "GALLETITAS OREO X PAQUETE (600GR)", "amount": 6, "unit": "g" },
+      { "name": "MINIPALITOS", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-297-V3",
+    "description": "Se cambia helado x helado fabricación",
+    "category": "PALETAS EVENTOS",
+    "ingredients": [
+      { "name": "DULCE DE LECHE INTENSO FABRICACION PALETAS", "amount": 72, "unit": "g" },
+      { "name": "BAÑO NEGRO", "amount": 35, "unit": "g" },
+      { "name": "MANTECA DE CACAO (PASTA DE CHOCOLATE BLANCO)", "amount": 0.5, "unit": "g" },
+      { "name": "CHOCOLATE COBERTURA BLANCO SABOR VAINILLA", "amount": 0.5, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-298-V5",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "CHOCOLATE BELGA FABRICACION PALETAS", "amount": 42, "unit": "g" },
+      { "name": "BAÑO CHOCOLATE BLANCO + DIOXIDO DE TITANIO", "amount": 32, "unit": "g" },
+      { "name": "TRANSFER SPIDEY", "amount": 0.041, "unit": "unit" },
+      { "name": "MINIPALITOS", "amount": 1, "unit": "unit" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-299-V3",
+    "description": "",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "DULCE DE LECHE SUAVE FABRICACION PALETAS", "amount": 50, "unit": "g" },
+      { "name": "GALLATELLA CASERA", "amount": 30, "unit": "g" },
+      { "name": "CUCURUCHO PARTIDO", "amount": 8, "unit": "g" },
+      { "name": "BAÑO CHOCOLATE BLANCO + DIOXIDO DE TITANIO", "amount": 30, "unit": "g" },
+      { "name": "COLORANTE PINTURA EVENTOS", "amount": 2, "unit": "g" }
+    ]
+  }
+]

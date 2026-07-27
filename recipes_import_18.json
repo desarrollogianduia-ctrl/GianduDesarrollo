@@ -1,0 +1,83 @@
+[
+  {
+    "name": "REC-1-PT-MIX-905-V1",
+    "description": "",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO SAMBAYON", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-MIX-906-V3",
+    "description": "",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO RAFFAELLO", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-MIX-907-V1",
+    "description": "",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO GIANDUIA", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-MIX-908-V1",
+    "description": "",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE SUAVE", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-MIX-909-V1",
+    "description": "",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO MASCARPONE", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-MIX-911-V1",
+    "description": "",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO KINBUENO", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-MIX-912-V1",
+    "description": "",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO DULCE DE LECHE SUAVE", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-MIX-913-V1",
+    "description": "",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO DE COCO", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-MIX-915-V1",
+    "description": "Se crea receta",
+    "category": "MIX",
+    "ingredients": [
+      { "name": "HELADO FRAMBUESA", "amount": 1000, "unit": "g" }
+    ]
+  },
+  {
+    "name": "REC-1-PT-PAL-200-V2",
+    "description": "cambio a helado frutilla fabricación",
+    "category": "PALETAS GIANDUIA",
+    "ingredients": [
+      { "name": "PALITOS PALETAS GRABADOS", "amount": 1, "unit": "unit" },
+      { "name": "FRUTILLA FABRICACION PALETAS", "amount": 70, "unit": "g" }
+    ]
+  }
+]
