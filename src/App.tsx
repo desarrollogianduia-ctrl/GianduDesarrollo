@@ -90,6 +90,7 @@ import { DashboardView } from "./components/DashboardView";
 import { NormativasView } from "./components/NormativasView";
 import { RecipeAuditView } from "./components/RecipeAuditView";
 import { AIAssistant } from "./components/AIAssistant";
+import { TrialManager } from "./components/TrialManager";
 import {
   Ingredient,
   Recipe,
@@ -182,7 +183,8 @@ type AppView =
   | "trial_formulas"
   | "asistente_formulacion"
   | "normativas"
-  | "conteo_ciclico";
+  | "conteo_ciclico"
+  | "trial_manager";
 
 interface ExpandableTextProps {
   text?: string;
@@ -2254,6 +2256,7 @@ export default function App() {
             { id: "developments", icon: GitMerge, label: "Tabla de Desarrollo" },
             { id: "recipes", icon: FlaskConical, label: "Formulación Técnica" },
             { id: "ingredients", icon: Database, label: "Almacén I+D" },
+            { id: "trial_manager", icon: FlaskRound, label: "Laboratorio I+D" },
             { id: "guide", icon: FileText, label: "Normativas" },
             { id: "conteo_ciclico", icon: ClipboardCheck, label: "Conteo Cíclico" },
             { id: "asistente_formulacion", icon: Sparkles, label: "Asistente Formulación" },
@@ -2407,6 +2410,7 @@ export default function App() {
               {view === "trial_formulas" && "Módulo de Formulación de Pruebas"}
               {view === "recipes" && "Formulación Técnica"}
               {view === "ingredients" && "Almacén I+D"}
+              {view === "trial_manager" && "Laboratorio I+D (Pruebas)"}
               {view === "guide" && "Normativas"}
               {view === "asistente_formulacion" && "Asistente de Formulación AI"}
             </h2>
@@ -6372,6 +6376,45 @@ export default function App() {
                       </>
                     )}
                   </div>
+                </motion.div>
+              )}
+
+              {view === "trial_manager" && (
+                <motion.div
+                  key="trial_manager"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="p-8 custom-scrollbar overflow-y-auto h-full"
+                >
+                  <TrialManager 
+                    recipes={recipes} 
+                    developments={developments}
+                    onSaveTrial={async (trial) => {
+                      if (user) {
+                        await saveRecipe(trial, user.uid);
+                      } else {
+                        setRecipes(prev => {
+                          const idx = prev.findIndex(r => r.id === trial.id);
+                          if (idx >= 0) {
+                            const next = [...prev];
+                            next[idx] = trial;
+                            return next;
+                          }
+                          return [...prev, trial];
+                        });
+                      }
+                    }}
+                    onDeleteTrial={async (id) => {
+                      if (window.confirm("¿Estás seguro de eliminar esta prueba?")) {
+                        if (user) {
+                          await deleteRecipe(id);
+                        } else {
+                          setRecipes(prev => prev.filter(r => r.id !== id));
+                        }
+                      }
+                    }}
+                  />
                 </motion.div>
               )}
 

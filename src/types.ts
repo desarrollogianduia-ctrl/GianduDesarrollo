@@ -21,7 +21,7 @@ export interface NutrientValues {
 export type IngredientCategory = 'generico' | 'especifico';
 export type FunctionalGroup = 'azucares' | 'lacteos' | 'chocolates' | 'neutros' | 'frutas' | 'pastas' | 'aceites' | 'frutos_secos' | 'aditivos' | 'miscelaneos' | 'otros';
 export type RecipeType = 'base' | 'semielaborado' | 'final';
-export type RecipeCategory = 'semielaborado' | 'pasteleria' | 'paletas' | 'chocolateria' | 'vitrina' | 'popolo' | 'helados' | 'sin_definir';
+export type RecipeCategory = 'semielaborado' | 'pasteleria' | 'paletas' | 'chocolateria' | 'vitrina' | 'popolo' | 'helados' | 'final' | 'sin_definir';
 export type DevelopmentStatus = 'formulacion' | 'informacion_nutricional' | 'creado_en_sistema' | 'finalizado';
 
 export type AllergenType = 'contiene' | 'puede_contener' | 'derivado_de';
@@ -79,9 +79,26 @@ export interface Recipe {
   isTrialFormula?: boolean; // New: is it a trial formulation?
   isSatisfactory?: boolean; // New: was it satisfactory?
   trialCode?: string; // New: links to the specific trial code, e.g. DE-GI-HELA-001A
+  projectId?: string; // New: link to DevelopmentProject.id
   isArchived?: boolean; // New: indicates if it's archived
   stock?: number; // Current physical stock
   priority?: 'baja' | 'media' | 'alta'; // Priority for auditing
+  createdAt?: number;
+  updatedAt?: number;
+  // R&D / Trial fields
+  isTrial?: boolean;
+  trialVersion?: string; // A, B, C...
+  procedure?: string;
+  observations?: string;
+  decoration?: string;
+  trialQuantity?: number;
+}
+
+export interface TrialIngredient {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
 }
 
 export interface CalculationResult {
