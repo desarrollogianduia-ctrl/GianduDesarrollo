@@ -36,7 +36,8 @@ export const saveRecipeAudit = async (audit: RecipeAudit) => {
 };
 
 export const subscribeKnowledgeDocuments = (userId: string, callback: (docs: KnowledgeDocument[]) => void) => {
-  const q = query(collection(db, "knowledge"), where("ownerId", "==", userId));
+  // Shared access: removing ownerId filter
+  const q = query(collection(db, "knowledge"));
   return onSnapshot(q, (snapshot) => {
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as KnowledgeDocument));
     callback(data);
@@ -134,7 +135,8 @@ export const subscribeIngredients = (callback: (ingredients: Ingredient[]) => vo
 };
 
 export const subscribeRecipes = (userId: string, callback: (recipes: Recipe[]) => void) => {
-  const q = query(collection(db, "recipes"), where("ownerId", "==", userId));
+  // Shared access: removing ownerId filter
+  const q = query(collection(db, "recipes"));
   return onSnapshot(q, (snapshot) => {
     const recipes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe));
     callback(recipes);
@@ -252,7 +254,8 @@ export const mergeIngredients = async (targetId: string, sourceIds: string[], re
 };
 
 export const subscribeDevelopments = (userId: string, callback: (developments: DevelopmentProject[]) => void) => {
-  const q = query(collection(db, "developments"), where("createdBy", "==", userId));
+  // Shared access: removing createdBy filter
+  const q = query(collection(db, "developments"));
   return onSnapshot(q, (snapshot) => {
     const developments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DevelopmentProject));
     callback(developments);
