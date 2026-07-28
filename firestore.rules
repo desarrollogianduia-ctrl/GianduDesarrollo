@@ -9,7 +9,8 @@ service cloud.firestore {
       return isSignedIn() && (
         request.auth.token.email == 'desarrollogianduia@gmail.com' ||
         request.auth.token.email == 'mantenimientogianduia@gmail.com' ||
-        request.auth.token.email == 'guicarrozzo@gmail.com'
+        request.auth.token.email == 'guicarrozzo@gmail.com' ||
+        request.auth.token.email == 'noconformidades@gianduia.com.ar'
       );
     }
 

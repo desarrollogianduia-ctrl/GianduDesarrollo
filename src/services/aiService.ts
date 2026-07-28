@@ -14,6 +14,27 @@ export interface NutritionalSearchResult extends Partial<NutrientValues> {
   confidenceNote: string;
 }
 
+async function safeJson(response: Response, errorMessage: string) {
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    try {
+      return await response.json();
+    } catch (e) {
+      const text = await response.text();
+      console.error(`JSON parse error: ${text.slice(0, 100)}...`);
+      throw new Error(`${errorMessage} (Error al procesar JSON)`);
+    }
+  } else {
+    const text = await response.text();
+    console.error(`Non-JSON response: ${text.slice(0, 100)}...`);
+    // If it's a 404 or 500 HTML page, return a friendly message
+    if (text.includes("<!doctype html>") || text.includes("<html")) {
+      throw new Error(`${errorMessage} (El servidor devolvió una página de error HTML)`);
+    }
+    throw new Error(`${errorMessage}: ${text.slice(0, 50)}`);
+  }
+}
+
 /**
  * Searches for nutritional information of an ingredient using the backend proxy.
  */
@@ -25,11 +46,10 @@ export async function searchNutritionalInfo(ingredientName: string): Promise<Nut
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "No se pudo obtener la información nutricional de la web.");
+    return await safeJson(response, "No se pudo obtener la información nutricional");
   }
 
-  return response.json();
+  return await safeJson(response, "Error al leer datos nutricionales");
 }
 
 /**
@@ -73,11 +93,10 @@ export async function chatAssistant(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "No se pudo comunicar con el asistente.");
+    return await safeJson(response, "No se pudo comunicar con el asistente");
   }
 
-  const data = await response.json();
+  const data = await safeJson(response, "Error al leer respuesta del asistente");
   return data.text;
 }
 
@@ -92,11 +111,10 @@ export async function extractKnowledgeInsights(conversation: string): Promise<{ 
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "No se pudieron extraer los insights de la conversación.");
+    return await safeJson(response, "No se pudieron extraer los insights");
   }
 
-  return response.json();
+  return await safeJson(response, "Error al leer insights");
 }
 
 /**
@@ -110,11 +128,10 @@ export async function generateIngredientTechSheet(ingredientName: string): Promi
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "No se pudo generar la ficha técnica del ingrediente.");
+    return await safeJson(response, "No se pudo generar la ficha técnica");
   }
 
-  return response.json();
+  return await safeJson(response, "Error al leer ficha técnica");
 }
 
 export async function extractRecipeFromMedia(file: File): Promise<ExtractedRecipe> {
@@ -127,11 +144,10 @@ export async function extractRecipeFromMedia(file: File): Promise<ExtractedRecip
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "No se pudo procesar la receta. Asegúrate de que la imagen sea clara.");
+    return await safeJson(response, "No se pudo procesar la receta");
   }
 
-  return response.json();
+  return await safeJson(response, "Error al leer receta extraída");
 }
 
 /**
@@ -177,9 +193,8 @@ export async function analyzeTrialProgression(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "No se pudo estructurar el análisis de la IA.");
+    return await safeJson(response, "No se pudo estructurar el análisis de la IA");
   }
 
-  return response.json();
+  return await safeJson(response, "Error al leer análisis de la IA");
 }

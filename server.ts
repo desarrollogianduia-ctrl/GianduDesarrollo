@@ -13,7 +13,11 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Health check
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", env: process.env.NODE_ENV });
+  res.json({ 
+    status: "ok", 
+    env: process.env.NODE_ENV,
+    hasGeminiKey: !!process.env.GEMINI_API_KEY 
+  });
 });
 
 // Lazy init Gemini
@@ -24,7 +28,14 @@ function getGenAI() {
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY environment variable is required");
     }
-    genAI = new GoogleGenAI({ apiKey });
+    genAI = new GoogleGenAI({ 
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
   }
   return genAI;
 }
@@ -36,7 +47,6 @@ app.post("/api/ai/nutritional-info", async (req, res) => {
   try {
     const { ingredientName } = req.body;
     const ai = getGenAI();
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const prompt = `Find the nutritional information EXCLUSIVELY per 100g (or 100ml for liquids) for "${ingredientName}". 
     The item should be common in the Argentine food market if possible.
@@ -59,14 +69,15 @@ app.post("/api/ai/nutritional-info", async (req, res) => {
     - sourcesUsed: A concise string listing the specific websites, databases, or brands you consulted (e.g. "SANCOR, Arcor, FoodData Central").
     - confidenceNote: A brief explanation of how the data was verified (e.g., "Verified across 3 manufacturing labels with <5% variance").`;
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: prompt,
+      config: {
         responseMimeType: "application/json",
       }
     });
 
-    res.json(JSON.parse(result.response.text()));
+    res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
     console.error("AI Error:", error);
     res.status(500).json({ error: error.message });
@@ -77,19 +88,20 @@ app.post("/api/ai/chat", async (req, res) => {
   try {
     const { message, history, systemPrompt } = req.body;
     const ai = getGenAI();
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    const chat = model.startChat({
+    const chat = ai.chats.create({
+      model: "gemini-flash-latest",
+      config: {
+        systemInstruction: systemPrompt
+      },
       history: history.map((h: any) => ({
         role: h.role === "user" ? "user" : "model",
         parts: [{ text: h.parts[0].text }]
       }))
     });
 
-    // Prepend system prompt if it's the first message or use a modified approach
-    // For simplicity here, we'll just send the message
     const result = await chat.sendMessage(message);
-    res.json({ text: result.response.text() });
+    res.json({ text: result.text });
   } catch (error: any) {
     console.error("AI Error:", error);
     res.status(500).json({ error: error.message });
@@ -100,7 +112,6 @@ app.post("/api/ai/extract-insights", async (req, res) => {
   try {
     const { conversation } = req.body;
     const ai = getGenAI();
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const prompt = `Analiza la siguiente conversación técnica de I+D en alimentos y extrae los puntos clave (insights).
     
@@ -118,14 +129,15 @@ app.post("/api/ai/extract-insights", async (req, res) => {
       "insights": ["Frase técnica 1", "Frase técnica 2"]
     }`;
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: prompt,
+      config: {
         responseMimeType: "application/json",
       }
     });
 
-    res.json(JSON.parse(result.response.text()));
+    res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
     console.error("AI Error:", error);
     res.status(500).json({ error: error.message });
@@ -136,7 +148,6 @@ app.post("/api/ai/tech-sheet", async (req, res) => {
   try {
     const { ingredientName } = req.body;
     const ai = getGenAI();
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const prompt = `Investiga y genera una ficha técnica técnica de I+D para el ingrediente: "${ingredientName}".
     Enfócate en la industria del helado, pastelería y chocolatería.
@@ -155,14 +166,15 @@ app.post("/api/ai/tech-sheet", async (req, res) => {
       "technicalCharacteristics": "Contenido detallado en formato Markdown..."
     }`;
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: prompt,
+      config: {
         responseMimeType: "application/json",
       }
     });
 
-    res.json(JSON.parse(result.response.text()));
+    res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
     console.error("AI Error:", error);
     res.status(500).json({ error: error.message });
@@ -177,37 +189,42 @@ app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res) => {
     }
 
     const ai = getGenAI();
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          data: file.buffer.toString('base64'),
-          mimeType: file.mimetype,
-        },
-      },
-      {
-        text: `Extract the recipe name and ingredients from this image or document. 
-        The context is the Argentine food industry (INDUSTRIA ALIMENTARIA ARGENTINA).
-        
-        Return a JSON object with the following structure:
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: [
         {
-          "name": "Recipe Name",
-          "ingredients": [
-            { "name": "Ingredient Name", "amount": 100, "unit": "g" }
-          ]
-        }
-        
-        CRITICAL INSTRUCTIONS:
-        1. Convert all amounts to GRAMS (g). 
-        2. If a unit is "kg", multiply by 1000. 
-        3. If a unit is "lt" or "ml" for liquids like milk/water, assume 1ml = 1g if density is unknown.
-        4. If the amount is a percentage (%), calculate the amount based on a standard 100kg batch if no total weight is specified, or specify the amount if a total weight is visible.
-        5. Use standard names for ingredients (e.g., "Sacarosa" -> "Azúcar Blanco").`,
-      },
-    ]);
+          inlineData: {
+            data: file.buffer.toString('base64'),
+            mimeType: file.mimetype,
+          },
+        },
+        {
+          text: `Extract the recipe name and ingredients from this image or document. 
+          The context is the Argentine food industry (INDUSTRIA ALIMENTARIA ARGENTINA).
+          
+          Return a JSON object with the following structure:
+          {
+            "name": "Recipe Name",
+            "ingredients": [
+              { "name": "Ingredient Name", "amount": 100, "unit": "g" }
+            ]
+          }
+          
+          CRITICAL INSTRUCTIONS:
+          1. Convert all amounts to GRAMS (g). 
+          2. If a unit is "kg", multiply by 1000. 
+          3. If a unit is "lt" or "ml" for liquids like milk/water, assume 1ml = 1g if density is unknown.
+          4. If the amount is a percentage (%), calculate the amount based on a standard 100kg batch if no total weight is specified, or specify the amount if a total weight is visible.
+          5. Use standard names for ingredients (e.g., "Sacarosa" -> "Azúcar Blanco").`,
+        },
+      ],
+      config: {
+        responseMimeType: "application/json",
+      }
+    });
 
-    res.json(JSON.parse(result.response.text()));
+    res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
     console.error("AI Error:", error);
     res.status(500).json({ error: error.message });
@@ -218,7 +235,6 @@ app.post("/api/ai/analyze-trials", async (req, res) => {
   try {
     const { productName, area, trials } = req.body;
     const ai = getGenAI();
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const prompt = `Actúa como un Ingeniero de Desarrollo y Control de Calidad Alimentaria especializado en la industria pastelera y de helados (I+D helados, pastelería, chocolatería, vitrina, paletas).
     
@@ -244,16 +260,28 @@ app.post("/api/ai/analyze-trials", async (req, res) => {
     3. "keyPointsForNextTrial" (string): Puntos clave para la siguiente prueba.
     4. "progressPercentage" (number): Grado de avance (0-100).`;
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
+    const result = await ai.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: prompt,
+      config: {
         responseMimeType: "application/json",
       }
     });
 
-    res.json(JSON.parse(result.response.text()));
+    const text = result.text || "{}";
+    try {
+      res.json(JSON.parse(text));
+    } catch (e) {
+      console.error("Gemini JSON Parse Error. Raw text:", text);
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        res.json(JSON.parse(jsonMatch[0]));
+      } else {
+        throw new Error("El modelo no devolvió un formato JSON válido.");
+      }
+    }
   } catch (error: any) {
-    console.error("AI Error:", error);
+    console.error("AI Error (Analyze Trials):", error);
     res.status(500).json({ error: error.message });
   }
 });
