@@ -15,23 +15,25 @@ export interface NutritionalSearchResult extends Partial<NutrientValues> {
 }
 
 async function safeJson(response: Response, errorMessage: string) {
+  const text = await response.text();
   const contentType = response.headers.get("content-type");
+  
   if (contentType && contentType.includes("application/json")) {
     try {
-      return await response.json();
+      return JSON.parse(text);
     } catch (e) {
-      const text = await response.text();
-      console.error(`JSON parse error: ${text.slice(0, 100)}...`);
-      throw new Error(`${errorMessage} (Error al procesar JSON)`);
+      console.error(`JSON parse error. Text: ${text.slice(0, 200)}`);
+      throw new Error(`${errorMessage} (Error al procesar JSON: ${text.slice(0, 50)})`);
     }
   } else {
-    const text = await response.text();
-    console.error(`Non-JSON response: ${text.slice(0, 100)}...`);
+    console.error(`Non-JSON response. Status: ${response.status}. Text: ${text.slice(0, 200)}`);
     // If it's a 404 or 500 HTML page, return a friendly message
     if (text.includes("<!doctype html>") || text.includes("<html")) {
-      throw new Error(`${errorMessage} (El servidor devolvió una página de error HTML)`);
+      const titleMatch = text.match(/<title>(.*?)<\/title>/i);
+      const title = titleMatch ? titleMatch[1] : "Página HTML";
+      throw new Error(`${errorMessage} (Servidor devolvió HTML: ${title})`);
     }
-    throw new Error(`${errorMessage}: ${text.slice(0, 50)}`);
+    throw new Error(`${errorMessage} (Status ${response.status}): ${text.slice(0, 100)}`);
   }
 }
 

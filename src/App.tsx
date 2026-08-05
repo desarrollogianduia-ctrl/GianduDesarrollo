@@ -91,6 +91,7 @@ import { NormativasView } from "./components/NormativasView";
 import { RecipeAuditView } from "./components/RecipeAuditView";
 import { AIAssistant } from "./components/AIAssistant";
 import { TrialManager } from "./components/TrialManager";
+import { WasteManager } from "./components/WasteManager";
 import {
   Ingredient,
   Recipe,
@@ -107,6 +108,8 @@ import {
   ProjectTask,
   KnowledgeDocument,
   RecipeAudit,
+  WasteEntry,
+  WasteReason,
 } from "./types";
 import { INITIAL_INGREDIENTS, INITIAL_RECIPE } from "./utils/initialData";
 import { calculateNutrition, roundValue } from "./services/nutritionService";
@@ -140,6 +143,9 @@ import {
   deleteKnowledgeDocument,
   subscribeRecipeAudits,
   saveRecipeAudit,
+  subscribeWastes,
+  saveWasteEntry,
+  deleteWasteEntry,
 } from "./lib/dataService";
 import { COMMON_ALLERGENS, CONVERSION_FACTORS } from "./constants";
 
@@ -184,7 +190,8 @@ type AppView =
   | "asistente_formulacion"
   | "normativas"
   | "conteo_ciclico"
-  | "trial_manager";
+  | "trial_manager"
+  | "gestion_costos";
 
 interface ExpandableTextProps {
   text?: string;
@@ -287,6 +294,7 @@ export default function App() {
   const [developments, setDevelopments] = useState<DevelopmentProject[]>([]);
   const [knowledgeDocuments, setKnowledgeDocuments] = useState<KnowledgeDocument[]>([]);
   const [recipeAudits, setRecipeAudits] = useState<RecipeAudit[]>([]);
+  const [wastes, setWastes] = useState<WasteEntry[]>([]);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>(
     INITIAL_RECIPE.id,
   );
@@ -428,11 +436,15 @@ export default function App() {
       const unsubAudits = subscribeRecipeAudits((data) => {
         setRecipeAudits(data);
       });
+      const unsubWastes = subscribeWastes((data) => {
+        setWastes(data);
+      });
       return () => {
         unsubRecipes();
         unsubDevs();
         unsubKnowledge();
         unsubAudits();
+        unsubWastes();
       };
     }
   }, [user]);
@@ -2259,6 +2271,7 @@ export default function App() {
             { id: "trial_manager", icon: FlaskRound, label: "Laboratorio I+D" },
             { id: "guide", icon: FileText, label: "Normativas" },
             { id: "conteo_ciclico", icon: ClipboardCheck, label: "Conteo Cíclico" },
+            { id: "gestion_costos", icon: Trash2, label: "Gestión de Costos" },
             { id: "asistente_formulacion", icon: Sparkles, label: "Asistente Formulación" },
           ].map((item) => (
             <button
@@ -2413,6 +2426,7 @@ export default function App() {
               {view === "trial_manager" && "Laboratorio I+D (Pruebas)"}
               {view === "guide" && "Normativas"}
               {view === "asistente_formulacion" && "Asistente de Formulación AI"}
+              {view === "gestion_costos" && "Gestión de Costos"}
             </h2>
             <div className="badge">LAB Hub v3.0</div>
           </div>
@@ -2552,6 +2566,29 @@ export default function App() {
                   className="h-full overflow-hidden"
                 >
                   <NormativasView />
+                </motion.div>
+              )}
+
+              {view === "gestion_costos" && user && (
+                <motion.div
+                  key="gestion_costos"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="h-full overflow-y-auto custom-scrollbar"
+                >
+                  <WasteManager 
+                    wastes={wastes}
+                    recipes={recipes}
+                    ingredients={ingredients}
+                    onSaveWaste={async (w) => {
+                      await saveWasteEntry(w);
+                    }}
+                    onDeleteWaste={async (id) => {
+                      await deleteWasteEntry(id);
+                    }}
+                    userId={user.uid}
+                  />
                 </motion.div>
               )}
 

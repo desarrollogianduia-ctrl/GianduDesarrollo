@@ -232,8 +232,15 @@ app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res) => {
 });
 
 app.post("/api/ai/analyze-trials", async (req, res) => {
+  console.log("POST /api/ai/analyze-trials received");
   try {
     const { productName, area, trials } = req.body;
+    
+    if (!trials || !Array.isArray(trials)) {
+      console.error("Invalid trials data received:", trials);
+      return res.status(400).json({ error: "Invalid trials data" });
+    }
+
     const ai = getGenAI();
     
     const prompt = `Actúa como un Ingeniero de Desarrollo y Control de Calidad Alimentaria especializado en la industria pastelera y de helados (I+D helados, pastelería, chocolatería, vitrina, paletas).
@@ -242,27 +249,27 @@ app.post("/api/ai/analyze-trials", async (req, res) => {
     
     Aquí tienes el historial de pruebas realizadas en orden cronológico:
     ${trials.map((t: any) => `
-    - Prueba ${t.trialLetter}:
+    - Prueba ${t.trialLetter || '?'}:
       * Notas/Observaciones: "${t.notes || 'Ninguna'}"
-      * Análisis Sensorial medido:
-        - Temperatura: "${t.sensoryAnalysis?.temperature || 'No medida'}"
-        - Textura: "${t.sensoryAnalysis?.texture || 'No medida'}"
-        - Sabor: "${t.sensoryAnalysis?.flavor || 'No medido'}"
-        - Dureza: "${t.sensoryAnalysis?.hardness || 'No medida'}"
-        - Decoración: "${t.sensoryAnalysis?.decoration || 'No medida'}"
+      * Análisis Sensorial:
+        - Temperatura: "${t.sensoryAnalysis?.temperature || 'N/A'}"
+        - Textura: "${t.sensoryAnalysis?.texture || 'N/A'}"
+        - Sabor: "${t.sensoryAnalysis?.flavor || 'N/A'}"
+        - Dureza: "${t.sensoryAnalysis?.hardness || 'N/A'}"
+        - Decoración: "${t.sensoryAnalysis?.decoration || 'N/A'}"
     `).join('\n')}
     
-    Analiza minuciosamente estas pruebas y genera un reporte técnico profesional de I+D en ESPAÑOL, evaluando qué fue mal en cada etapa, qué mejoró, identificando puntos clave para la próxima prueba y determinando el nivel de avance.
+    Analiza minuciosamente estas pruebas y genera un reporte técnico profesional de I+D en ESPAÑOL.
     
-    Retorna un objeto JSON con los siguientes campos estrictos:
+    Retorna un objeto JSON con los siguientes campos:
     1. "summary" (string): Un resumen técnico claro y conciso.
     2. "whatWentWrong" (string): Qué fue mal o qué detalles se deben corregir.
     3. "keyPointsForNextTrial" (string): Puntos clave para la siguiente prueba.
     4. "progressPercentage" (number): Grado de avance (0-100).`;
 
     const result = await ai.models.generateContent({
-      model: "gemini-flash-latest",
-      contents: prompt,
+      model: "gemini-3.6-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: {
         responseMimeType: "application/json",
       }

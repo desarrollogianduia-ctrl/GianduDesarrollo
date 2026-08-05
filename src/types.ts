@@ -209,3 +209,40 @@ export interface RecipeAudit {
   physicalCount?: number;
   adjustmentReason?: string;
 }
+
+export type WasteReason = 'proceso_calor' | 'proceso_fisico' | 'otro';
+export type WastePriority = 'alta' | 'media' | 'baja';
+export type WasteStatus = 'pendiente' | 'completado';
+
+export interface ProductionStage {
+  id: string;
+  name: string;
+  timeMinutes: number;
+  observations?: string;
+  improvement?: string;
+}
+
+export interface WasteEntry {
+  id: string;
+  date: number;
+  productId: string;
+  productName: string;
+  amount: number; // Calculated: initial - final
+  unit: string;
+  reason: WasteReason;
+  area: ProductArea;
+  ownerId: string;
+  status: WasteStatus;
+  priority: WastePriority;
+  notes?: string;
+  productionTime?: number;
+  initialWeight?: number;
+  finalWeight?: number;
+  stages?: ProductionStage[];
+  categoryDetails?: {
+    containerType?: string;
+    batchNumber?: string;
+    shift?: 'mañana' | 'tarde' | 'noche';
+    inclusionAmount?: number;
+  };
+}

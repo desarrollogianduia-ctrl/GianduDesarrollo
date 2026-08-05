@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "./firebase";
-import { Ingredient, Recipe, DevelopmentProject, KnowledgeDocument, RecipeAudit } from "../types";
+import { Ingredient, Recipe, DevelopmentProject, KnowledgeDocument, RecipeAudit, WasteEntry } from "../types";
 
 export const subscribeRecipeAudits = (callback: (audits: RecipeAudit[]) => void) => {
   return onSnapshot(collection(db, "recipeAudits"), (snapshot) => {
@@ -320,6 +320,38 @@ export const reopenDevelopment = async (id: string, userId: string) => {
     }, { merge: true });
   } catch (error) {
     if (error instanceof FirestoreError) handleFirestoreError(error, 'write', path);
+    throw error;
+  }
+};
+
+export const subscribeWastes = (callback: (wastes: WasteEntry[]) => void) => {
+  return onSnapshot(collection(db, "wastes"), (snapshot) => {
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WasteEntry));
+    callback(data);
+  }, (error) => {
+    handleFirestoreError(error, 'list', 'wastes');
+  });
+};
+
+export const saveWasteEntry = async (waste: WasteEntry) => {
+  const path = `wastes/${waste.id}`;
+  try {
+    const wasteRef = doc(db, "wastes", waste.id);
+    const data = cleanData(waste);
+    await setDoc(wasteRef, data);
+  } catch (error) {
+    if (error instanceof FirestoreError) handleFirestoreError(error, 'write', path);
+    throw error;
+  }
+};
+
+export const deleteWasteEntry = async (id: string) => {
+  const path = `wastes/${id}`;
+  try {
+    const wasteRef = doc(db, "wastes", id);
+    await deleteDoc(wasteRef);
+  } catch (error) {
+    if (error instanceof FirestoreError) handleFirestoreError(error, 'delete', path);
     throw error;
   }
 };
