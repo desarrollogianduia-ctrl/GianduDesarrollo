@@ -92,6 +92,7 @@ import { RecipeAuditView } from "./components/RecipeAuditView";
 import { AIAssistant } from "./components/AIAssistant";
 import { TrialManager } from "./components/TrialManager";
 import { WasteManager } from "./components/WasteManager";
+import { CalendarView } from "./components/CalendarView";
 import {
   Ingredient,
   Recipe,
@@ -110,6 +111,7 @@ import {
   RecipeAudit,
   WasteEntry,
   WasteReason,
+  CalendarEvent,
 } from "./types";
 import { INITIAL_INGREDIENTS, INITIAL_RECIPE } from "./utils/initialData";
 import { calculateNutrition, roundValue } from "./services/nutritionService";
@@ -146,6 +148,9 @@ import {
   subscribeWastes,
   saveWasteEntry,
   deleteWasteEntry,
+  subscribeCalendarEvents,
+  saveCalendarEvent,
+  deleteCalendarEvent,
 } from "./lib/dataService";
 import { COMMON_ALLERGENS, CONVERSION_FACTORS } from "./constants";
 
@@ -191,7 +196,8 @@ type AppView =
   | "normativas"
   | "conteo_ciclico"
   | "trial_manager"
-  | "gestion_costos";
+  | "gestion_costos"
+  | "calendario";
 
 interface ExpandableTextProps {
   text?: string;
@@ -295,6 +301,7 @@ export default function App() {
   const [knowledgeDocuments, setKnowledgeDocuments] = useState<KnowledgeDocument[]>([]);
   const [recipeAudits, setRecipeAudits] = useState<RecipeAudit[]>([]);
   const [wastes, setWastes] = useState<WasteEntry[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>(
     INITIAL_RECIPE.id,
   );
@@ -307,6 +314,14 @@ export default function App() {
       setView(newView);
     }
   };
+
+  useEffect(() => {
+    const handleNavigate = (e: any) => {
+      if (e.detail) navigateTo(e.detail);
+    };
+    window.addEventListener('navigate', handleNavigate);
+    return () => window.removeEventListener('navigate', handleNavigate);
+  }, [view]);
 
   const getProdTrialDuration = (startTime?: string, endTime?: string) => {
     if (!startTime || !endTime) return null;
@@ -439,12 +454,16 @@ export default function App() {
       const unsubWastes = subscribeWastes((data) => {
         setWastes(data);
       });
+      const unsubEvents = subscribeCalendarEvents((data) => {
+        setEvents(data);
+      });
       return () => {
         unsubRecipes();
         unsubDevs();
         unsubKnowledge();
         unsubAudits();
         unsubWastes();
+        unsubEvents();
       };
     }
   }, [user]);
@@ -2262,7 +2281,7 @@ export default function App() {
           )}
         </div>
 
-        <nav className="flex-1 px-3 space-y-2 overflow-hidden">
+        <nav className="flex-1 px-3 space-y-2 overflow-y-auto custom-scrollbar pb-8">
           {[
             { id: "dashboard", icon: LayoutDashboard, label: "Panel General" },
             { id: "developments", icon: GitMerge, label: "Tabla de Desarrollo" },
@@ -2272,6 +2291,7 @@ export default function App() {
             { id: "guide", icon: FileText, label: "Normativas" },
             { id: "conteo_ciclico", icon: ClipboardCheck, label: "Conteo Cíclico" },
             { id: "gestion_costos", icon: Trash2, label: "Gestión de Costos" },
+            { id: "calendario", icon: Calendar, label: "Calendario I+D" },
             { id: "asistente_formulacion", icon: Sparkles, label: "Asistente Formulación" },
           ].map((item) => (
             <button
@@ -2427,6 +2447,7 @@ export default function App() {
               {view === "guide" && "Normativas"}
               {view === "asistente_formulacion" && "Asistente de Formulación AI"}
               {view === "gestion_costos" && "Gestión de Costos"}
+              {view === "calendario" && "Calendario I+D"}
             </h2>
             <div className="badge">LAB Hub v3.0</div>
           </div>
@@ -2588,6 +2609,28 @@ export default function App() {
                       await deleteWasteEntry(id);
                     }}
                     userId={user.uid}
+                  />
+                </motion.div>
+              )}
+
+               {view === "calendario" && user && (
+                <motion.div
+                  key="calendario"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="h-full overflow-hidden"
+                >
+                  <CalendarView
+                    events={events}
+                    tasks={allPendingTasks}
+                    userId={user.uid}
+                    onSaveEvent={async (event) => {
+                      await saveCalendarEvent(event);
+                    }}
+                    onDeleteEvent={async (id) => {
+                      await deleteCalendarEvent(id);
+                    }}
                   />
                 </motion.div>
               )}

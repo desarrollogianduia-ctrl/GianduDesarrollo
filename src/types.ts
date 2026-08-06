@@ -246,3 +246,25 @@ export interface WasteEntry {
     inclusionAmount?: number;
   };
 }
+
+export type EventType = 'reunion' | 'tarea' | 'hito' | 'otro';
+
+export interface EventParticipant {
+  name: string;
+  email?: string;
+  role?: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  startDate: number;
+  endDate: number;
+  type: EventType;
+  color: string;
+  participants: EventParticipant[];
+  location?: string;
+  relatedProjectId?: string;
+  ownerId: string;
+}

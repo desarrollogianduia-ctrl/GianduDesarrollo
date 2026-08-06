@@ -495,7 +495,8 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
                       <div className="flex justify-end gap-2">
                         {waste.status === 'pendiente' && (
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setClosingWaste(waste);
                               setClosingData({
                                 finalWeight: 0,
@@ -822,6 +823,11 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
                           placeholder="Ej: 9.850"
                           className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:border-rose-500/50 transition-all font-mono"
                         />
+                        {closingData.finalWeight > 0 && (
+                          <p className="text-[10px] text-rose-400 font-bold ml-1">
+                            Merma Calculada: {((closingWaste.initialWeight || 0) - closingData.finalWeight).toFixed(3)} {closingWaste.unit}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] uppercase font-bold text-white/40 ml-1">Tiempo Real de Proceso (Min)</label>
@@ -973,7 +979,7 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
                     type="submit"
                     className="flex-[2] btn-primary py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-rose-500/20"
                   >
-                    Confirmar y Guardar Merma
+                    {viewMode === 'mermas' ? 'Confirmar y Guardar Merma' : 'Confirmar y Guardar Tiempos'}
                   </button>
                 </div>
               </form>

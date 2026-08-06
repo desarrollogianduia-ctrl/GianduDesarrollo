@@ -128,14 +128,19 @@ export function DashboardView({ developments, recipes }: DashboardViewProps) {
             color: 'text-purple-400' 
           },
           { 
-            label: 'Pendiente Cómputos', 
-            value: recipes.filter(r => r.status === 'informacion_nutricional').length, 
-            sub: 'Requiere atención',
-            icon: Scale, 
-            color: 'text-emerald-400' 
+            label: 'Calendario I+D', 
+            value: 'Ver Agenda', 
+            sub: 'Tareas y Reuniones',
+            icon: Calendar, 
+            color: 'text-amber-400',
+            onClick: () => window.dispatchEvent(new CustomEvent('navigate', { detail: 'calendario' }))
           },
         ].map((stat, i) => (
-          <div key={i} className="bg-[var(--surface)] border border-[var(--border)] p-6 rounded-3xl relative overflow-hidden group">
+          <div 
+            key={i} 
+            className={`bg-[var(--surface)] border border-[var(--border)] p-6 rounded-3xl relative overflow-hidden group transition-all ${stat.onClick ? 'cursor-pointer hover:border-[var(--accent)]/50' : ''}`}
+            onClick={stat.onClick}
+          >
             <div className="flex items-start justify-between relative z-10">
               <div className="space-y-2">
                 <p className="text-[10px] font-black uppercase tracking-[2px] text-white/30">{stat.label}</p>

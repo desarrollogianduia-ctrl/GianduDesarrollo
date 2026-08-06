@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "./firebase";
-import { Ingredient, Recipe, DevelopmentProject, KnowledgeDocument, RecipeAudit, WasteEntry } from "../types";
+import { Ingredient, Recipe, DevelopmentProject, KnowledgeDocument, RecipeAudit, WasteEntry, CalendarEvent } from "../types";
 
 export const subscribeRecipeAudits = (callback: (audits: RecipeAudit[]) => void) => {
   return onSnapshot(collection(db, "recipeAudits"), (snapshot) => {
@@ -350,6 +350,38 @@ export const deleteWasteEntry = async (id: string) => {
   try {
     const wasteRef = doc(db, "wastes", id);
     await deleteDoc(wasteRef);
+  } catch (error) {
+    if (error instanceof FirestoreError) handleFirestoreError(error, 'delete', path);
+    throw error;
+  }
+};
+
+export const subscribeCalendarEvents = (callback: (events: CalendarEvent[]) => void) => {
+  return onSnapshot(collection(db, "events"), (snapshot) => {
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CalendarEvent));
+    callback(data);
+  }, (error) => {
+    handleFirestoreError(error, 'list', 'events');
+  });
+};
+
+export const saveCalendarEvent = async (event: CalendarEvent) => {
+  const path = `events/${event.id}`;
+  try {
+    const eventRef = doc(db, "events", event.id);
+    const data = cleanData(event);
+    await setDoc(eventRef, data);
+  } catch (error) {
+    if (error instanceof FirestoreError) handleFirestoreError(error, 'write', path);
+    throw error;
+  }
+};
+
+export const deleteCalendarEvent = async (id: string) => {
+  const path = `events/${id}`;
+  try {
+    const eventRef = doc(db, "events", id);
+    await deleteDoc(eventRef);
   } catch (error) {
     if (error instanceof FirestoreError) handleFirestoreError(error, 'delete', path);
     throw error;
