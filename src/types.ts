@@ -222,6 +222,13 @@ export interface ProductionStage {
   improvement?: string;
 }
 
+export interface InclusionEntry {
+  name: string;
+  initialWeight: number;
+  finalWeight: number;
+  usedWeight: number;
+}
+
 export interface WasteEntry {
   id: string;
   date: number;
@@ -243,7 +250,9 @@ export interface WasteEntry {
     containerType?: string;
     batchNumber?: string;
     shift?: 'mañana' | 'tarde' | 'noche';
+    inclusions?: InclusionEntry[];
     inclusionAmount?: number;
+    inclusionName?: string;
   };
 }
 

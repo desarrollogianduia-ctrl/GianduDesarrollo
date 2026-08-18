@@ -16,7 +16,7 @@ import {
   ThermometerSnowflake
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { WasteEntry, Recipe, Ingredient, WasteReason, ProductArea, WasteStatus } from '../types';
+import { WasteEntry, Recipe, Ingredient, WasteReason, ProductArea, WasteStatus, InclusionEntry, ProductionStage } from '../types';
 
 interface WasteManagerProps {
   wastes: WasteEntry[];
@@ -88,8 +88,11 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
   const [closingData, setClosingData] = useState({
     finalWeight: 0,
     productionTime: 0,
+    inclusionName: '',
+    inclusionAmount: 0,
+    inclusions: [] as InclusionEntry[],
     notes: '',
-    stages: [] as { id: string; name: string; timeMinutes: number; observations: string; improvement: string }[]
+    stages: [] as ProductionStage[]
   });
 
   const filteredItems = useMemo(() => {
@@ -100,6 +103,15 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
     ];
     return allItems.filter(item => item.name.toLowerCase().includes(query)).slice(0, 10);
   }, [itemSearch, recipes, ingredients]);
+
+  const semielaborados = useMemo(() => {
+    return recipes.filter(r => 
+      r.category === 'semielaborado' || 
+      r.type === 'semielaborado' || 
+      r.name.toLowerCase().includes('siembra') ||
+      r.name.toLowerCase().includes('veteado')
+    );
+  }, [recipes]);
 
   const sortedWastes = useMemo(() => {
     return wastes
@@ -131,6 +143,8 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
       : closingData.productionTime;
 
     const amount = (closingWaste.initialWeight || 0) - closingData.finalWeight;
+    const totalInclusionUsed = closingData.inclusions.reduce((acc, inc) => acc + inc.usedWeight, 0);
+
     const completedWaste: WasteEntry = {
       ...closingWaste,
       finalWeight: closingData.finalWeight,
@@ -139,13 +153,27 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
       amount: amount > 0 ? amount : 0,
       status: 'completado',
       date: Date.now(),
-      notes: closingData.notes || closingWaste.notes
+      notes: closingData.notes || closingWaste.notes,
+      categoryDetails: {
+        ...closingWaste.categoryDetails,
+        inclusions: closingData.inclusions,
+        inclusionAmount: totalInclusionUsed,
+        inclusionName: closingData.inclusions.map(inc => inc.name).join(', ')
+      }
     };
 
     try {
       await onSaveWaste(completedWaste);
       setClosingWaste(null);
-      setClosingData({ finalWeight: 0, productionTime: 0, notes: '', stages: [] });
+      setClosingData({ 
+        finalWeight: 0, 
+        productionTime: 0, 
+        inclusionName: '',
+        inclusionAmount: 0,
+        inclusions: [],
+        notes: '', 
+        stages: [] 
+      });
     } catch (error) {
       console.error(error);
       alert('Error al cerrar el control.');
@@ -497,10 +525,31 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              
+                              // Buscar si la receta tiene ingredientes que sean semielaborados (siembras)
+                              const recipe = recipes.find(r => r.id === waste.productId);
+                              const defaultInclusions = (recipe?.ingredients || [])
+                                .filter(ri => ri.isRecipe)
+                                .map(ri => {
+                                  const subRecipe = recipes.find(sr => sr.id === ri.ingredientId);
+                                  const isSiembra = subRecipe?.name.toLowerCase().includes('siembra') || 
+                                                  subRecipe?.name.toLowerCase().includes('veteado') ||
+                                                  subRecipe?.category === 'semielaborado';
+                                  
+                                  if (subRecipe && isSiembra) {
+                                    return { name: subRecipe.name, initialWeight: 0, finalWeight: 0, usedWeight: 0 };
+                                  }
+                                  return null;
+                                })
+                                .filter(Boolean) as InclusionEntry[];
+
                               setClosingWaste(waste);
                               setClosingData({
                                 finalWeight: 0,
                                 productionTime: waste.productionTime || 0,
+                                inclusionName: waste.categoryDetails?.inclusionName || '',
+                                inclusionAmount: waste.categoryDetails?.inclusionAmount || 0,
+                                inclusions: waste.categoryDetails?.inclusions?.length ? waste.categoryDetails.inclusions : defaultInclusions,
                                 notes: waste.notes || '',
                                 stages: []
                               });
@@ -512,12 +561,13 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
                           </button>
                         )}
                         <button
-                          onClick={() => {
-                            if (window.confirm('¿Eliminar este registro?')) {
-                              onDeleteWaste(waste.id);
-                            }
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteWaste(waste.id);
                           }}
-                          className="p-2 text-white/20 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                          className="flex items-center justify-center w-10 h-10 text-rose-500 hover:bg-rose-500/20 rounded-full transition-all bg-rose-500/5 border border-rose-500/20"
+                          title="Eliminar registro"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -786,62 +836,100 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
               exit={{ scale: 0.9, opacity: 0 }}
               className="relative w-full max-w-xl bg-[#121212] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden"
             >
-              <form onSubmit={handleCompleteControl} className="p-10 space-y-8">
-                <header className="space-y-1">
-                  <div className="flex items-center gap-2 text-rose-400 text-[10px] font-black uppercase tracking-widest">
-                    <History size={14} />
-                    Finalizar Control Operativo
-                  </div>
-                  <h3 className="text-2xl font-light italic font-serif">Resultados de {closingWaste.productName}</h3>
-                </header>
+              {(() => {
+                const totalInclusions = closingData.inclusions.reduce((acc, inc) => acc + (inc.usedWeight || 0), 0);
+                const totalTheoretical = (closingWaste.initialWeight || 0) + totalInclusions;
+                const mermaReal = totalTheoretical - (closingData.finalWeight || 0);
+                const grPerKg = closingData.finalWeight > 0 ? (totalInclusions / closingData.finalWeight) * 1000 : 0;
 
-                <div className="grid grid-cols-2 gap-6 p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-white/40 uppercase font-black">Peso Inicial</p>
-                    <p className="text-xl font-mono text-white/80">{closingWaste.initialWeight} {closingWaste.unit}</p>
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <p className="text-[10px] text-white/40 uppercase font-black">Prioridad</p>
-                    <p className={`text-xl font-black uppercase tracking-tighter ${PRIORITIES.find(p => p.id === closingWaste.priority)?.color}`}>
-                      {closingWaste.priority}
-                    </p>
-                  </div>
-                </div>
+                return (
+                  <form onSubmit={handleCompleteControl} className="p-10 space-y-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                    <header className="space-y-1">
+                      <div className="flex items-center gap-2 text-rose-400 text-[10px] font-black uppercase tracking-widest">
+                        <History size={14} />
+                        Finalizar Control Operativo
+                      </div>
+                      <h3 className="text-2xl font-light italic font-serif">Resultados de {closingWaste.productName}</h3>
+                    </header>
 
-                <div className="space-y-6">
-                  {viewMode === 'mermas' ? (
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-bold text-white/40 ml-1">Peso Final / Resultante (Kg)</label>
+                    <div className="grid grid-cols-2 gap-6 p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-white/40 uppercase font-black">Peso Inicial Mix ({closingWaste.unit})</p>
                         <input
                           type="number"
                           step="0.001"
-                          required
-                          autoFocus
-                          value={closingData.finalWeight || ''}
-                          onChange={(e) => setClosingData({ ...closingData, finalWeight: parseFloat(e.target.value) })}
-                          placeholder="Ej: 9.850"
-                          className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:border-rose-500/50 transition-all font-mono"
+                          value={closingWaste.initialWeight || ''}
+                          onChange={(e) => setClosingWaste({ ...closingWaste, initialWeight: parseFloat(e.target.value) || 0 })}
+                          className="w-full bg-transparent border-b border-white/10 text-xl font-mono text-white focus:outline-none focus:border-blue-500/50 transition-all p-0 h-8"
+                          placeholder="0.000"
                         />
-                        {closingData.finalWeight > 0 && (
-                          <p className="text-[10px] text-rose-400 font-bold ml-1">
-                            Merma Calculada: {((closingWaste.initialWeight || 0) - closingData.finalWeight).toFixed(3)} {closingWaste.unit}
-                          </p>
-                        )}
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-bold text-white/40 ml-1">Tiempo Real de Proceso (Min)</label>
-                        <input
-                          type="number"
-                          required
-                          value={closingData.productionTime || ''}
-                          onChange={(e) => setClosingData({ ...closingData, productionTime: parseInt(e.target.value) || 0 })}
-                          placeholder="Ej: 30"
-                          className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:border-blue-500/50 transition-all font-mono"
-                        />
+                      <div className="space-y-1 text-right">
+                        <p className="text-[10px] text-white/40 uppercase font-black">Prioridad</p>
+                        <p className={`text-xl font-black uppercase tracking-tighter ${PRIORITIES.find(p => p.id === closingWaste.priority)?.color}`}>
+                          {closingWaste.priority}
+                        </p>
                       </div>
                     </div>
-                  ) : (
+
+                    <div className="space-y-6">
+                      {viewMode === 'mermas' ? (
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-bold text-white/40 ml-1">Área / Sector (Validar)</label>
+                            <select
+                              value={closingWaste.area}
+                              onChange={(e) => setClosingWaste({ ...closingWaste, area: e.target.value as ProductArea })}
+                              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:border-blue-500/50 transition-all appearance-none text-blue-400"
+                            >
+                              {AREAS.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-bold text-white/40 ml-1">Peso Final / Resultante (Kg)</label>
+                            <input
+                              type="number"
+                              step="0.001"
+                              required
+                              autoFocus
+                              value={closingData.finalWeight || ''}
+                              onChange={(e) => setClosingData({ ...closingData, finalWeight: parseFloat(e.target.value) })}
+                              placeholder="Ej: 9.850"
+                              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:border-rose-500/50 transition-all font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Summary Section */}
+                        <div className="grid grid-cols-2 gap-4 p-6 bg-white/[0.03] border border-white/5 rounded-3xl">
+                          <div className="space-y-1">
+                            <p className="text-[9px] uppercase font-black text-white/30 tracking-widest">Peso Total Siembras</p>
+                            <p className="text-lg font-mono font-bold text-blue-400/80">{totalInclusions.toFixed(3)} Kg</p>
+                          </div>
+                          <div className="space-y-1 text-right">
+                            <p className="text-[9px] uppercase font-black text-white/30 tracking-widest">Total Tirada (Mix + Siembra)</p>
+                            <p className="text-lg font-mono font-bold text-white/80">{totalTheoretical.toFixed(3)} Kg</p>
+                          </div>
+                          <div className="col-span-2 pt-4 border-t border-white/5 grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <p className="text-[9px] uppercase font-black text-white/30 tracking-widest">Merma Calculada</p>
+                              <p className={`text-lg font-mono font-bold ${mermaReal > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                {mermaReal.toFixed(3)} Kg
+                              </p>
+                            </div>
+                            {closingWaste.area === 'helados' && (
+                              <div className="space-y-1 text-right">
+                                <p className="text-[9px] uppercase font-black text-blue-400/60 tracking-widest">Siembra por Kg de Helado</p>
+                                <p className="text-xl font-mono font-bold text-blue-400">
+                                  {grPerKg.toFixed(1)} <span className="text-[10px] opacity-60">g / Kg</span>
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      ) : closingWaste.area !== 'helados' && (
                     <div className="space-y-6">
                       <div className="flex justify-between items-center px-1">
                         <label className="text-[10px] uppercase font-bold text-blue-400">Desglose de Etapas de Producción</label>
@@ -955,6 +1043,125 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
                     </div>
                   )}
 
+                  {closingWaste.area === 'helados' && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between px-2">
+                        <div className="flex items-center gap-2">
+                          <ThermometerSnowflake className="text-blue-400" size={16} />
+                          <p className="text-[10px] uppercase font-black text-blue-400 tracking-widest">Balance de Siembras</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setClosingData({
+                              ...closingData,
+                              inclusions: [...closingData.inclusions, { name: '', initialWeight: 0, finalWeight: 0, usedWeight: 0 }]
+                            });
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl text-[10px] font-black uppercase text-blue-400 transition-all"
+                        >
+                          <Plus size={14} />
+                          Añadir Fila
+                        </button>
+                      </div>
+
+                      <div className="bg-white/5 border border-white/10 rounded-[24px] overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-white/5 border-b border-white/10">
+                              <th className="px-4 py-3 text-[9px] uppercase font-black tracking-widest text-white/30">Nombre Siembra</th>
+                              <th className="px-4 py-3 text-[9px] uppercase font-black tracking-widest text-white/30">Peso Inicial (Kg)</th>
+                              <th className="px-4 py-3 text-[9px] uppercase font-black tracking-widest text-white/30">Peso Final (Kg)</th>
+                              <th className="px-4 py-3 text-[9px] uppercase font-black tracking-widest text-white/30">Utilizado</th>
+                              <th className="px-4 py-3 text-[9px] uppercase font-black tracking-widest text-white/30 text-right"></th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/5">
+                            {closingData.inclusions.map((inclusion, idx) => (
+                              <tr key={idx} className="group hover:bg-white/[0.02] transition-all">
+                                <td className="px-4 py-3">
+                                  <input
+                                    type="text"
+                                    list="semielaborados-list"
+                                    value={inclusion.name}
+                                    onChange={(e) => {
+                                      const newInclusions = [...closingData.inclusions];
+                                      newInclusions[idx].name = e.target.value;
+                                      setClosingData({ ...closingData, inclusions: newInclusions });
+                                    }}
+                                    placeholder="Nombre..."
+                                    className="w-full bg-transparent border-none p-0 text-xs text-white focus:ring-0 placeholder:text-white/10"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <input
+                                    type="number"
+                                    step="0.001"
+                                    value={inclusion.initialWeight || ''}
+                                    onChange={(e) => {
+                                      const val = parseFloat(e.target.value) || 0;
+                                      const newInclusions = [...closingData.inclusions];
+                                      newInclusions[idx].initialWeight = val;
+                                      newInclusions[idx].usedWeight = Number((val - (newInclusions[idx].finalWeight || 0)).toFixed(3));
+                                      setClosingData({ ...closingData, inclusions: newInclusions });
+                                    }}
+                                    className="w-full bg-transparent border-none p-0 text-xs text-white focus:ring-0 font-mono placeholder:text-white/10"
+                                    placeholder="0.000"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <input
+                                    type="number"
+                                    step="0.001"
+                                    value={inclusion.finalWeight || ''}
+                                    onChange={(e) => {
+                                      const val = parseFloat(e.target.value) || 0;
+                                      const newInclusions = [...closingData.inclusions];
+                                      newInclusions[idx].finalWeight = val;
+                                      newInclusions[idx].usedWeight = Number(((newInclusions[idx].initialWeight || 0) - val).toFixed(3));
+                                      setClosingData({ ...closingData, inclusions: newInclusions });
+                                    }}
+                                    className="w-full bg-transparent border-none p-0 text-xs text-white focus:ring-0 font-mono placeholder:text-white/10"
+                                    placeholder="0.000"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`text-xs font-mono font-bold ${inclusion.usedWeight > 0 ? 'text-blue-400' : 'text-white/20'}`}>
+                                    {inclusion.usedWeight.toFixed(3)}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newInclusions = closingData.inclusions.filter((_, i) => i !== idx);
+                                      setClosingData({ ...closingData, inclusions: newInclusions });
+                                    }}
+                                    className="w-8 h-8 flex items-center justify-center text-rose-400 hover:bg-rose-400/20 rounded-lg transition-all bg-rose-400/5 border border-rose-400/10"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            {closingData.inclusions.length === 0 && (
+                              <tr>
+                                <td colSpan={5} className="px-4 py-10 text-center text-[10px] uppercase font-black tracking-widest text-white/10 italic">
+                                  Sin siembras registradas
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                        <datalist id="semielaborados-list">
+                          {semielaborados.map(s => (
+                            <option key={s.id} value={s.name} />
+                          ))}
+                        </datalist>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase font-bold text-white/40 ml-1">Observaciones Finales</label>
                     <textarea
@@ -983,7 +1190,9 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
                   </button>
                 </div>
               </form>
-            </motion.div>
+            );
+          })()}
+        </motion.div>
           </div>
         )}
       </AnimatePresence>
