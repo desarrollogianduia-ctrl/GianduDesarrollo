@@ -12,7 +12,8 @@ import {
   History,
   Info,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
@@ -118,9 +119,16 @@ export function TrialManager({ recipes, developments, onSaveTrial, onDeleteTrial
             className="group bg-white/5 border border-white/10 rounded-[2rem] p-6 hover:border-[var(--accent)]/40 transition-all relative overflow-hidden"
           >
             <div className="flex justify-between items-start mb-4">
-              <span className="px-3 py-1 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-full text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">
-                {trial.trialCode}
-              </span>
+              <div className="flex gap-2">
+                {trial.status === 'en_cola' && (
+                  <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-[9px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-1">
+                    <Clock size={10} /> En Cola
+                  </span>
+                )}
+                <span className="px-3 py-1 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-full text-[10px] font-black text-[var(--accent)] uppercase tracking-widest">
+                  {trial.trialCode}
+                </span>
+              </div>
               <div className="flex gap-2">
                 <button 
                   onClick={() => handleExportToExcel(trial)}
@@ -162,6 +170,27 @@ export function TrialManager({ recipes, developments, onSaveTrial, onDeleteTrial
                 className="flex-1 py-3 bg-white/5 hover:bg-[var(--accent)]/10 border border-white/10 rounded-xl text-xs font-bold text-white/60 hover:text-[var(--accent)] transition-all flex items-center justify-center gap-2"
               >
                 Ver Detalles <ChevronRight size={14} />
+              </button>
+              <button
+                onClick={async () => {
+                  if (trial.status === 'en_cola') {
+                    if (window.confirm("¿Deseas quitar esta prueba de la cola de producción y volver a edición?")) {
+                      await onSaveTrial({ ...trial, status: 'formulacion', updatedAt: Date.now() });
+                    }
+                  } else {
+                    if (window.confirm("¿Enviar esta prueba a 'Cola de Producción'? Esto indicará que ya no depende de tus tiempos de laboratorio.")) {
+                      await onSaveTrial({ ...trial, status: 'en_cola', updatedAt: Date.now() });
+                    }
+                  }
+                }}
+                className={`p-3 border rounded-xl transition-all flex items-center justify-center ${
+                  trial.status === 'en_cola' 
+                    ? 'bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-lg shadow-blue-500/10' 
+                    : 'bg-white/5 border-white/10 text-white/40 hover:text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/20'
+                }`}
+                title={trial.status === 'en_cola' ? "En Cola de Producción" : "Enviar a Cola de Producción"}
+              >
+                <Clock size={16} />
               </button>
               <button
                 onClick={async () => {

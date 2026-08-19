@@ -59,7 +59,7 @@ const CONTAINER_TYPES = {
 export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDeleteWaste, userId }: WasteManagerProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [closingWaste, setClosingWaste] = useState<WasteEntry | null>(null);
-  const [activeTab, setActiveTab] = useState<'pendientes' | 'completados'>('pendientes');
+  const [activeTab, setActiveTab] = useState<'pendientes' | 'en_cola' | 'completados'>('pendientes');
   const [viewMode, setViewMode] = useState<'mermas' | 'tiempos'>('mermas');
   const [searchQuery, setSearchQuery] = useState('');
   const [reasonFilter, setReasonFilter] = useState<WasteReason | 'todos'>('todos');
@@ -117,6 +117,7 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
     return wastes
       .filter(w => {
         const matchesStatus = (activeTab === 'pendientes' && w.status === 'pendiente') || 
+                            (activeTab === 'en_cola' && w.status === 'en_cola') ||
                             (activeTab === 'completados' && w.status === 'completado');
         const matchesSearch = w.productName.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesReason = reasonFilter === 'todos' || w.reason === reasonFilter;
@@ -293,12 +294,20 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
             Pendientes ({wastes.filter(w => w.status === 'pendiente').length})
           </button>
           <button
+            onClick={() => setActiveTab('en_cola')}
+            className={`px-6 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+              activeTab === 'en_cola' ? 'bg-blue-500 text-white shadow-lg' : 'text-white/30 hover:text-white'
+            }`}
+          >
+            En Cola ({wastes.filter(w => w.status === 'en_cola').length})
+          </button>
+          <button
             onClick={() => setActiveTab('completados')}
             className={`px-6 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
               activeTab === 'completados' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white'
             }`}
           >
-            Completados
+            Completados ({wastes.filter(w => w.status === 'completado').length})
           </button>
         </div>
       </div>
@@ -558,6 +567,32 @@ export function WasteManager({ wastes, recipes, ingredients, onSaveWaste, onDele
                           >
                             <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
                             CERRAR CONTROL
+                          </button>
+                        )}
+                        {waste.status === 'pendiente' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSaveWaste({ ...waste, status: 'en_cola' });
+                            }}
+                            className="flex items-center justify-center w-10 h-10 text-blue-400 hover:bg-blue-500/20 rounded-full transition-all bg-blue-500/5 border border-blue-500/20"
+                            title="Enviar a Cola de Producción"
+                          >
+                            <Clock size={18} />
+                          </button>
+                        )}
+                        {waste.status === 'en_cola' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSaveWaste({ ...waste, status: 'pendiente' });
+                            }}
+                            className="flex items-center justify-center w-10 h-10 text-amber-400 hover:bg-amber-500/20 rounded-full transition-all bg-amber-500/5 border border-amber-500/20"
+                            title="Volver a Pendientes"
+                          >
+                            <History size={18} />
                           </button>
                         )}
                         <button

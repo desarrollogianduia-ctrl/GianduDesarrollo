@@ -22,7 +22,7 @@ export type IngredientCategory = 'generico' | 'especifico';
 export type FunctionalGroup = 'azucares' | 'lacteos' | 'chocolates' | 'neutros' | 'frutas' | 'pastas' | 'aceites' | 'frutos_secos' | 'aditivos' | 'miscelaneos' | 'otros';
 export type RecipeType = 'base' | 'semielaborado' | 'final';
 export type RecipeCategory = 'semielaborado' | 'pasteleria' | 'paletas' | 'chocolateria' | 'vitrina' | 'popolo' | 'helados' | 'final' | 'sin_definir';
-export type DevelopmentStatus = 'formulacion' | 'informacion_nutricional' | 'creado_en_sistema' | 'finalizado';
+export type DevelopmentStatus = 'formulacion' | 'informacion_nutricional' | 'creado_en_sistema' | 'en_cola' | 'finalizado';
 
 export type AllergenType = 'contiene' | 'puede_contener' | 'derivado_de';
 
@@ -137,7 +137,7 @@ export interface KnowledgeDocument {
 
 export type ProductArea = 'pasteleria' | 'paletas' | 'chocolates' | 'helados' | 'popolo' | 'semielaborados' | 'vitrina' | 'terceros';
 export type ProjectPriority = 'alta' | 'media' | 'baja';
-export type ProjectStatus = 'pendiente' | 'en_progreso' | 'pausado' | 'finalizado' | 'archivado';
+export type ProjectStatus = 'pendiente' | 'en_progreso' | 'en_cola' | 'pausado' | 'finalizado' | 'archivado';
 
 export interface ProjectTask {
   id: string;
@@ -212,7 +212,7 @@ export interface RecipeAudit {
 
 export type WasteReason = 'proceso_calor' | 'proceso_fisico' | 'otro';
 export type WastePriority = 'alta' | 'media' | 'baja';
-export type WasteStatus = 'pendiente' | 'completado';
+export type WasteStatus = 'pendiente' | 'en_cola' | 'completado';
 
 export interface ProductionStage {
   id: string;
