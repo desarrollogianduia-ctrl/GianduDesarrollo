@@ -71,8 +71,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, initialDelay = 50
   throw new Error("Maximum retries reached");
 }
 
-// Model alias - use gemini-flash-latest for stability
-const DEFAULT_MODEL = "gemini-flash-latest";
+// Model alias - use gemini-3.8-flash for all text tasks as per skill guidelines
+const DEFAULT_MODEL = "gemini-3.8-flash";
 
 // AI Endpoints
 app.post("/api/ai/nutritional-info", async (req, res, next) => {
