@@ -1,6 +1,5 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import multer from "multer";
 import dotenv from "dotenv";
@@ -13,10 +12,12 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Health check
 app.get("/api/health", (req, res) => {
+  const key = process.env.GEMINI_API_KEY;
   res.json({ 
     status: "ok", 
     env: process.env.NODE_ENV,
-    hasGeminiKey: !!process.env.GEMINI_API_KEY 
+    hasGeminiKey: !!key,
+    keyPrefix: key ? `${key.substring(0, 4)}...` : "none"
   });
 });
 
@@ -26,8 +27,10 @@ function getGenAI() {
   if (!genAI) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
+      console.error("[CRITICAL] GEMINI_API_KEY is missing in environment variables");
       throw new Error("GEMINI_API_KEY environment variable is required");
     }
+    console.log("[AI] Initializing Gemini client (Key prefix:", apiKey.substring(0, 4), ")");
     genAI = new GoogleGenAI({ 
       apiKey,
       httpOptions: {
@@ -42,8 +45,8 @@ function getGenAI() {
 
 app.use(express.json({ limit: '10mb' }));
 
-// AI Helper with retry logic
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, initialDelay = 1000): Promise<T> {
+// AI Helper with retry logic - REDUCED for Vercel timeouts
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, initialDelay = 500): Promise<T> {
   let delay = initialDelay;
   for (let i = 0; i < retries; i++) {
     try {
@@ -56,9 +59,9 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, initialDelay = 10
         error.code === 503;
 
       if (i < retries - 1 && isRetryable) {
-        console.log(`AI Error (503), retrying in ${delay}ms... (Attempt ${i + 1}/${retries})`);
+        console.log(`[AI] Error (503), retrying in ${delay}ms... (Attempt ${i + 1}/${retries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2; // Exponential backoff
+        delay *= 2; 
         continue;
       }
       throw error;
@@ -67,11 +70,14 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3, initialDelay = 10
   throw new Error("Maximum retries reached");
 }
 
+// Model alias - use gemini-3.8-flash for all text tasks
+const DEFAULT_MODEL = "gemini-3.8-flash";
+
 // AI Endpoints
 app.post("/api/ai/nutritional-info", async (req, res) => {
   try {
     const { ingredientName } = req.body;
-    console.log(`[AI] Searching nutritional info for: ${ingredientName}`);
+    console.log(`[AI] Nutritional info search: ${ingredientName}`);
     const ai = getGenAI();
     
     const prompt = `Find the nutritional information EXCLUSIVELY per 100g (or 100ml for liquids) for "${ingredientName}". 
@@ -96,8 +102,8 @@ app.post("/api/ai/nutritional-info", async (req, res) => {
     - confidenceNote: string`;
 
     const result = await withRetry(() => ai.models.generateContent({
-      model: "gemini-3.8-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      model: DEFAULT_MODEL,
+      contents: prompt,
       config: {
         responseMimeType: "application/json",
       }
@@ -106,7 +112,7 @@ app.post("/api/ai/nutritional-info", async (req, res) => {
     const text = result.text || "{}";
     res.json(JSON.parse(text));
   } catch (error: any) {
-    console.error("Nutritional Info AI Error:", error);
+    console.error("[AI] Nutritional Info Error:", error);
     res.status(500).json({ error: error.message || "Error interno del servidor en AI" });
   }
 });
@@ -114,10 +120,11 @@ app.post("/api/ai/nutritional-info", async (req, res) => {
 app.post("/api/ai/chat", async (req, res) => {
   try {
     const { message, history, systemPrompt } = req.body;
+    console.log("[AI] Chat request received");
     const ai = getGenAI();
     
     const chat = ai.chats.create({
-      model: "gemini-3.8-flash",
+      model: DEFAULT_MODEL,
       config: {
         systemInstruction: systemPrompt
       },
@@ -130,7 +137,7 @@ app.post("/api/ai/chat", async (req, res) => {
     const result = await withRetry(() => chat.sendMessage(message)) as any;
     res.json({ text: result.text });
   } catch (error: any) {
-    console.error("AI Error:", error);
+    console.error("[AI] Chat Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -138,6 +145,7 @@ app.post("/api/ai/chat", async (req, res) => {
 app.post("/api/ai/extract-insights", async (req, res) => {
   try {
     const { conversation } = req.body;
+    console.log("[AI] Extract insights request");
     const ai = getGenAI();
     
     const prompt = `Analiza la siguiente conversación técnica de I+D en alimentos y extrae los puntos clave (insights).
@@ -157,7 +165,7 @@ app.post("/api/ai/extract-insights", async (req, res) => {
     }`;
 
     const result = await withRetry(() => ai.models.generateContent({
-      model: "gemini-3.8-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -166,7 +174,7 @@ app.post("/api/ai/extract-insights", async (req, res) => {
 
     res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
-    console.error("AI Error:", error);
+    console.error("[AI] Extract Insights Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -174,6 +182,7 @@ app.post("/api/ai/extract-insights", async (req, res) => {
 app.post("/api/ai/tech-sheet", async (req, res) => {
   try {
     const { ingredientName } = req.body;
+    console.log(`[AI] Tech sheet request for: ${ingredientName}`);
     const ai = getGenAI();
     
     const prompt = `Investiga y genera una ficha técnica técnica de I+D para el ingrediente: "${ingredientName}".
@@ -194,7 +203,7 @@ app.post("/api/ai/tech-sheet", async (req, res) => {
     }`;
 
     const result = await withRetry(() => ai.models.generateContent({
-      model: "gemini-3.8-flash",
+      model: DEFAULT_MODEL,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -203,7 +212,7 @@ app.post("/api/ai/tech-sheet", async (req, res) => {
 
     res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
-    console.error("AI Error:", error);
+    console.error("[AI] Tech Sheet Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -215,10 +224,11 @@ app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
+    console.log(`[AI] Extract recipe from file: ${file.originalname} (${file.mimetype})`);
     const ai = getGenAI();
     
     const result = await withRetry(() => ai.models.generateContent({
-      model: "gemini-3.8-flash",
+      model: DEFAULT_MODEL,
       contents: [
         {
           inlineData: {
@@ -227,24 +237,28 @@ app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res) => {
           },
         },
         {
-          text: `Extract the recipe name and ingredients from this image or document. 
-          The context is the Argentine high-end food industry (INDUSTRIA ALIMENTARIA ARGENTINA - HELADOS Y PASTELERÍA).
+          text: `Extrae el nombre de la receta y la lista de ingredientes de esta imagen o documento. 
+          CONTEXTO: Industria alimentaria de alta gama en Argentina (Gianduia - Helados, Pastelería, Chocolatería).
           
-          Return a JSON object with the following structure:
+          ESTRUCTURA DE RETORNO (JSON):
           {
-            "name": "Recipe Name",
+            "name": "Nombre de la Receta",
             "ingredients": [
-              { "name": "Ingredient Name", "amount": 100, "unit": "g" }
+              { "name": "Nombre del Ingrediente", "amount": 100, "unit": "g" }
             ]
           }
           
-          CRITICAL INSTRUCTIONS:
-          1. Convert all amounts to GRAMS (g). 
-          2. Use standard names for ingredients common in Gianduia (e.g., "Sacarosa" -> "Azúcar Blanco", "Crema 36%" -> "Crema de Leche").
-          3. If the document uses percentages (%), assume a 1000g total if no total is specified.
-          4. Be very precise with technical terms like stabilizers (neutros), pastes (pastas de frutos secos), and variegatos.
-          5. If an ingredient has a brand mentioned (e.g. "Pasta Pistacho Elit"), include the brand in the name.
-          6. Ensure the ingredient name is clean and technical.`,
+          REGLAS CRÍTICAS DE EXTRACCIÓN:
+          1. CONVERSIÓN A GRAMOS: Si el documento usa kg, ml, l, cc o %, convertí todo a GRAMOS (g). 
+             - Si usa %, asumí un total de 1000g (1kg) si no se especifica el peso total.
+          2. NOMENCLATURA TÉCNICA GIANDUIA:
+             - "Sacarosa" -> "Azúcar Blanco"
+             - "Crema 36%" -> "Crema de Leche"
+             - "Neutro" -> Identificá si es "Neutro para Helado", "Neutro para Sorbete", etc.
+             - "Pasta" -> Respetá el nombre completo (ej: "Pasta de Pistacho Elit", "Pasta Avellana").
+          3. MARCAS: Si el ingrediente menciona una marca (ej: Elit, Arcor, Ledevit), incluila en el nombre.
+          4. PRECISIÓN: Sé extremadamente preciso con los números. Si hay tachaduras o correcciones a mano, priorizá la corrección manual.
+          5. IDIOMA: Extrae los nombres tal como aparecen, pero normalizá las unidades a "g".`,
         },
       ],
       config: {
@@ -254,18 +268,18 @@ app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res) => {
 
     res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
-    console.error("AI Error:", error);
+    console.error("[AI] Extract Recipe Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
 app.post("/api/ai/analyze-trials", async (req, res) => {
-  console.log("POST /api/ai/analyze-trials received");
+  console.log("[AI] POST /api/ai/analyze-trials received");
   try {
     const { productName, area, trials } = req.body;
     
     if (!trials || !Array.isArray(trials)) {
-      console.error("Invalid trials data received:", trials);
+      console.error("[AI] Invalid trials data received:", trials);
       return res.status(400).json({ error: "Invalid trials data" });
     }
 
@@ -293,8 +307,8 @@ app.post("/api/ai/analyze-trials", async (req, res) => {
     4. "progressPercentage": Número entre 0 y 100 que indique qué tan cerca está el producto de ser finalizado.`;
 
     const result = await withRetry(() => ai.models.generateContent({
-      model: "gemini-3.8-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      model: DEFAULT_MODEL,
+      contents: prompt,
       config: {
         responseMimeType: "application/json",
       }
@@ -304,7 +318,7 @@ app.post("/api/ai/analyze-trials", async (req, res) => {
     try {
       res.json(JSON.parse(text));
     } catch (e) {
-      console.error("Gemini JSON Parse Error. Raw text:", text);
+      console.error("[AI] Gemini JSON Parse Error. Raw text:", text);
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         res.json(JSON.parse(jsonMatch[0]));
@@ -313,33 +327,64 @@ app.post("/api/ai/analyze-trials", async (req, res) => {
       }
     }
   } catch (error: any) {
-    console.error("AI Error (Analyze Trials):", error);
+    console.error("[AI] Analyze Trials Error:", error);
     res.status(500).json({ error: error.message });
   }
+});
+
+// Debug catch-all for /api
+app.all("/api/*", (req, res) => {
+  console.log(`[SERVER] 404 on API route: ${req.method} ${req.path}`);
+  res.status(404).json({ 
+    error: "API Route not found",
+    method: req.method,
+    path: req.path
+  });
 });
 
 // Vite middleware setup
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
+    console.log("[SERVER] Starting in development mode with Vite...");
+    try {
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+    } catch (e) {
+      console.error("[SERVER] Failed to load Vite:", e);
+    }
+    
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
     });
-    app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
+    // In production (non-Vercel), serve static files
+    if (!process.env.VERCEL) {
+      console.log("[SERVER] Starting in production mode (standalone)...");
+      const distPath = path.join(process.cwd(), 'dist');
+      app.use(express.static(distPath));
+      app.get('*', (req, res) => {
+        if (req.path.startsWith('/api/')) return; // Let API routes handle it
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+      app.listen(PORT, "0.0.0.0", () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+      });
+    } else {
+      console.log("[SERVER] Running as Vercel Function");
+    }
+  }
 }
 
-if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+// Only call startServer if not imported (running as main process)
+// Or if we are in dev mode
+if (process.env.NODE_ENV !== "production") {
+  startServer();
+} else if (!process.env.VERCEL) {
   startServer();
 }
 

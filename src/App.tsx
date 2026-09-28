@@ -6303,14 +6303,14 @@ export default function App() {
                                         return (
                                           <div
                                             key={i}
-                                            className="octagon w-48 h-48 flex flex-col items-center justify-center text-center p-6 shadow-2xl"
+                                            className="octagon w-52 h-52 flex flex-col items-center justify-center text-center p-8 shadow-2xl"
                                           >
-                                            <span className="text-[18px] font-black leading-none mb-2 opacity-95">EXCESO EN</span>
-                                            <span className="text-3xl font-[900] leading-tight tracking-tighter px-2">
+                                            <span className="text-[20px] font-black leading-none mb-3 opacity-90 tracking-tighter">EXCESO EN</span>
+                                            <span className="text-4xl font-[1000] leading-[0.85] tracking-[-0.07em] px-1 break-words">
                                               {parts[1] || parts[0]}
                                             </span>
-                                            <div className="mt-4 text-[10px] font-bold opacity-50 uppercase tracking-tighter">
-                                              Ministerio de Salud
+                                            <div className="mt-5 text-[11px] font-extrabold opacity-60 uppercase tracking-tight border-t border-white/20 pt-2 w-full max-w-[100px]">
+                                              Min. Salud
                                             </div>
                                           </div>
                                         );
