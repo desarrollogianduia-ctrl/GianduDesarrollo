@@ -56,10 +56,11 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, initialDelay = 50
         error.message?.includes("503") || 
         error.message?.includes("high demand") || 
         error.status === 503 ||
-        error.code === 503;
+        error.code === 503 ||
+        error.message?.includes("overloaded");
 
       if (i < retries - 1 && isRetryable) {
-        console.log(`[AI] Error (503), retrying in ${delay}ms... (Attempt ${i + 1}/${retries})`);
+        console.log(`[AI] Error (retryable), retrying in ${delay}ms... (Attempt ${i + 1}/${retries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
         delay *= 2; 
         continue;
@@ -70,13 +71,15 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, initialDelay = 50
   throw new Error("Maximum retries reached");
 }
 
-// Model alias - use gemini-3.8-flash for all text tasks
-const DEFAULT_MODEL = "gemini-3.8-flash";
+// Model alias - use gemini-flash-latest for stability
+const DEFAULT_MODEL = "gemini-flash-latest";
 
 // AI Endpoints
-app.post("/api/ai/nutritional-info", async (req, res) => {
+app.post("/api/ai/nutritional-info", async (req, res, next) => {
   try {
     const { ingredientName } = req.body;
+    if (!ingredientName) return res.status(400).json({ error: "Ingredient name is required" });
+    
     console.log(`[AI] Nutritional info search: ${ingredientName}`);
     const ai = getGenAI();
     
@@ -113,11 +116,11 @@ app.post("/api/ai/nutritional-info", async (req, res) => {
     res.json(JSON.parse(text));
   } catch (error: any) {
     console.error("[AI] Nutritional Info Error:", error);
-    res.status(500).json({ error: error.message || "Error interno del servidor en AI" });
+    next(error);
   }
 });
 
-app.post("/api/ai/chat", async (req, res) => {
+app.post("/api/ai/chat", async (req, res, next) => {
   try {
     const { message, history, systemPrompt } = req.body;
     console.log("[AI] Chat request received");
@@ -128,7 +131,7 @@ app.post("/api/ai/chat", async (req, res) => {
       config: {
         systemInstruction: systemPrompt
       },
-      history: history.map((h: any) => ({
+      history: (history || []).slice(-10).map((h: any) => ({
         role: h.role === "user" ? "user" : "model",
         parts: [{ text: h.parts[0].text }]
       }))
@@ -138,20 +141,23 @@ app.post("/api/ai/chat", async (req, res) => {
     res.json({ text: result.text });
   } catch (error: any) {
     console.error("[AI] Chat Error:", error);
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 });
 
-app.post("/api/ai/extract-insights", async (req, res) => {
+app.post("/api/ai/extract-insights", async (req, res, next) => {
   try {
     const { conversation } = req.body;
     console.log("[AI] Extract insights request");
     const ai = getGenAI();
     
+    // Limit conversation length to avoid token limits or memory issues
+    const safeConv = (conversation || "").slice(-5000);
+    
     const prompt = `Analiza la siguiente conversación técnica de I+D en alimentos y extrae los puntos clave (insights).
     
     CONVERSACIÓN:
-    ${conversation}
+    ${safeConv}
     
     INSTRUCCIONES:
     1. Identifica el tema principal para el título.
@@ -175,11 +181,11 @@ app.post("/api/ai/extract-insights", async (req, res) => {
     res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
     console.error("[AI] Extract Insights Error:", error);
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 });
 
-app.post("/api/ai/tech-sheet", async (req, res) => {
+app.post("/api/ai/tech-sheet", async (req, res, next) => {
   try {
     const { ingredientName } = req.body;
     console.log(`[AI] Tech sheet request for: ${ingredientName}`);
@@ -213,11 +219,11 @@ app.post("/api/ai/tech-sheet", async (req, res) => {
     res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
     console.error("[AI] Tech Sheet Error:", error);
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 });
 
-app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res) => {
+app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res, next) => {
   try {
     const file = req.file;
     if (!file) {
@@ -269,11 +275,11 @@ app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res) => {
     res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
     console.error("[AI] Extract Recipe Error:", error);
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 });
 
-app.post("/api/ai/analyze-trials", async (req, res) => {
+app.post("/api/ai/analyze-trials", async (req, res, next) => {
   console.log("[AI] POST /api/ai/analyze-trials received");
   try {
     const { productName, area, trials } = req.body;
@@ -285,12 +291,15 @@ app.post("/api/ai/analyze-trials", async (req, res) => {
 
     const ai = getGenAI();
     
+    // Limit to last 15 trials to keep context small and fast
+    const recentTrials = trials.slice(-15);
+    
     const prompt = `Actúa como un Ingeniero Senior de Desarrollo y Control de Calidad Alimentaria especializado en Gianduia (industria pastelera y helados de alta gama).
     
     Analiza la evolución de las pruebas para el desarrollo del producto "${productName}" en el área "${area}".
     
     Historial de pruebas (orden cronológico):
-    ${trials.map((t: any) => `
+    ${recentTrials.map((t: any) => `
     - Versión ${t.trialLetter || '?'}:
       * Notas: "${t.notes || 'N/A'}"
       * Sensorial (Temp/Text/Sab/Dur/Dec): ${t.sensoryAnalysis?.temperature || '-'}/${t.sensoryAnalysis?.texture || '-'}/${t.sensoryAnalysis?.flavor || '-'}/${t.sensoryAnalysis?.hardness || '-'}/${t.sensoryAnalysis?.decoration || '-'}
@@ -328,7 +337,7 @@ app.post("/api/ai/analyze-trials", async (req, res) => {
     }
   } catch (error: any) {
     console.error("[AI] Analyze Trials Error:", error);
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 });
 
@@ -339,6 +348,16 @@ app.all("/api/*", (req, res) => {
     error: "API Route not found",
     method: req.method,
     path: req.path
+  });
+});
+
+// Global Error Handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("[SERVER] Fatal Error:", err);
+  res.status(500).json({ 
+    error: "AI_SERVER_ERROR", 
+    message: err.message,
+    status: err.status || 500
   });
 });
 
