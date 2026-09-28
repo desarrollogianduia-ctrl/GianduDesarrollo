@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 const PORT = 3000;
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -42,19 +42,45 @@ function getGenAI() {
 
 app.use(express.json({ limit: '10mb' }));
 
+// AI Helper with retry logic
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, initialDelay = 1000): Promise<T> {
+  let delay = initialDelay;
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      const isRetryable = 
+        error.message?.includes("503") || 
+        error.message?.includes("high demand") || 
+        error.status === 503 ||
+        error.code === 503;
+
+      if (i < retries - 1 && isRetryable) {
+        console.log(`AI Error (503), retrying in ${delay}ms... (Attempt ${i + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2; // Exponential backoff
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error("Maximum retries reached");
+}
+
 // AI Endpoints
 app.post("/api/ai/nutritional-info", async (req, res) => {
   try {
     const { ingredientName } = req.body;
+    console.log(`[AI] Searching nutritional info for: ${ingredientName}`);
     const ai = getGenAI();
     
     const prompt = `Find the nutritional information EXCLUSIVELY per 100g (or 100ml for liquids) for "${ingredientName}". 
-    The item should be common in the Argentine food market if possible.
+    The item should be common in the Argentine food market (Ley 27.642 context).
     
     CRITICAL: 
     1. All values MUST be per 100g/ml of product.
-    2. You MUST look for at least 3 different sources (e.g., brand labels, official food databases, reliable nutrition sites) to verify the accuracy of the data. 
-    Compare the values and use the most reliable or an average if they are consistent.
+    2. You MUST look for at least 3 different sources (e.g., SADI, ARCOR, official food databases, or reliable nutrition sites) to verify the accuracy of the data. 
+    3. Return a valid JSON.
     
     Return a JSON object with:
     - energy (kcal)
@@ -66,21 +92,22 @@ app.post("/api/ai/nutritional-info", async (req, res) => {
     - transFats (g)
     - fiber (g)
     - sodium (mg)
-    - sourcesUsed: A concise string listing the specific websites, databases, or brands you consulted (e.g. "SANCOR, Arcor, FoodData Central").
-    - confidenceNote: A brief explanation of how the data was verified (e.g., "Verified across 3 manufacturing labels with <5% variance").`;
+    - sourcesUsed: string
+    - confidenceNote: string`;
 
-    const result = await ai.models.generateContent({
-      model: "gemini-flash-latest",
-      contents: prompt,
+    const result = await withRetry(() => ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: {
         responseMimeType: "application/json",
       }
-    });
+    })) as any;
 
-    res.json(JSON.parse(result.text || "{}"));
+    const text = result.text || "{}";
+    res.json(JSON.parse(text));
   } catch (error: any) {
-    console.error("AI Error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("Nutritional Info AI Error:", error);
+    res.status(500).json({ error: error.message || "Error interno del servidor en AI" });
   }
 });
 
@@ -90,7 +117,7 @@ app.post("/api/ai/chat", async (req, res) => {
     const ai = getGenAI();
     
     const chat = ai.chats.create({
-      model: "gemini-flash-latest",
+      model: "gemini-3.8-flash",
       config: {
         systemInstruction: systemPrompt
       },
@@ -100,7 +127,7 @@ app.post("/api/ai/chat", async (req, res) => {
       }))
     });
 
-    const result = await chat.sendMessage(message);
+    const result = await withRetry(() => chat.sendMessage(message)) as any;
     res.json({ text: result.text });
   } catch (error: any) {
     console.error("AI Error:", error);
@@ -129,13 +156,13 @@ app.post("/api/ai/extract-insights", async (req, res) => {
       "insights": ["Frase técnica 1", "Frase técnica 2"]
     }`;
 
-    const result = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+    const result = await withRetry(() => ai.models.generateContent({
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
       }
-    });
+    })) as any;
 
     res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
@@ -166,13 +193,13 @@ app.post("/api/ai/tech-sheet", async (req, res) => {
       "technicalCharacteristics": "Contenido detallado en formato Markdown..."
     }`;
 
-    const result = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+    const result = await withRetry(() => ai.models.generateContent({
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
       }
-    });
+    })) as any;
 
     res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
@@ -190,8 +217,8 @@ app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res) => {
 
     const ai = getGenAI();
     
-    const result = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+    const result = await withRetry(() => ai.models.generateContent({
+      model: "gemini-3.8-flash",
       contents: [
         {
           inlineData: {
@@ -201,7 +228,7 @@ app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res) => {
         },
         {
           text: `Extract the recipe name and ingredients from this image or document. 
-          The context is the Argentine food industry (INDUSTRIA ALIMENTARIA ARGENTINA).
+          The context is the Argentine high-end food industry (INDUSTRIA ALIMENTARIA ARGENTINA - HELADOS Y PASTELERÍA).
           
           Return a JSON object with the following structure:
           {
@@ -213,16 +240,17 @@ app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res) => {
           
           CRITICAL INSTRUCTIONS:
           1. Convert all amounts to GRAMS (g). 
-          2. If a unit is "kg", multiply by 1000. 
-          3. If a unit is "lt" or "ml" for liquids like milk/water, assume 1ml = 1g if density is unknown.
-          4. If the amount is a percentage (%), calculate the amount based on a standard 100kg batch if no total weight is specified, or specify the amount if a total weight is visible.
-          5. Use standard names for ingredients (e.g., "Sacarosa" -> "Azúcar Blanco").`,
+          2. Use standard names for ingredients common in Gianduia (e.g., "Sacarosa" -> "Azúcar Blanco", "Crema 36%" -> "Crema de Leche").
+          3. If the document uses percentages (%), assume a 1000g total if no total is specified.
+          4. Be very precise with technical terms like stabilizers (neutros), pastes (pastas de frutos secos), and variegatos.
+          5. If an ingredient has a brand mentioned (e.g. "Pasta Pistacho Elit"), include the brand in the name.
+          6. Ensure the ingredient name is clean and technical.`,
         },
       ],
       config: {
         responseMimeType: "application/json",
       }
-    });
+    })) as any;
 
     res.json(JSON.parse(result.text || "{}"));
   } catch (error: any) {
@@ -243,37 +271,34 @@ app.post("/api/ai/analyze-trials", async (req, res) => {
 
     const ai = getGenAI();
     
-    const prompt = `Actúa como un Ingeniero de Desarrollo y Control de Calidad Alimentaria especializado en la industria pastelera y de helados (I+D helados, pastelería, chocolatería, vitrina, paletas).
+    const prompt = `Actúa como un Ingeniero Senior de Desarrollo y Control de Calidad Alimentaria especializado en Gianduia (industria pastelera y helados de alta gama).
     
-    Queremos analizar la evolución de las pruebas para el desarrollo del producto "${productName}" en el área "${area}".
+    Analiza la evolución de las pruebas para el desarrollo del producto "${productName}" en el área "${area}".
     
-    Aquí tienes el historial de pruebas realizadas en orden cronológico:
+    Historial de pruebas (orden cronológico):
     ${trials.map((t: any) => `
-    - Prueba ${t.trialLetter || '?'}:
-      * Notas/Observaciones: "${t.notes || 'Ninguna'}"
-      * Análisis Sensorial:
-        - Temperatura: "${t.sensoryAnalysis?.temperature || 'N/A'}"
-        - Textura: "${t.sensoryAnalysis?.texture || 'N/A'}"
-        - Sabor: "${t.sensoryAnalysis?.flavor || 'N/A'}"
-        - Dureza: "${t.sensoryAnalysis?.hardness || 'N/A'}"
-        - Decoración: "${t.sensoryAnalysis?.decoration || 'N/A'}"
+    - Versión ${t.trialLetter || '?'}:
+      * Notas: "${t.notes || 'N/A'}"
+      * Sensorial (Temp/Text/Sab/Dur/Dec): ${t.sensoryAnalysis?.temperature || '-'}/${t.sensoryAnalysis?.texture || '-'}/${t.sensoryAnalysis?.flavor || '-'}/${t.sensoryAnalysis?.hardness || '-'}/${t.sensoryAnalysis?.decoration || '-'}
+      * Fecha Ejecución: ${t.trialExecutionDate || 'N/A'}
     `).join('\n')}
     
-    Analiza minuciosamente estas pruebas y genera un reporte técnico profesional de I+D en ESPAÑOL.
+    PROPORCIONA UN ANÁLISIS TÉCNICO PROFESIONAL EN ESPAÑOL.
+    Enfócate en parámetros físicos (textura, estabilidad), químicos (dulzor, grasas) y sensoriales.
     
-    Retorna un objeto JSON con los siguientes campos:
-    1. "summary" (string): Un resumen técnico claro y conciso.
-    2. "whatWentWrong" (string): Qué fue mal o qué detalles se deben corregir.
-    3. "keyPointsForNextTrial" (string): Puntos clave para la siguiente prueba.
-    4. "progressPercentage" (number): Grado de avance (0-100).`;
+    Retorna un JSON estricto con:
+    1. "summary": Resumen de la evolución técnica.
+    2. "whatWentWrong": Puntos críticos fallidos o áreas de mejora detectadas.
+    3. "keyPointsForNextTrial": Recomendaciones precisas para la próxima iteración.
+    4. "progressPercentage": Número entre 0 y 100 que indique qué tan cerca está el producto de ser finalizado.`;
 
-    const result = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+    const result = await withRetry(() => ai.models.generateContent({
+      model: "gemini-3.8-flash",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: {
         responseMimeType: "application/json",
       }
-    });
+    })) as any;
 
     const text = result.text || "{}";
     try {
@@ -314,4 +339,8 @@ async function startServer() {
   });
 }
 
-startServer();
+if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+  startServer();
+}
+
+export default app;

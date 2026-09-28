@@ -286,6 +286,220 @@ function ErrorBoundary({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+const IngredientRow = ({
+  ing,
+  isMergeMode,
+  mergeTargetId,
+  mergeSourceIds,
+  setMergeTargetId,
+  setMergeSourceIds,
+  setResolvingIngredient,
+  handleWebSync,
+  isSearchingWeb,
+  handleDeleteIngredient,
+}: any) => {
+  return (
+    <tr
+      key={ing.id}
+      className={`hover:bg-white/5 transition-all group ${mergeTargetId === ing.id ? "bg-emerald-500/5" : mergeSourceIds.includes(ing.id) ? "bg-red-500/5" : ""}`}
+    >
+      {isMergeMode && (
+        <td className="pl-6 py-4">
+          <div className="flex flex-col gap-1.5">
+            <button
+              onClick={() => {
+                if (mergeTargetId === ing.id) {
+                  setMergeTargetId(null);
+                } else {
+                  setMergeTargetId(ing.id);
+                  setMergeSourceIds((prev: string[]) =>
+                    prev.filter((id) => id !== ing.id),
+                  );
+                }
+              }}
+              className={`text-[9px] uppercase font-bold p-1 rounded border text-center transition-all ${mergeTargetId === ing.id ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white/5 border-white/10 text-white/40 hover:text-white"}`}
+            >
+              {mergeTargetId === ing.id ? "MAESTRO" : "Fijar Maestro"}
+            </button>
+            {mergeTargetId !== ing.id && (
+              <button
+                onClick={() => {
+                  setMergeSourceIds((prev: string[]) =>
+                    prev.includes(ing.id)
+                      ? prev.filter((id) => id !== ing.id)
+                      : [...prev, ing.id],
+                  );
+                }}
+                className={`text-[9px] uppercase font-bold p-1 rounded border text-center transition-all ${mergeSourceIds.includes(ing.id) ? "bg-red-500 border-red-500 text-white" : "bg-white/5 border-white/10 text-white/40 hover:text-white"}`}
+              >
+                {mergeSourceIds.includes(ing.id) ? "DUPLICADO" : "Es Duplicado"}
+              </button>
+            )}
+          </div>
+        </td>
+      )}
+      <td className="pl-8 py-6">
+        <div className="flex items-center gap-4">
+          {ing.isRecipe && (
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
+              <Layers size={18} />
+            </div>
+          )}
+          <div className="flex flex-col min-w-0">
+            <div className="font-bold text-lg text-white/90 tracking-tight truncate group-hover:text-[var(--accent)] transition-colors">
+              {ing.name}
+            </div>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-white/30 mt-1 font-black">
+              {ing.brand || "INSUMO BASE"}
+            </div>
+          </div>
+        </div>
+      </td>
+      <td className="px-4 text-center">
+        <div
+          onClick={() => {
+            setResolvingIngredient({
+              index: -1,
+              name: ing.name,
+              isSearching: false,
+              data: ing,
+            });
+          }}
+          className="flex flex-col items-center gap-2 cursor-pointer hover:scale-105 transition-all"
+        >
+          <span
+            className={`px-3 py-1 rounded-lg text-[9px] uppercase font-black tracking-widest border ${ing.category === "generico" ? "bg-rose-500/10 border-rose-500/20 text-rose-400" : "bg-purple-500/10 border-purple-500/20 text-purple-400"}`}
+          >
+            {ing.category}
+          </span>
+          {ing.functionalGroup && (
+            <span
+              className={`px-3 py-1 rounded-lg text-[9px] uppercase font-black tracking-widest border whitespace-nowrap ${
+                ing.functionalGroup === "lacteos"
+                  ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                  : ing.functionalGroup === "azucares"
+                    ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                    : ing.functionalGroup === "aceites"
+                      ? "bg-cyan-500/10 border-cyan-500/20 text-cyan-400"
+                      : ing.functionalGroup === "frutos_secos"
+                        ? "bg-orange-500/10 border-orange-500/20 text-orange-400"
+                        : ing.functionalGroup === "chocolates"
+                          ? "bg-orange-900/20 border-orange-900/20 text-orange-900"
+                          : ing.functionalGroup === "neutros"
+                            ? "bg-purple-500/10 border-purple-500/20 text-purple-400"
+                            : ing.functionalGroup === "pastas"
+                              ? "bg-yellow-600/10 border-yellow-600/20 text-yellow-600"
+                              : ing.functionalGroup === "frutas"
+                                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                : ing.functionalGroup === "aditivos"
+                                  ? "bg-indigo-500/10 border-indigo-500/20 text-indigo-400"
+                                  : "bg-white/5 border-white/10 text-white/40"
+              }`}
+            >
+              {ing.functionalGroup.replace("_", " ")}
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="text-center font-mono text-xl font-black text-white/80 tracking-tighter">
+        {Math.round(ing.energy)}
+      </td>
+      <td className="text-center font-mono text-base font-bold text-white/40">
+        {typeof ing.proteins === "number" ? ing.proteins.toFixed(1) : ing.proteins}g
+      </td>
+      <td className="text-center font-mono text-base font-bold text-white/40">
+        {typeof ing.totalFats === "number" ? ing.totalFats.toFixed(1) : ing.totalFats}g
+      </td>
+      <td className="text-center font-mono text-base font-bold text-white/40">
+        {typeof ing.sugars === "number" ? ing.sugars.toFixed(1) : ing.sugars}g
+      </td>
+      <td className="text-left">
+        <div className="flex flex-col gap-1">
+          {ing.isTrialOnly ? (
+            <div className="space-y-0.5">
+              <div className="text-[10px] text-amber-500 font-bold uppercase tracking-widest">
+                INFO PRUEBA
+              </div>
+              <div className="text-[9px] text-white/60 font-mono">
+                LOTE: {ing.trialBatch || "-"}
+              </div>
+              <div className="text-[9px] text-white/60 font-mono">
+                VTO: {ing.trialExpiration || "-"}
+              </div>
+              <div className="text-[9px] text-white/60 font-mono">
+                CANT: {ing.trialQuantity || "-"}
+              </div>
+            </div>
+          ) : (
+            <span className="text-[10px] font-mono text-white/60">
+              {ing.rnpa || "Sin RNPA"}
+            </span>
+          )}
+          <div className="flex gap-2 mt-1.5">
+            {ing.technicalSheetUrl && (
+              <a
+                href={ing.technicalSheetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500 hover:text-white transition-all shadow-lg shadow-rose-500/5"
+                title="Ver Ficha Técnica"
+              >
+                <FileText size={12} />
+              </a>
+            )}
+            {ing.certificateUrl && (
+              <a
+                href={ing.certificateUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-lg shadow-emerald-500/5"
+                title="Ver Certificado"
+              >
+                <Scale size={12} />
+              </a>
+            )}
+          </div>
+        </div>
+      </td>
+      <td className="text-center pr-8">
+        <div className="flex items-center justify-center gap-2">
+          {!ing.isRecipe && (
+            <button
+              onClick={() => handleWebSync(ing.id, ing.name)}
+              disabled={isSearchingWeb === ing.id}
+              className={`p-2.5 rounded-xl transition-all shadow-lg ${isSearchingWeb === ing.id ? "bg-amber-500/20 text-amber-500 animate-pulse" : "bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-white shadow-amber-500/5"}`}
+              title="Sincronizar con IA"
+            >
+              <RefreshCw size={14} className={isSearchingWeb === ing.id ? "animate-spin" : ""} />
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setResolvingIngredient({
+                index: -1,
+                name: ing.name,
+                isSearching: false,
+                data: ing,
+              });
+            }}
+            className="p-2.5 text-white/20 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+            title="Editar Insumo"
+          >
+            <Edit3 size={16} />
+          </button>
+          <button
+            onClick={() => handleDeleteIngredient(ing.id)}
+            className="p-2.5 text-white/10 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+            title="Eliminar Insumo"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+};
+
 export default function App() {
   console.log("App component rendering start...");
   useEffect(() => {
@@ -709,6 +923,31 @@ export default function App() {
   const excelInputRef = useRef<HTMLInputElement>(null);
 
   const filteredIngredients = useMemo(() => {
+    if (ingCategory === "semielaborados") {
+      const searchLower = ingSearch.toLowerCase();
+      return recipes
+        .filter((r) => r.type === "semielaborado")
+        .filter((r) => r.name.toLowerCase().includes(searchLower))
+        .map((r) => {
+          const nut = calculateNutrition(r, ingredients, recipes);
+          return {
+            id: r.id,
+            name: r.name,
+            brand: "PRODUCCIÓN PROPIA",
+            category: "especifico",
+            functionalGroup: "semielaborados",
+            energy: nut.adjustedNutrients.energy * (100 / (r.finalYield || 1)),
+            proteins:
+              nut.adjustedNutrients.proteins * (100 / (r.finalYield || 1)),
+            totalFats:
+              nut.adjustedNutrients.totalFats * (100 / (r.finalYield || 1)),
+            sugars: nut.adjustedNutrients.sugars * (100 / (r.finalYield || 1)),
+            rnpa: "RE-GI-SE-" + r.id.substring(r.id.length - 4).toUpperCase(),
+            isRecipe: true,
+          } as any;
+        });
+    }
+
     return ingredients
       .filter((i) => {
         const searchLower = ingSearch.toLowerCase();
@@ -737,6 +976,10 @@ export default function App() {
             "frutas",
             "pastas",
             "otros",
+            "aceites",
+            "frutos_secos",
+            "aditivos",
+            "miscelaneos",
           ].includes(ingCategory)
         ) {
           return matchesSearch && i.functionalGroup === ingCategory;
@@ -745,7 +988,27 @@ export default function App() {
         return matchesSearch;
       })
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [ingredients, ingSearch, ingCategory]);
+  }, [ingredients, recipes, ingSearch, ingCategory]);
+
+  const groupedFilteredIngredients = useMemo(() => {
+    // If we are already filtering by a specific category (including semielaborados), don't group further
+    if (ingCategory !== "all" || ingSearch) return null;
+
+    const groups: Record<string, any[]> = {};
+    filteredIngredients.forEach((ing) => {
+      // If it's a recipe (semielaborado), put it in a special group
+      const group = ing.isRecipe ? "PRODUCTOS SEMIELABORADOS (PRODUCCIÓN PROPIA)" : (ing.functionalGroup || "OTROS INSUMOS");
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(ing);
+    });
+
+    // Sort groups: Semielaborados first, then alphabetical
+    return Object.entries(groups).sort((a, b) => {
+      if (a[0].includes("SEMIELABORADOS")) return -1;
+      if (b[0].includes("SEMIELABORADOS")) return 1;
+      return a[0].localeCompare(b[0]);
+    });
+  }, [filteredIngredients, ingCategory, ingSearch]);
 
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1047,14 +1310,22 @@ export default function App() {
     }
   };
 
-  const handleWebSync = async (ing: Ingredient) => {
-    setIsSearchingWeb(ing.id);
+  const handleWebSync = async (ingOrId: Ingredient | string, optionalName?: string) => {
+    const id = typeof ingOrId === "string" ? ingOrId : ingOrId.id;
+    const name = typeof ingOrId === "string" ? optionalName : ingOrId.name;
+    
+    if (!name) return;
+
+    setIsSearchingWeb(id);
     try {
-      const info = await searchNutritionalInfo(ing.name);
-      const updatedIng = { ...ing, ...info };
+      const info = await searchNutritionalInfo(name);
+      const existingIng = ingredients.find(i => i.id === id);
+      if (!existingIng) throw new Error("Insumo no encontrado en la base de datos");
+
+      const updatedIng = { ...existingIng, ...info };
       await saveIngredient(updatedIng);
       setIngredients((prev) =>
-        prev.map((i) => (i.id === ing.id ? updatedIng : i)),
+        prev.map((i) => (i.id === id ? updatedIng : i)),
       );
     } catch (error) {
       alert(
@@ -1072,7 +1343,7 @@ export default function App() {
     setTimeout(() => setCopiedLabel(false), 2000);
   };
 
-  const handleIngredientWebSearch = async () => {
+  const handleIngredientWebSearch = async (forceGeneric = false) => {
     if (!resolvingIngredient?.data?.name) {
       alert("Por favor, ingresa un nombre para buscar.");
       return;
@@ -1082,9 +1353,8 @@ export default function App() {
       prev ? { ...prev, isSearching: true } : null,
     );
     try {
-      const result = await searchNutritionalInfo(
-        resolvingIngredient.data.name,
-      );
+      const searchName = forceGeneric ? `${resolvingIngredient.data.name} genérico` : resolvingIngredient.data.name;
+      const result = await searchNutritionalInfo(searchName);
       setResolvingIngredient((prev) => {
         if (!prev) return null;
         return {
@@ -1092,20 +1362,20 @@ export default function App() {
           isSearching: false,
           data: {
             ...prev.data,
-            energy: result.energy || prev.data.energy || 0,
-            energyKJ: result.energy ? Math.round(result.energy * 4.184) : (prev.data.energyKJ || 0),
-            carbs: result.carbs || prev.data.carbs || 0,
-            sugars: result.sugars || prev.data.sugars || 0,
-            totalSugars: result.sugars || prev.data.totalSugars || 0,
-            proteins: result.proteins || prev.data.proteins || 0,
-            totalFats: result.totalFats || prev.data.totalFats || 0,
-            saturatedFats:
-              result.saturatedFats || prev.data.saturatedFats || 0,
-            transFats: result.transFats || prev.data.transFats || 0,
-            fiber: result.fiber || prev.data.fiber || 0,
-            sodium: result.sodium || prev.data.sodium || 0,
-            source: result.sourcesUsed,
-            confidenceNote: result.confidenceNote,
+            energy: Number(result.energy) || prev.data.energy || 0,
+            energyKJ: result.energy ? Math.round(Number(result.energy) * 4.184) : (Number(prev.data.energyKJ) || 0),
+            carbs: Number(result.carbs) || prev.data.carbs || 0,
+            sugars: Number(result.sugars) || prev.data.sugars || 0,
+            totalSugars: Number(result.totalSugars) || Number(result.sugars) || prev.data.totalSugars || 0,
+            addedSugars: Number(result.addedSugars) || prev.data.addedSugars || 0,
+            proteins: Number(result.proteins) || prev.data.proteins || 0,
+            totalFats: Number(result.totalFats) || prev.data.totalFats || 0,
+            saturatedFats: Number(result.saturatedFats) || prev.data.saturatedFats || 0,
+            transFats: Number(result.transFats) || prev.data.transFats || 0,
+            fiber: Number(result.fiber) || prev.data.fiber || 0,
+            sodium: Number(result.sodium) || prev.data.sodium || 0,
+            source: result.sourcesUsed || "",
+            confidenceNote: result.confidenceNote || "",
           },
         };
       });
@@ -1270,16 +1540,20 @@ export default function App() {
         data: {
           name,
           category: "especifico",
-          energy: searchResult.energy,
-          carbs: searchResult.carbs,
-          sugars: searchResult.sugars,
-          proteins: searchResult.proteins,
-          totalFats: searchResult.totalFats,
-          saturatedFats: searchResult.saturatedFats,
-          transFats: searchResult.transFats,
-          fiber: searchResult.fiber,
-          sodium: searchResult.sodium,
-          source: searchResult.sourcesUsed,
+          energy: Number(searchResult.energy) || 0,
+          energyKJ: searchResult.energy ? Math.round(Number(searchResult.energy) * 4.184) : 0,
+          carbs: Number(searchResult.carbs) || 0,
+          sugars: Number(searchResult.sugars) || 0,
+          totalSugars: Number(searchResult.totalSugars) || Number(searchResult.sugars) || 0,
+          addedSugars: Number(searchResult.addedSugars) || 0,
+          proteins: Number(searchResult.proteins) || 0,
+          totalFats: Number(searchResult.totalFats) || 0,
+          saturatedFats: Number(searchResult.saturatedFats) || 0,
+          transFats: Number(searchResult.transFats) || 0,
+          fiber: Number(searchResult.fiber) || 0,
+          sodium: Number(searchResult.sodium) || 0,
+          source: searchResult.sourcesUsed || "",
+          confidenceNote: searchResult.confidenceNote || "",
         },
       });
     } catch (error) {
@@ -1382,29 +1656,29 @@ export default function App() {
         category:
           (newIngData.category as "generico" | "especifico") || "especifico",
         functionalGroup: newIngData.functionalGroup || "otros",
-        energy: newIngData.energy || 0,
-        energyKJ: newIngData.energyKJ || 0,
-        carbs: newIngData.carbs || 0,
-        sugars: newIngData.sugars || 0,
-        totalSugars: newIngData.totalSugars || 0,
-        addedSugars: newIngData.addedSugars || 0,
-        proteins: newIngData.proteins || 0,
-        totalFats: newIngData.totalFats || 0,
-        saturatedFats: newIngData.saturatedFats || 0,
-        transFats: newIngData.transFats || 0,
-        fiber: newIngData.fiber || 0,
-        sodium: newIngData.sodium || 0,
+        energy: Number(newIngData.energy) || 0,
+        energyKJ: Number(newIngData.energyKJ) || 0,
+        carbs: Number(newIngData.carbs) || 0,
+        sugars: Number(newIngData.sugars) || 0,
+        totalSugars: Number(newIngData.totalSugars) || 0,
+        addedSugars: Number(newIngData.addedSugars) || 0,
+        proteins: Number(newIngData.proteins) || 0,
+        totalFats: Number(newIngData.totalFats) || 0,
+        saturatedFats: Number(newIngData.saturatedFats) || 0,
+        transFats: Number(newIngData.transFats) || 0,
+        fiber: Number(newIngData.fiber) || 0,
+        sodium: Number(newIngData.sodium) || 0,
         brand: newIngData.brand || "",
         rnpa: newIngData.rnpa || "",
         technicalSheetUrl: newIngData.technicalSheetUrl || "",
         certificateUrl: newIngData.certificateUrl || "",
         source: newIngData.source || "",
         allergens: newIngData.allergens || [],
-        isGlutenFree: newIngData.isGlutenFree || false,
-        isTrialOnly: newIngData.isTrialOnly || false,
-        trialQuantity: newIngData.trialQuantity || "",
-        trialBatch: newIngData.trialBatch || "",
-        trialExpiration: newIngData.trialExpiration || "",
+        isGlutenFree: !!newIngData.isGlutenFree,
+        isTrialOnly: !!newIngData.isTrialOnly,
+        trialQuantity: String(newIngData.trialQuantity || ""),
+        trialBatch: String(newIngData.trialBatch || ""),
+        trialExpiration: String(newIngData.trialExpiration || ""),
       } as Ingredient;
 
       // Save globally
@@ -5446,201 +5720,241 @@ export default function App() {
                                   </span>
                                 </div>
 
-                                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-x-auto custom-scrollbar w-full">
-                                  <table className="w-full text-left border-collapse min-w-[650px]">
-                                    <thead>
-                                      <tr className="bg-white/5 border-b border-[var(--border)]">
-                                        <th className="px-6 py-4 text-[10px] uppercase font-bold text-[var(--text-s)] tracking-widest">
-                                          Ingrediente / Insumo
-                                        </th>
-                                        <th className="px-6 py-4 text-[10px] uppercase font-bold text-[var(--text-s)] tracking-widest text-right">
-                                          Cantidad (g)
-                                        </th>
-                                        <th className="px-6 py-4 text-[10px] uppercase font-bold text-[var(--text-s)] tracking-widest text-right">
-                                          Aporte (%)
-                                        </th>
-                                        <th className="px-4 py-4"></th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-[var(--border)]">
-                                      {selectedRecipe.ingredients.map(
-                                        (ri, idx) => {
-                                          const subRecipe = ri.isRecipe
-                                            ? recipes.find(
-                                                (r) => r.id === ri.ingredientId,
-                                              )
-                                            : null;
-                                          const ingredient = !ri.isRecipe
-                                            ? ingredients.find(
-                                                (i) => i.id === ri.ingredientId,
-                                              )
-                                            : null;
-                                          const percentage =
-                                            recipeTotalWeight > 0
-                                              ? (ri.amount /
-                                                  recipeTotalWeight) *
-                                                100
-                                              : 0;
+                                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl overflow-hidden shadow-2xl">
+                                  <div className="overflow-x-auto custom-scrollbar">
+                                    <table className="w-full text-left border-collapse min-w-[650px]">
+                                      <thead>
+                                        <tr className="bg-white/5 border-b border-white/5">
+                                          <th className="px-8 py-5 text-[10px] uppercase font-bold text-white/30 tracking-[0.2em]">
+                                            Materia Prima / Componente
+                                          </th>
+                                          <th className="px-8 py-5 text-[10px] uppercase font-bold text-white/30 tracking-[0.2em] text-right">
+                                            Peso (g)
+                                          </th>
+                                          <th className="px-8 py-5 text-[10px] uppercase font-bold text-white/30 tracking-[0.2em] text-right">
+                                            Aporte
+                                          </th>
+                                          <th className="px-6 py-5"></th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-white/5">
+                                        {selectedRecipe.ingredients.map(
+                                          (ri, idx) => {
+                                            const subRecipe = ri.isRecipe
+                                              ? recipes.find(
+                                                  (r) => r.id === ri.ingredientId,
+                                                )
+                                              : null;
+                                            const ingredient = !ri.isRecipe
+                                              ? ingredients.find(
+                                                  (i) => i.id === ri.ingredientId,
+                                                )
+                                              : null;
+                                            const percentage =
+                                              recipeTotalWeight > 0
+                                                ? (ri.amount /
+                                                    recipeTotalWeight) *
+                                                  100
+                                                : 0;
 
-                                          return (
-                                            <tr
-                                              key={idx}
-                                              className="hover:bg-white/[0.02] group transition-all"
-                                            >
-                                              <td className="px-6 py-4">
-                                                <div className="flex flex-col">
-                                                  <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-semibold text-white/90 truncate max-w-[250px]">
-                                                      {ri.isRecipe
-                                                        ? subRecipe?.name ||
-                                                          "Sub-Receta No Encontrada"
-                                                        : ingredient?.name ||
-                                                          ri.note ||
-                                                          "Ingrediente No Encontrado"}
-                                                    </span>
-                                                    {!ri.isRecipe &&
-                                                      !ingredient &&
-                                                      ri.note && (
-                                                        <button
-                                                          onClick={() =>
-                                                            handleSearchWeb(
-                                                              idx,
-                                                              ri.note!,
-                                                            )
-                                                          }
-                                                          className="p-1 bg-amber-500/10 text-amber-500 rounded hover:bg-amber-500/20 transition-all flex items-center gap-1.5 px-1.5"
-                                                          title="Vincular con Materia Prima"
-                                                        >
-                                                          <AlertTriangle
-                                                            size={10}
-                                                          />
-                                                          <span className="text-[8px] font-bold uppercase tracking-tighter">
-                                                            Vincular
-                                                          </span>
-                                                        </button>
-                                                      )}
+                                            return (
+                                              <tr
+                                                key={idx}
+                                                className="hover:bg-white/[0.04] group transition-all duration-300 border-b border-white/[0.03]"
+                                              >
+                                                <td className="px-8 py-8">
+                                                  <div className="flex items-center gap-5">
+                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all group-hover:scale-110 ${ri.isRecipe ? "bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-lg shadow-rose-500/5" : "bg-white/5 text-white/40 border border-white/5"}`}>
+                                                      {ri.isRecipe ? <Layers size={22} /> : <Milk size={22} />}
+                                                    </div>
+                                                    <div className="flex flex-col min-w-0">
+                                                      <div className="flex items-center gap-3">
+                                                        <span className="text-lg font-semibold text-white tracking-tight truncate max-w-[350px]">
+                                                          {ri.isRecipe
+                                                            ? subRecipe?.name ||
+                                                              "Sub-Receta No Encontrada"
+                                                            : ingredient?.name ||
+                                                              ri.note ||
+                                                              "Ingrediente No Encontrado"}
+                                                        </span>
+                                                        {!ri.isRecipe &&
+                                                          !ingredient &&
+                                                          ri.note && (
+                                                            <button
+                                                              onClick={() =>
+                                                                handleSearchWeb(
+                                                                  idx,
+                                                                  ri.note!,
+                                                                )
+                                                              }
+                                                              className="group relative flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-r from-amber-500/10 to-amber-600/5 text-amber-500 rounded-xl hover:from-amber-500/20 hover:to-amber-600/10 transition-all border border-amber-500/20 shadow-lg shadow-amber-500/5 active:scale-95 overflow-hidden"
+                                                              title="Vincular con Materia Prima mediante IA"
+                                                            >
+                                                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                                                              <Sparkles
+                                                                size={16}
+                                                                className="relative z-10 group-hover:rotate-12 transition-transform"
+                                                              />
+                                                              <span className="relative z-10 text-[10px] font-black uppercase tracking-[0.1em]">
+                                                                Vincular IA
+                                                              </span>
+                                                            </button>
+                                                          )}
+                                                      </div>
+                                                      <div className="flex items-center gap-3 mt-1.5">
+                                                        <span className={`text-[10px] uppercase font-black tracking-[0.15em] px-2.5 py-1 rounded-lg border ${ri.isRecipe ? "bg-rose-500/10 border-rose-500/20 text-rose-400" : "bg-white/5 border-white/5 text-white/30"}`}>
+                                                          {ri.isRecipe
+                                                            ? "Sub-Fórmula"
+                                                            : (ingredient?.category || "Insumo")}
+                                                        </span>
+                                                        <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest truncate">
+                                                          {ri.isRecipe
+                                                            ? "Lab. Interno"
+                                                            : ingredient?.brand ||
+                                                              (ingredient?.category ===
+                                                              "generico"
+                                                                ? "Genérico"
+                                                                : "S/M")}
+                                                        </span>
+                                                      </div>
+                                                    </div>
                                                   </div>
-                                                  <span className="text-[9px] uppercase tracking-[0.1em] text-[var(--text-s)] opacity-40 italic mt-0.5">
-                                                    {ri.isRecipe
-                                                      ? "Fórmula Base"
-                                                      : ingredient?.brand ||
-                                                        (ingredient?.category ===
-                                                        "generico"
-                                                          ? "Insumo Genérico"
-                                                          : "Marca no especificada")}
-                                                  </span>
-                                                </div>
-                                              </td>
-                                              <td className="px-6 py-4 text-right">
-                                                <div className="inline-flex items-center gap-2 bg-black/20 rounded-lg p-1.5 border border-white/5 group-hover:border-[var(--accent)]/30 transition-all">
-                                                  <input
-                                                    type="number"
-                                                    value={ri.amount}
-                                                    onChange={(e) => {
-                                                      const val =
-                                                        parseFloat(
-                                                          e.target.value,
-                                                        ) || 0;
-                                                      const newIngredients = [
-                                                        ...selectedRecipe.ingredients,
-                                                      ];
-                                                      newIngredients[idx] = {
-                                                        ...ri,
-                                                        amount: val,
-                                                      };
-                                                      const newTotal =
-                                                        newIngredients.reduce(
-                                                          (acc, curr) =>
-                                                            acc + curr.amount,
-                                                          0,
-                                                        );
-                                                      handleUpdateRecipe({
-                                                        ...selectedRecipe,
-                                                        ingredients:
-                                                          newIngredients,
-                                                        totalYield: newTotal,
-                                                        finalYield: newTotal,
-                                                      });
-                                                    }}
-                                                    className="w-20 bg-transparent text-right text-sm font-mono text-[var(--accent)] focus:text-white transition-all outline-none"
-                                                  />
-                                                  <span className="text-[10px] uppercase font-bold text-white/20 mr-1">
-                                                    g
-                                                  </span>
-                                                </div>
-                                              </td>
-                                              <td className="px-6 py-4 text-right">
-                                                <span className="text-xs font-mono font-bold text-white/40">
-                                                  {percentage.toFixed(2)}%
-                                                </span>
-                                              </td>
-                                              <td className="px-4 py-4 text-center">
-                                                <button
-                                                  onClick={() =>
-                                                    removeIngredientFromRecipe(
-                                                      idx,
-                                                    )
-                                                  }
-                                                  className="p-2 text-rose-500/60 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"
-                                                >
-                                                  <Trash2 size={16} />
-                                                </button>
-                                              </td>
-                                            </tr>
-                                          );
-                                        },
-                                      )}
-                                      {/* Total Row with Validation */}
-                                      <tr className="bg-white/5 font-bold">
-                                        <td className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/60">
-                                          Total Formulación
-                                        </td>
-                                        <td className="px-6 py-4 text-right text-sm font-mono text-white">
-                                          {recipeTotalWeight.toFixed(2)} g
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                          <div className="flex flex-col items-end">
-                                            <span className={`text-sm font-mono ${Math.abs(recipeTotalWeight - 100) < 0.01 || Math.abs(recipeTotalWeight - 1000) < 0.01 ? "text-emerald-400" : "text-amber-400"}`}>
-                                              {selectedRecipe.ingredients.length > 0 ? "100.00%" : "0.00%"}
-                                            </span>
-                                            {selectedRecipe.ingredients.length > 0 && Math.abs(recipeTotalWeight - 100) > 0.01 && Math.abs(recipeTotalWeight - 1000) > 0.01 && (
-                                              <span className="text-[8px] text-white/30 uppercase tracking-tighter mt-1">
-                                                Tip: Formular base 100 o 1000 para balancear
+                                                </td>
+                                                <td className="px-8 py-8 text-right">
+                                                  <div className="inline-flex items-center gap-4 bg-black/40 rounded-[1.25rem] px-5 py-3.5 border border-white/5 focus-within:border-[var(--accent)]/50 focus-within:ring-8 focus-within:ring-[var(--accent)]/5 transition-all shadow-inner">
+                                                    <input
+                                                      type="number"
+                                                      value={ri.amount}
+                                                      onChange={(e) => {
+                                                        const val =
+                                                          parseFloat(
+                                                            e.target.value,
+                                                          ) || 0;
+                                                        const newIngredients = [
+                                                          ...selectedRecipe.ingredients,
+                                                        ];
+                                                        newIngredients[idx] = {
+                                                          ...ri,
+                                                          amount: val,
+                                                        };
+                                                        const newTotal =
+                                                          newIngredients.reduce(
+                                                            (acc, curr) =>
+                                                              acc + curr.amount,
+                                                            0,
+                                                          );
+                                                        handleUpdateRecipe({
+                                                          ...selectedRecipe,
+                                                          ingredients:
+                                                            newIngredients,
+                                                          totalYield: newTotal,
+                                                          finalYield: newTotal,
+                                                        });
+                                                      }}
+                                                      className="w-28 bg-transparent text-right text-xl font-mono font-black text-[var(--accent)] focus:text-white transition-all outline-none"
+                                                    />
+                                                    <span className="text-xs font-black text-white/10 uppercase tracking-widest">
+                                                      g
+                                                    </span>
+                                                  </div>
+                                                </td>
+                                                <td className="px-8 py-8 text-right">
+                                                  <div className="flex flex-col items-end gap-2">
+                                                    <span className="text-xl font-mono font-black text-white/90 tracking-tighter">
+                                                      {percentage.toFixed(2)}%
+                                                    </span>
+                                                    <div className="w-20 h-1.5 bg-white/5 rounded-full overflow-hidden shadow-inner">
+                                                      <div 
+                                                        className="h-full bg-gradient-to-r from-[var(--accent)] to-rose-400 transition-all duration-700 ease-out" 
+                                                        style={{ width: `${Math.min(percentage, 100)}%` }}
+                                                      />
+                                                    </div>
+                                                  </div>
+                                                </td>
+                                                <td className="px-6 py-8 text-center">
+                                                  <button
+                                                    onClick={() =>
+                                                      removeIngredientFromRecipe(
+                                                        idx,
+                                                      )
+                                                    }
+                                                    className="p-4 text-white/10 hover:text-white hover:bg-red-500/20 border border-transparent hover:border-red-500/20 rounded-2xl transition-all active:scale-90"
+                                                  >
+                                                    <Trash2 size={20} />
+                                                  </button>
+                                                </td>
+                                              </tr>
+                                            );
+                                          },
+                                        )}
+                                        {/* Total Row with Validation */}
+                                        <tr className="bg-white/5 border-t-2 border-white/5">
+                                          <td className="px-8 py-8">
+                                            <div className="flex items-center gap-3">
+                                              <div className="w-2 h-2 rounded-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]" />
+                                              <span className="text-[12px] uppercase font-black tracking-[0.3em] text-white/60">
+                                                Balance Total
                                               </span>
+                                            </div>
+                                          </td>
+                                          <td className="px-8 py-8 text-right">
+                                            <div className="flex flex-col items-end gap-1">
+                                              <span className="text-2xl font-mono font-bold text-white tracking-tight">
+                                                {recipeTotalWeight.toLocaleString("es-AR")} g
+                                              </span>
+                                              <span className="text-[10px] text-white/20 uppercase font-bold tracking-widest">
+                                                Masa Total Bruta
+                                              </span>
+                                            </div>
+                                          </td>
+                                          <td className="px-8 py-8 text-right">
+                                            <div className="flex flex-col items-end">
+                                              <span className={`text-2xl font-mono font-bold ${Math.abs(recipeTotalWeight - 100) < 0.01 || Math.abs(recipeTotalWeight - 1000) < 0.01 ? "text-emerald-400" : "text-amber-400"}`}>
+                                                {selectedRecipe.ingredients.length > 0 ? "100.00%" : "0.00%"}
+                                              </span>
+                                              {selectedRecipe.ingredients.length > 0 && Math.abs(recipeTotalWeight - 100) > 0.01 && Math.abs(recipeTotalWeight - 1000) > 0.01 && (
+                                                <span className="text-[9px] text-white/30 uppercase font-bold tracking-tighter mt-1 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                                                  Ajustar a base 100/1000
+                                                </span>
+                                              )}
+                                            </div>
+                                          </td>
+                                          <td className="px-6 py-8 text-center">
+                                            {selectedRecipe.ingredients.length > 0 && Math.abs(selectedRecipe.ingredients.reduce((acc, ri) => acc + (recipeTotalWeight > 0 ? (ri.amount / recipeTotalWeight) * 100 : 0), 0) - 100) < 0.01 ? (
+                                              <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20 shadow-lg shadow-emerald-500/10">
+                                                <Check size={20} strokeWidth={3} />
+                                              </div>
+                                            ) : (
+                                              <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/20 shadow-lg shadow-amber-500/10">
+                                                <AlertCircle size={20} strokeWidth={3} />
+                                              </div>
                                             )}
-                                          </div>
-                                        </td>
-                                        <td className="px-4 py-4 text-center">
-                                          {selectedRecipe.ingredients.length > 0 && Math.abs(selectedRecipe.ingredients.reduce((acc, ri) => acc + (recipeTotalWeight > 0 ? (ri.amount / recipeTotalWeight) * 100 : 0), 0) - 100) < 0.01 ? (
-                                            <Check size={16} className="text-emerald-400 mx-auto" />
-                                          ) : (
-                                            <AlertCircle size={16} className="text-amber-400 mx-auto" />
-                                          )}
-                                        </td>
-                                      </tr>
-                                    </tbody>
-                                  </table>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </div>
                                 </div>
 
-                                <div className="flex gap-4">
+                                <div className="flex flex-col md:flex-row gap-6 pt-4">
                                   <div className="flex-1 relative">
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col sm:flex-row gap-3">
                                       <div className="relative flex-1">
                                         <Plus
-                                          size={14}
-                                          className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20"
+                                          size={16}
+                                          className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--accent)]"
                                         />
                                         <input
                                           type="text"
-                                          placeholder="🔍 BUSCAR MATERIA PRIMA POR NOMBRE O MARCA..."
+                                          placeholder="AÑADIR MATERIA PRIMA (BUSCAR POR NOMBRE O MARCA)..."
                                           value={ingTargetSearch}
                                           onChange={(e) =>
                                             setIngTargetSearch(e.target.value)
                                           }
-                                          className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-4 text-[10px] font-bold uppercase tracking-[0.1em] text-white outline-none focus:border-[var(--accent)] transition-all placeholder:text-white/20 shadow-inner"
+                                          className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-6 py-5 text-[11px] font-bold uppercase tracking-[0.15em] text-white outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] transition-all placeholder:text-white/20 shadow-xl"
                                         />
                                         {ingTargetSearch && (
-                                          <div className="absolute bottom-full left-0 right-0 mb-2 bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-2xl max-h-60 overflow-y-auto z-50">
+                                          <div className="absolute bottom-full left-0 right-0 mb-3 bg-[#121212] border border-white/10 rounded-[28px] overflow-hidden shadow-2xl max-h-80 overflow-y-auto z-50 backdrop-blur-xl">
                                             <button
                                               onClick={() => {
                                                 setResolvingIngredient({
@@ -5656,11 +5970,10 @@ export default function App() {
                                                 });
                                                 setIngTargetSearch("");
                                               }}
-                                              className="w-full text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-[var(--accent)] hover:bg-white/5 transition-all flex items-center gap-2 border-b border-[var(--border)]"
+                                              className="w-full text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--accent)] hover:bg-white/5 transition-all flex items-center gap-3 border-b border-white/5"
                                             >
-                                              <PlusCircle size={14} />
-                                              Crear "{ingTargetSearch}" como
-                                              nuevo
+                                              <PlusCircle size={18} />
+                                              <span>Crear "{ingTargetSearch}" como nueva materia prima</span>
                                             </button>
                                             {ingredients
                                               .filter(
@@ -5686,25 +5999,27 @@ export default function App() {
                                                     );
                                                     setIngTargetSearch("");
                                                   }}
-                                                  className="w-full text-left px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-white/70 hover:bg-white/5 hover:text-[var(--accent)] transition-all flex items-center justify-between"
+                                                  className="w-full text-left px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-white/70 hover:bg-white/5 hover:text-white transition-all flex items-center justify-between group"
                                                 >
-                                                  <span>
-                                                    {ing.name}{" "}
-                                                    <span className="opacity-40 italic ml-2">
-                                                      ({ing.brand || "Genérico"}
-                                                      )
+                                                  <div className="flex flex-col">
+                                                    <span className="group-hover:text-[var(--accent)] transition-colors">{ing.name}</span>
+                                                    <span className="text-[9px] opacity-40 italic font-medium tracking-normal mt-0.5">
+                                                      {ing.brand || "Marca Genérica"}
                                                     </span>
-                                                  </span>
-                                                  {ingredients.find(
-                                                    (ei) =>
-                                                      ei.name.toLowerCase() ===
-                                                        ing.name.toLowerCase() &&
-                                                      ei.id !== ing.id,
-                                                  ) && (
-                                                    <span className="text-[8px] bg-amber-500/10 text-amber-500 px-1 rounded">
-                                                      Ya en sistema
-                                                    </span>
-                                                  )}
+                                                  </div>
+                                                  <div className="flex items-center gap-3">
+                                                    {ingredients.find(
+                                                      (ei) =>
+                                                        ei.name.toLowerCase() ===
+                                                          ing.name.toLowerCase() &&
+                                                        ei.id !== ing.id,
+                                                    ) && (
+                                                      <span className="text-[8px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded uppercase">
+                                                        Duplicado
+                                                      </span>
+                                                    )}
+                                                    <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                                                  </div>
                                                 </button>
                                               ))}
                                           </div>
@@ -5714,8 +6029,9 @@ export default function App() {
                                         onClick={() =>
                                           setIsAddingSubRecipe(true)
                                         }
-                                        className="px-6 bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-rose-500/20 transition-all font-serif italic"
+                                        className="px-8 py-5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-rose-500/20 transition-all flex items-center gap-2 shadow-lg"
                                       >
+                                        <Layers size={16} />
                                         Sub-Receta
                                       </button>
                                     </div>
@@ -5982,18 +6298,23 @@ export default function App() {
                                   </h3>
                                   <div className="flex flex-wrap gap-4 justify-center">
                                     {nutritionData.warnings.length > 0 ? (
-                                      nutritionData.warnings.map((w, i) => (
-                                        <div
-                                          key={i}
-                                          className="octagon w-28 h-28 flex flex-col items-center justify-center text-center p-2 leading-tight"
-                                        >
-                                          {w.split(" ").map((word, wi) => (
-                                            <span key={wi} className="block text-[7px] font-black tracking-tighter">
-                                              {word}
+                                      nutritionData.warnings.map((w, i) => {
+                                        const parts = w.split(" EN ");
+                                        return (
+                                          <div
+                                            key={i}
+                                            className="octagon w-48 h-48 flex flex-col items-center justify-center text-center p-6 shadow-2xl"
+                                          >
+                                            <span className="text-[18px] font-black leading-none mb-2 opacity-95">EXCESO EN</span>
+                                            <span className="text-3xl font-[900] leading-tight tracking-tighter px-2">
+                                              {parts[1] || parts[0]}
                                             </span>
-                                          ))}
-                                        </div>
-                                      ))
+                                            <div className="mt-4 text-[10px] font-bold opacity-50 uppercase tracking-tighter">
+                                              Ministerio de Salud
+                                            </div>
+                                          </div>
+                                        );
+                                      })
                                     ) : (
                                       <div className="w-full p-10 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl flex flex-col items-center justify-center text-center gap-4">
                                         <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
@@ -6257,14 +6578,25 @@ export default function App() {
                                         <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
                                         4. Advertencias (Ley 27.642)
                                       </h4>
-                                      <div className="flex flex-wrap gap-3">
+                                      <div className="flex flex-wrap gap-4">
                                         {nutritionData.warnings.length > 0 ? (
-                                          nutritionData.warnings.map((w, idx) => (
-                                            <div key={idx} className="bg-black border-2 border-white px-3 py-1.5 text-white text-[9px] font-black tracking-widest flex items-center gap-2">
-                                              <div className="w-2 h-2 bg-white rotate-45" />
-                                              {w}
-                                            </div>
-                                          ))
+                                          nutritionData.warnings.map((w, idx) => {
+                                            const parts = w.split(" EN ");
+                                            return (
+                                              <div 
+                                                key={idx} 
+                                                className="octagon w-40 h-40 flex flex-col items-center justify-center text-center p-5 shadow-xl"
+                                              >
+                                                <span className="text-[14px] font-black leading-none mb-1.5">EXCESO EN</span>
+                                                <span className="text-2xl font-[900] leading-tight tracking-tighter px-1">
+                                                  {parts[1] || parts[0]}
+                                                </span>
+                                                <div className="mt-3 text-[8px] font-bold opacity-30 uppercase tracking-tighter">
+                                                  Ministerio de Salud
+                                                </div>
+                                              </div>
+                                            );
+                                          })
                                         ) : (
                                           <div className="text-[10px] text-white/30 italic">No requiere sellos de advertencia.</div>
                                         )}
@@ -6524,8 +6856,37 @@ export default function App() {
                       />
                     </div>
 
+                    <div className="pane-title mb-4 bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                      Productos Semielaborados
+                    </div>
+                    <button
+                      onClick={() => setIngCategory("semielaborados")}
+                      className={`w-full text-left px-4 py-3 rounded-xl text-[10px] uppercase tracking-wider font-bold flex justify-between items-center transition-all group mb-6 ${
+                        ingCategory === "semielaborados"
+                          ? "bg-emerald-500/20 text-emerald-400 shadow-xl ring-1 ring-emerald-500/30"
+                          : "text-[var(--text-s)] hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Layers
+                          size={14}
+                          className={
+                            ingCategory === "semielaborados"
+                              ? "text-emerald-400"
+                              : "opacity-40 group-hover:opacity-100"
+                          }
+                        />
+                        <span>Ver Semielaborados</span>
+                      </div>
+                      <span
+                        className={`font-mono text-[9px] ${ingCategory === "semielaborados" ? "text-white/60" : "opacity-40"}`}
+                      >
+                        {recipes.filter((r) => r.type === "semielaborado").length}
+                      </span>
+                    </button>
+
                     <div className="pane-title mb-4 bg-gradient-to-r from-rose-400 to-amber-400 bg-clip-text text-transparent">
-                      Clasificación Principal
+                      Clasificación Materia Prima
                     </div>
                     <div className="space-y-1">
                       {[
@@ -6908,234 +7269,54 @@ export default function App() {
                               </td>
                             </tr>
                           )}
-                          {filteredIngredients.map((ing) => (
-                            <tr
-                              key={ing.id}
-                              className={`hover:bg-white/5 transition-all group ${mergeTargetId === ing.id ? "bg-emerald-500/5" : mergeSourceIds.includes(ing.id) ? "bg-red-500/5" : ""}`}
-                            >
-                              {isMergeMode && (
-                                <td className="pl-6 py-4">
-                                  <div className="flex flex-col gap-1.5">
-                                    <button
-                                      onClick={() => {
-                                        if (mergeTargetId === ing.id) {
-                                          setMergeTargetId(null);
-                                        } else {
-                                          setMergeTargetId(ing.id);
-                                          setMergeSourceIds((prev) =>
-                                            prev.filter((id) => id !== ing.id),
-                                          );
-                                        }
-                                      }}
-                                      className={`text-[9px] uppercase font-bold p-1 rounded border text-center transition-all ${mergeTargetId === ing.id ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white/5 border-white/10 text-white/40 hover:text-white"}`}
-                                    >
-                                      {mergeTargetId === ing.id
-                                        ? "MAESTRO"
-                                        : "Fijar Maestro"}
-                                    </button>
-                                    {mergeTargetId !== ing.id && (
-                                      <button
-                                        onClick={() => {
-                                          setMergeSourceIds((prev) =>
-                                            prev.includes(ing.id)
-                                              ? prev.filter(
-                                                  (id) => id !== ing.id,
-                                                )
-                                              : [...prev, ing.id],
-                                          );
-                                        }}
-                                        className={`text-[9px] uppercase font-bold p-1 rounded border text-center transition-all ${mergeSourceIds.includes(ing.id) ? "bg-red-500 border-red-500 text-white" : "bg-white/5 border-white/10 text-white/40 hover:text-white"}`}
-                                      >
-                                        {mergeSourceIds.includes(ing.id)
-                                          ? "DUPLICADO"
-                                          : "Es Duplicado"}
-                                      </button>
-                                    )}
-                                  </div>
-                                </td>
-                              )}
-                              <td className="pl-6 py-4">
-                                <div className="flex flex-col">
-                                  <div className="font-medium text-[var(--text-p)]">
-                                    {ing.name}
-                                  </div>
-                                  <div className="text-[10px] uppercase tracking-wider text-[var(--text-s)] mt-0.5 font-mono">
-                                    {ing.brand || "STANDARDIZED CORE"}
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="text-center">
-                                <div
-                                  onClick={() => {
-                                    setResolvingIngredient({
-                                      index: -1,
-                                      name: ing.name,
-                                      isSearching: false,
-                                      data: ing,
-                                    });
-                                  }}
-                                  className="flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition-all"
-                                >
-                                  <span
-                                    className={`px-2 py-0.5 rounded-full text-[9px] uppercase font-bold border ${ing.category === "generico" ? "bg-rose-500/10 border-rose-500/30 text-rose-400" : "bg-purple-500/10 border-purple-500/30 text-purple-400"}`}
+                          {groupedFilteredIngredients ? (
+                            groupedFilteredIngredients.map(([group, items]) => (
+                              <React.Fragment key={group}>
+                                <tr className="bg-gradient-to-r from-white/[0.03] to-transparent">
+                                  <td
+                                    colSpan={isMergeMode ? 10 : 9}
+                                    className="px-8 py-4 text-[11px] uppercase font-black tracking-[0.4em] text-white/90 border-y border-white/5"
                                   >
-                                    {ing.category}
-                                  </span>
-                                  {ing.functionalGroup && (
-                                    <span
-                                      className={`px-2 py-0.5 rounded-full text-[8px] uppercase font-bold border whitespace-nowrap ${
-                                        ing.functionalGroup === "lacteos"
-                                          ? "bg-blue-500/10 border-blue-500/30 text-blue-400"
-                                          : ing.functionalGroup === "azucares"
-                                            ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                                            : ing.functionalGroup === "aceites"
-                                              ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
-                                              : ing.functionalGroup ===
-                                                  "frutos_secos"
-                                                ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
-                                                : ing.functionalGroup ===
-                                                    "chocolates"
-                                                  ? "bg-orange-900/20 border-orange-900/30 text-orange-900"
-                                                  : ing.functionalGroup ===
-                                                      "neutros"
-                                                    ? "bg-purple-500/10 border-purple-500/30 text-purple-400"
-                                                    : ing.functionalGroup ===
-                                                        "pastas"
-                                                      ? "bg-yellow-600/10 border-yellow-600/30 text-yellow-600"
-                                                      : ing.functionalGroup ===
-                                                          "frutas"
-                                                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                                                        : ing.functionalGroup ===
-                                                            "aditivos"
-                                                          ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-400"
-                                                          : "bg-white/5 border-white/10 text-white/60"
-                                      }`}
-                                    >
-                                      {ing.functionalGroup.replace("_", " ")}
-                                    </span>
-                                  )}
-                                  {ing.isTrialOnly && (
-                                    <span className="px-2 py-0.5 rounded-full text-[7px] uppercase font-bold bg-amber-500/10 border border-amber-500/30 text-amber-500 whitespace-nowrap">
-                                      LOTE PRUEBA
-                                    </span>
-                                  )}
-                                  {ing.isGlutenFree && (
-                                    <span className="px-2 py-0.5 rounded-full text-[7px] uppercase font-bold bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 whitespace-nowrap">
-                                      SIN TACC
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="text-center font-mono text-[var(--text-p)]">
-                                {ing.energy}
-                              </td>
-                              <td className="text-center font-mono text-[var(--text-s)]">
-                                {ing.proteins}g
-                              </td>
-                              <td className="text-center font-mono text-[var(--text-s)]">
-                                {ing.totalFats}g
-                              </td>
-                              <td className="text-center font-mono text-[var(--text-s)]">
-                                {ing.sugars}g
-                              </td>
-                              <td className="text-left">
-                                <div className="flex flex-col gap-1">
-                                  {ing.isTrialOnly ? (
-                                    <div className="space-y-0.5">
-                                      <div className="text-[10px] text-amber-500 font-bold uppercase tracking-widest">
-                                        INFO PRUEBA
-                                      </div>
-                                      <div className="text-[9px] text-white/60 font-mono">
-                                        LOTE: {ing.trialBatch || "-"}
-                                      </div>
-                                      <div className="text-[9px] text-white/60 font-mono">
-                                        VTO: {ing.trialExpiration || "-"}
-                                      </div>
-                                      <div className="text-[9px] text-white/60 font-mono">
-                                        CANT: {ing.trialQuantity || "-"}
-                                      </div>
+                                    <div className="flex items-center gap-4">
+                                      <div className={`w-1.5 h-6 rounded-full ${group.includes("SEMIELABORADOS") ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]"}`} />
+                                      {group.replace("_", " ")}
                                     </div>
-                                  ) : (
-                                    <span className="text-[10px] font-mono text-white/60">
-                                      {ing.rnpa || "Sin RNPA"}
-                                    </span>
-                                  )}
-                                  <div className="flex gap-2">
-                                    {ing.technicalSheetUrl && (
-                                      <a
-                                        href={ing.technicalSheetUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-rose-400 hover:text-rose-300 flex items-center gap-1"
-                                        title="Ficha Técnica"
-                                      >
-                                        <FileText size={10} />
-                                        <span className="text-[8px] uppercase font-bold">
-                                          Ficha
-                                        </span>
-                                      </a>
-                                    )}
-                                    {ing.certificateUrl && (
-                                      <a
-                                        href={ing.certificateUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
-                                        title="Certificado"
-                                      >
-                                        <Scale size={10} />
-                                        <span className="text-[8px] uppercase font-bold">
-                                          Cert.
-                                        </span>
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="text-center pr-6">
-                                <div className="flex justify-center gap-2">
-                                  <button
-                                    onClick={() => handleWebSync(ing)}
-                                    disabled={isSearchingWeb === ing.id}
-                                    className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all disabled:opacity-20 flex items-center justify-center"
-                                    title="Actualizar desde la web"
-                                  >
-                                    {isSearchingWeb === ing.id ? (
-                                      <Loader2
-                                        className="animate-spin"
-                                        size={14}
-                                      />
-                                    ) : (
-                                      <RefreshCw size={14} />
-                                    )}
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      // Find the recipe index if needed, but here we just need a modal to edit the ingredient
-                                      setResolvingIngredient({
-                                        index: -1, // Not part of a recipe sync
-                                        name: ing.name,
-                                        isSearching: false,
-                                        data: ing,
-                                      });
-                                    }}
-                                    className="p-2 rounded-lg bg-white/5 text-[var(--text-s)] hover:text-white hover:bg-white/10 transition-all flex items-center justify-center"
-                                  >
-                                    <Edit3 size={14} />
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      handleDeleteIngredient(ing.id)
-                                    }
-                                    className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all flex items-center justify-center"
-                                    title="Eliminar Insumo"
-                                  >
-                                    <Trash2 size={14} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                  </td>
+                                </tr>
+                                {items.map((ing) => (
+                                  <IngredientRow
+                                    key={ing.id}
+                                    ing={ing}
+                                    isMergeMode={isMergeMode}
+                                    mergeTargetId={mergeTargetId}
+                                    mergeSourceIds={mergeSourceIds}
+                                    setMergeTargetId={setMergeTargetId}
+                                    setMergeSourceIds={setMergeSourceIds}
+                                    setResolvingIngredient={setResolvingIngredient}
+                                    handleWebSync={handleWebSync}
+                                    isSearchingWeb={isSearchingWeb}
+                                    handleDeleteIngredient={handleDeleteIngredient}
+                                  />
+                                ))}
+                              </React.Fragment>
+                            ))
+                          ) : (
+                            filteredIngredients.map((ing) => (
+                              <IngredientRow
+                                key={ing.id}
+                                ing={ing}
+                                isMergeMode={isMergeMode}
+                                mergeTargetId={mergeTargetId}
+                                mergeSourceIds={mergeSourceIds}
+                                setMergeTargetId={setMergeTargetId}
+                                setMergeSourceIds={setMergeSourceIds}
+                                setResolvingIngredient={setResolvingIngredient}
+                                handleWebSync={handleWebSync}
+                                isSearchingWeb={isSearchingWeb}
+                                handleDeleteIngredient={handleDeleteIngredient}
+                              />
+                            ))
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -7511,15 +7692,33 @@ export default function App() {
                                   })
                                 }
                                 placeholder="Ej: Azúcar Impalpable"
-                                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-4 text-base text-white outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] transition-all"
+                                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl px-6 py-5 text-lg text-white outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] transition-all"
                               />
                               <button
-                                onClick={handleIngredientWebSearch}
-                                className="absolute right-2 top-2 bottom-2 bg-[var(--accent)] text-white px-4 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-[var(--accent)]/20"
+                                onClick={() => handleIngredientWebSearch(false)}
+                                disabled={resolvingIngredient.isSearching}
+                                className="absolute right-2.5 top-2.5 bottom-2.5 bg-gradient-to-br from-[var(--accent)] to-[var(--accent)]/80 text-white px-6 rounded-xl flex items-center gap-2.5 text-[11px] font-black uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-xl shadow-[var(--accent)]/30 disabled:opacity-50 disabled:scale-100"
                               >
-                                <Sparkles size={14} />
+                                {resolvingIngredient.isSearching ? (
+                                  <Loader2 size={16} className="animate-spin" />
+                                ) : (
+                                  <Globe size={16} />
+                                )}
                                 Buscar en Web
                               </button>
+                            </div>
+                            <div className="mt-4 flex items-center gap-4">
+                              <button
+                                onClick={() => handleIngredientWebSearch(true)}
+                                disabled={resolvingIngredient.isSearching}
+                                className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                              >
+                                <Database size={14} />
+                                Forzar Búsqueda Genérica (IA)
+                              </button>
+                              <p className="text-[9px] text-white/20 font-medium italic">
+                                * Use búsqueda genérica si no encuentra una marca específica.
+                              </p>
                             </div>
                           </div>
 

@@ -174,7 +174,7 @@ export function calculateNutrition(
   // These are calculated based on 100g of the adjusted final product
   const per100g = {} as any;
   Object.keys(adjustedNutrients).forEach(key => {
-    per100g[key] = (adjustedNutrients as any)[key] * (100 / recipe.finalYield);
+    per100g[key] = (adjustedNutrients as any)[key] * (100 / safeFinalYield);
   });
 
   const warnings: string[] = [];
