@@ -71,7 +71,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, initialDelay = 50
   throw new Error("Maximum retries reached");
 }
 
-// Model alias - use gemini-3.8-flash for all text tasks as per skill guidelines
+// Model alias - use gemini-3.8-flash as recommended
 const DEFAULT_MODEL = "gemini-3.8-flash";
 
 // AI Endpoints
@@ -88,7 +88,7 @@ app.post("/api/ai/nutritional-info", async (req, res, next) => {
     
     CRITICAL: 
     1. All values MUST be per 100g/ml of product.
-    2. You MUST look for at least 3 different sources (e.g., SADI, ARCOR, official food databases, or reliable nutrition sites) to verify the accuracy of the data. 
+    2. Verificá la información con bases de datos confiables de Argentina (SADI, ARCOR, etc.).
     3. Return a valid JSON.
     
     Return a JSON object with:
@@ -104,7 +104,7 @@ app.post("/api/ai/nutritional-info", async (req, res, next) => {
     - sourcesUsed: string
     - confidenceNote: string`;
 
-    const result = await withRetry(() => ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: DEFAULT_MODEL,
       contents: prompt,
       config: {
@@ -112,7 +112,7 @@ app.post("/api/ai/nutritional-info", async (req, res, next) => {
       }
     })) as any;
 
-    const text = result.text || "{}";
+    const text = response.text || "{}";
     res.json(JSON.parse(text));
   } catch (error: any) {
     console.error("[AI] Nutritional Info Error:", error);
@@ -137,8 +137,8 @@ app.post("/api/ai/chat", async (req, res, next) => {
       }))
     });
 
-    const result = await withRetry(() => chat.sendMessage(message)) as any;
-    res.json({ text: result.text });
+    const response = await withRetry(() => chat.sendMessage(message)) as any;
+    res.json({ text: response.text });
   } catch (error: any) {
     console.error("[AI] Chat Error:", error);
     next(error);
@@ -151,7 +151,6 @@ app.post("/api/ai/extract-insights", async (req, res, next) => {
     console.log("[AI] Extract insights request");
     const ai = getGenAI();
     
-    // Limit conversation length to avoid token limits or memory issues
     const safeConv = (conversation || "").slice(-5000);
     
     const prompt = `Analiza la siguiente conversación técnica de I+D en alimentos y extrae los puntos clave (insights).
@@ -170,7 +169,7 @@ app.post("/api/ai/extract-insights", async (req, res, next) => {
       "insights": ["Frase técnica 1", "Frase técnica 2"]
     }`;
 
-    const result = await withRetry(() => ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: DEFAULT_MODEL,
       contents: prompt,
       config: {
@@ -178,7 +177,7 @@ app.post("/api/ai/extract-insights", async (req, res, next) => {
       }
     })) as any;
 
-    res.json(JSON.parse(result.text || "{}"));
+    res.json(JSON.parse(response.text || "{}"));
   } catch (error: any) {
     console.error("[AI] Extract Insights Error:", error);
     next(error);
@@ -208,7 +207,7 @@ app.post("/api/ai/tech-sheet", async (req, res, next) => {
       "technicalCharacteristics": "Contenido detallado en formato Markdown..."
     }`;
 
-    const result = await withRetry(() => ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: DEFAULT_MODEL,
       contents: prompt,
       config: {
@@ -216,7 +215,7 @@ app.post("/api/ai/tech-sheet", async (req, res, next) => {
       }
     })) as any;
 
-    res.json(JSON.parse(result.text || "{}"));
+    res.json(JSON.parse(response.text || "{}"));
   } catch (error: any) {
     console.error("[AI] Tech Sheet Error:", error);
     next(error);
@@ -233,46 +232,41 @@ app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res, next)
     console.log(`[AI] Extract recipe from file: ${file.originalname} (${file.mimetype})`);
     const ai = getGenAI();
     
-    const result = await withRetry(() => ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: DEFAULT_MODEL,
-      contents: [
-        {
-          inlineData: {
-            data: file.buffer.toString('base64'),
-            mimeType: file.mimetype,
-          },
-        },
-        {
-          text: `Extrae el nombre de la receta y la lista de ingredientes de esta imagen o documento. 
-          CONTEXTO: Industria alimentaria de alta gama en Argentina (Gianduia - Helados, Pastelería, Chocolatería).
-          
-          ESTRUCTURA DE RETORNO (JSON):
+      contents: {
+        parts: [
           {
-            "name": "Nombre de la Receta",
-            "ingredients": [
-              { "name": "Nombre del Ingrediente", "amount": 100, "unit": "g" }
-            ]
-          }
-          
-          REGLAS CRÍTICAS DE EXTRACCIÓN:
-          1. CONVERSIÓN A GRAMOS: Si el documento usa kg, ml, l, cc o %, convertí todo a GRAMOS (g). 
-             - Si usa %, asumí un total de 1000g (1kg) si no se especifica el peso total.
-          2. NOMENCLATURA TÉCNICA GIANDUIA:
-             - "Sacarosa" -> "Azúcar Blanco"
-             - "Crema 36%" -> "Crema de Leche"
-             - "Neutro" -> Identificá si es "Neutro para Helado", "Neutro para Sorbete", etc.
-             - "Pasta" -> Respetá el nombre completo (ej: "Pasta de Pistacho Elit", "Pasta Avellana").
-          3. MARCAS: Si el ingrediente menciona una marca (ej: Elit, Arcor, Ledevit), incluila en el nombre.
-          4. PRECISIÓN: Sé extremadamente preciso con los números. Si hay tachaduras o correcciones a mano, priorizá la corrección manual.
-          5. IDIOMA: Extrae los nombres tal como aparecen, pero normalizá las unidades a "g".`,
-        },
-      ],
+            inlineData: {
+              data: file.buffer.toString('base64'),
+              mimeType: file.mimetype,
+            },
+          },
+          {
+            text: `Extrae el nombre de la receta y la lista de ingredientes de esta imagen o documento. 
+            CONTEXTO: Industria alimentaria de alta gama en Argentina (Gianduia - Helados, Pastelería, Chocolatería).
+            
+            ESTRUCTURA DE RETORNO (JSON):
+            {
+              "name": "Nombre de la Receta",
+              "ingredients": [
+                { "name": "Nombre del Ingrediente", "amount": 100, "unit": "g" }
+              ]
+            }
+            
+            REGLAS CRÍTICAS DE EXTRACCIÓN:
+            1. CONVERSIÓN A GRAMOS: Si el documento usa kg, ml, l, cc o %, convertí todo a GRAMOS (g). 
+            2. NOMENCLATURA TÉCNICA GIANDUIA: Respetá marcas (Elit, Arcor) e ingredientes específicos.
+            3. IDIOMA: Extrae los nombres tal como aparecen, pero normalizá las unidades a "g".`,
+          },
+        ]
+      },
       config: {
         responseMimeType: "application/json",
       }
     })) as any;
 
-    res.json(JSON.parse(result.text || "{}"));
+    res.json(JSON.parse(response.text || "{}"));
   } catch (error: any) {
     console.error("[AI] Extract Recipe Error:", error);
     next(error);
@@ -280,18 +274,14 @@ app.post("/api/ai/extract-recipe", upload.single('file'), async (req, res, next)
 });
 
 app.post("/api/ai/analyze-trials", async (req, res, next) => {
-  console.log("[AI] POST /api/ai/analyze-trials received");
   try {
     const { productName, area, trials } = req.body;
     
     if (!trials || !Array.isArray(trials)) {
-      console.error("[AI] Invalid trials data received:", trials);
       return res.status(400).json({ error: "Invalid trials data" });
     }
 
     const ai = getGenAI();
-    
-    // Limit to last 15 trials to keep context small and fast
     const recentTrials = trials.slice(-15);
     
     const prompt = `Actúa como un Ingeniero Senior de Desarrollo y Control de Calidad Alimentaria especializado en Gianduia (industria pastelera y helados de alta gama).
@@ -302,12 +292,8 @@ app.post("/api/ai/analyze-trials", async (req, res, next) => {
     ${recentTrials.map((t: any) => `
     - Versión ${t.trialLetter || '?'}:
       * Notas: "${t.notes || 'N/A'}"
-      * Sensorial (Temp/Text/Sab/Dur/Dec): ${t.sensoryAnalysis?.temperature || '-'}/${t.sensoryAnalysis?.texture || '-'}/${t.sensoryAnalysis?.flavor || '-'}/${t.sensoryAnalysis?.hardness || '-'}/${t.sensoryAnalysis?.decoration || '-'}
-      * Fecha Ejecución: ${t.trialExecutionDate || 'N/A'}
+      * Sensorial: ${JSON.stringify(t.sensoryAnalysis)}
     `).join('\n')}
-    
-    PROPORCIONA UN ANÁLISIS TÉCNICO PROFESIONAL EN ESPAÑOL.
-    Enfócate en parámetros físicos (textura, estabilidad), químicos (dulzor, grasas) y sensoriales.
     
     Retorna un JSON estricto con:
     1. "summary": Resumen de la evolución técnica.
@@ -315,7 +301,7 @@ app.post("/api/ai/analyze-trials", async (req, res, next) => {
     3. "keyPointsForNextTrial": Recomendaciones precisas para la próxima iteración.
     4. "progressPercentage": Número entre 0 y 100 que indique qué tan cerca está el producto de ser finalizado.`;
 
-    const result = await withRetry(() => ai.models.generateContent({
+    const response = await withRetry(() => ai.models.generateContent({
       model: DEFAULT_MODEL,
       contents: prompt,
       config: {
@@ -323,11 +309,10 @@ app.post("/api/ai/analyze-trials", async (req, res, next) => {
       }
     })) as any;
 
-    const text = result.text || "{}";
+    const text = response.text || "{}";
     try {
       res.json(JSON.parse(text));
     } catch (e) {
-      console.error("[AI] Gemini JSON Parse Error. Raw text:", text);
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         res.json(JSON.parse(jsonMatch[0]));
@@ -343,7 +328,6 @@ app.post("/api/ai/analyze-trials", async (req, res, next) => {
 
 // Debug catch-all for /api
 app.all("/api/*", (req, res) => {
-  console.log(`[SERVER] 404 on API route: ${req.method} ${req.path}`);
   res.status(404).json({ 
     error: "API Route not found",
     method: req.method,
@@ -353,18 +337,15 @@ app.all("/api/*", (req, res) => {
 
 // Global Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error("[SERVER] Fatal Error:", err);
-  res.status(500).json({ 
+  console.error("[SERVER] Error Handler:", err);
+  res.status(err.status || 500).json({ 
     error: "AI_SERVER_ERROR", 
-    message: err.message,
-    status: err.status || 500
+    message: err.message
   });
 });
 
-// Vite middleware setup
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
-    console.log("[SERVER] Starting in development mode with Vite...");
     try {
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
@@ -380,27 +361,21 @@ async function startServer() {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   } else {
-    // In production (non-Vercel), serve static files
     if (!process.env.VERCEL) {
-      console.log("[SERVER] Starting in production mode (standalone)...");
       const distPath = path.join(process.cwd(), 'dist');
       app.use(express.static(distPath));
       app.get('*', (req, res) => {
-        if (req.path.startsWith('/api/')) return; // Let API routes handle it
+        if (req.path.startsWith('/api/')) return; 
         res.sendFile(path.join(distPath, 'index.html'));
       });
 
       app.listen(PORT, "0.0.0.0", () => {
         console.log(`Server running on http://localhost:${PORT}`);
       });
-    } else {
-      console.log("[SERVER] Running as Vercel Function");
     }
   }
 }
 
-// Only call startServer if not imported (running as main process)
-// Or if we are in dev mode
 if (process.env.NODE_ENV !== "production") {
   startServer();
 } else if (!process.env.VERCEL) {

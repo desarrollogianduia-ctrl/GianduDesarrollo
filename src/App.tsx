@@ -55,6 +55,7 @@ import {
   ClipboardCheck,
   ListTodo,
   Calendar,
+  ShieldAlert,
   Undo2,
   Pause,
   Play,
@@ -106,6 +107,7 @@ import {
   ProductArea,
   ProjectPriority,
   ProjectStatus,
+  AssignmentArea,
   ProjectTask,
   KnowledgeDocument,
   RecipeAudit,
@@ -840,6 +842,34 @@ export default function App() {
     devFilterPriority,
     devStatusFilter,
   ]);
+
+  const allCalendarEvents = useMemo(() => {
+    const devEvents: CalendarEvent[] = developments.flatMap((dev) =>
+      (dev.areaAssignments || []).map((assign) => ({
+        id: `dev_${dev.id}_${assign.area}`,
+        title: `[${assign.area.toUpperCase()}] ${dev.productName}`,
+        startDate: assign.date,
+        endDate: assign.date + 3600000,
+        type: "hito" as const,
+        color:
+          assign.area === "compras"
+            ? "#3b82f6"
+            : assign.area === "desarrollo"
+              ? "#8b5cf6"
+              : assign.area === "produccion"
+                ? "#10b981"
+                : assign.area === "sistema"
+                  ? "#f59e0b"
+                  : assign.area === "pcp"
+                    ? "#ec4899"
+                    : "#ef4444",
+        participants: [],
+        ownerId: dev.createdBy,
+        relatedProjectId: dev.id,
+      })),
+    );
+    return [...events, ...devEvents];
+  }, [events, developments]);
 
   const allPendingTasks = useMemo(() => {
     return developments
@@ -2096,6 +2126,35 @@ export default function App() {
     );
   };
 
+  const handleUpdateAreaAssignment = async (
+    dev: DevelopmentProject,
+    area: AssignmentArea,
+    dateStr: string,
+  ) => {
+    if (!user) return;
+    let timestamp = 0;
+    if (dateStr) {
+      const [y, m, d] = dateStr.split("-").map(Number);
+      timestamp = new Date(y, m - 1, d, 12, 0, 0).getTime();
+    }
+    const currentAssignments = dev.areaAssignments || [];
+    const existingIdx = currentAssignments.findIndex((a) => a.area === area);
+
+    let newAssignments = [...currentAssignments];
+    if (timestamp === 0) {
+      newAssignments = newAssignments.filter((a) => a.area !== area);
+    } else if (existingIdx >= 0) {
+      newAssignments[existingIdx] = { area, date: timestamp };
+    } else {
+      newAssignments.push({ area, date: timestamp });
+    }
+
+    await saveDevelopment(
+      { ...dev, areaAssignments: newAssignments, updatedAt: Date.now() },
+      user.uid,
+    );
+  };
+
   const handleAddTask = async (dev: DevelopmentProject) => {
     if (!newTaskText.trim() || !user) return;
     const parsedDeadline = newTaskDeadline
@@ -2896,7 +2955,7 @@ export default function App() {
                   className="h-full overflow-hidden"
                 >
                   <CalendarView
-                    events={events}
+                    events={allCalendarEvents}
                     tasks={allPendingTasks}
                     userId={user.uid}
                     onSaveEvent={async (event) => {
@@ -3811,7 +3870,7 @@ export default function App() {
                                       colSpan={8}
                                       className="px-12 py-10 border-b border-[var(--border)]"
                                     >
-                                      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                                      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                                         <div className="space-y-6">
                                           <div className="flex items-center justify-between">
                                             <h4 className="text-sm font-bold uppercase tracking-widest text-[var(--accent)] flex items-center gap-2">
@@ -3981,6 +4040,46 @@ export default function App() {
                                                 </button>
                                               )}
                                             </div>
+                                          </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                          <h4 className="text-sm font-bold uppercase tracking-widest text-[var(--accent)] flex items-center gap-2">
+                                            <ShieldAlert size={16} /> Asignación de Áreas
+                                          </h4>
+                                          <div className="space-y-4">
+                                            {[
+                                              { id: 'compras', label: 'Compras', color: 'text-blue-400' },
+                                              { id: 'desarrollo', label: 'Desarrollo', color: 'text-purple-400' },
+                                              { id: 'produccion', label: 'Producción', color: 'text-emerald-400' },
+                                              { id: 'sistema', label: 'Sistema', color: 'text-amber-400' },
+                                              { id: 'pcp', label: 'PCP', color: 'text-pink-400' },
+                                              { id: 'mantenimiento', label: 'Mantenimiento', color: 'text-rose-400' }
+                                            ].map((areaItem) => {
+                                              const assignment = (dev.areaAssignments || []).find(a => a.area === areaItem.id);
+                                              let dateVal = "";
+                                              if (assignment) {
+                                                const d = new Date(assignment.date);
+                                                dateVal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                              }
+                                              
+                                              return (
+                                                <div key={areaItem.id} className="bg-white/5 border border-white/5 p-3 rounded-2xl space-y-2">
+                                                  <div className="flex items-center gap-2">
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${areaItem.color.replace('text-', 'bg-')}`} />
+                                                    <span className={`text-[10px] uppercase font-black tracking-widest ${areaItem.color}`}>
+                                                      {areaItem.label}
+                                                    </span>
+                                                  </div>
+                                                  <input 
+                                                    type="date"
+                                                    value={dateVal}
+                                                    onChange={(e) => handleUpdateAreaAssignment(dev, areaItem.id as AssignmentArea, e.target.value)}
+                                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-1.5 text-[10px] text-white/60 focus:border-[var(--accent)] outline-none transition-all"
+                                                  />
+                                                </div>
+                                              );
+                                            })}
                                           </div>
                                         </div>
 

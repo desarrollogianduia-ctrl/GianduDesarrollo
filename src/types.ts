@@ -138,6 +138,12 @@ export interface KnowledgeDocument {
 export type ProductArea = 'pasteleria' | 'paletas' | 'chocolates' | 'helados' | 'popolo' | 'semielaborados' | 'vitrina' | 'terceros';
 export type ProjectPriority = 'alta' | 'media' | 'baja';
 export type ProjectStatus = 'pendiente' | 'en_progreso' | 'en_cola' | 'pausado' | 'finalizado' | 'archivado';
+export type AssignmentArea = 'compras' | 'desarrollo' | 'produccion' | 'sistema' | 'pcp' | 'mantenimiento';
+
+export interface AreaAssignment {
+  area: AssignmentArea;
+  date: number; // timestamp
+}
 
 export interface ProjectTask {
   id: string;
@@ -181,6 +187,7 @@ export interface DevelopmentProject {
   prodTrialEndTime?: string;
   tasks?: ProjectTask[];
   sensoryAnalysis?: SensoryAnalysis;
+  areaAssignments?: AreaAssignment[];
 }
 
 export type AuditStatus = 'ok' | 'desvio' | 'arreglado' | 'problema';
