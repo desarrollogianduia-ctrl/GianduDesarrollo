@@ -16,6 +16,7 @@ import {
   CONVERSION_FACTORS, 
   ROUNDING_RULES 
 } from '../constants.ts';
+import { INITIAL_INGREDIENTS } from '../utils/initialData.ts';
 
 export interface FlattenedIngredient {
   name: string;
@@ -83,37 +84,107 @@ export function calculateNutrition(
       const subRecipe = allRecipes.find(r => r.id === ri.ingredientId);
       if (subRecipe) {
         const subResult = calculateNutrition(subRecipe, ingredientsDb, allRecipes);
-        const subWeight = subRecipe.finalYield || subRecipe.ingredients.reduce((a, b) => a + b.amount, 0);
+        // In food science, we need the density or total weight to calculate concentration.
+        // We use finalYield if available, otherwise sum of ingredients.
+        const subWeight = (subRecipe.finalYield && subRecipe.finalYield > 0)
+          ? subRecipe.finalYield
+          : (subRecipe.ingredients.reduce((a, b) => a + b.amount, 0) || 1);
         ingValues = {} as any;
-        Object.keys(subResult.adjustedNutrients).forEach(key => {
-          (ingValues as any)[key] = (subResult.adjustedNutrients as any)[key] * (100 / subWeight);
+        Object.keys(subResult.totalNutrients).forEach(key => {
+          (ingValues as any)[key] = ((subResult.totalNutrients as any)[key] / subWeight) * 100;
         });
         name = subRecipe.name;
       }
     } else {
-      const ing = ingredientsDb.find(i => i.id === ri.ingredientId);
+      // Normalize search query
+      const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      
+      const targetQuery = normalize(ri.note || (typeof ri.ingredientId === 'string' && !ri.ingredientId.startsWith('ing_') ? ri.ingredientId : ''));
+      
+      // 1. Direct match by ID in provided DB
+      let ing = ingredientsDb.find(i => i.id === ri.ingredientId);
+
+      // 2. Fallback: match by ID in built-in INITIAL_INGREDIENTS catalog
+      if (!ing) {
+        ing = INITIAL_INGREDIENTS.find(i => i.id === ri.ingredientId);
+      }
+
+      // 3. Fallback: match by normalized name
+      if (!ing && targetQuery) {
+        ing = ingredientsDb.find(i => normalize(i.name) === targetQuery) ||
+              INITIAL_INGREDIENTS.find(i => normalize(i.name) === targetQuery) ||
+              ingredientsDb.find(i => normalize(i.name).includes(targetQuery) || targetQuery.includes(normalize(i.name))) ||
+              INITIAL_INGREDIENTS.find(i => normalize(i.name).includes(targetQuery) || targetQuery.includes(normalize(i.name)));
+      }
+
+      // 4. Fallback if ri.ingredientId is a catalog ID but DB has different ID
+      if (!ing && ri.ingredientId) {
+        const catalogItem = INITIAL_INGREDIENTS.find(i => i.id === ri.ingredientId);
+        if (catalogItem) {
+          ing = ingredientsDb.find(i => normalize(i.name) === normalize(catalogItem.name)) || catalogItem;
+        }
+      }
+
       if (ing) {
         ingValues = ing;
         name = ing.name;
+      } else {
+        name = ri.note || "INGREDIENTE DESCONOCIDO";
       }
     }
 
-    if (!ingValues) return;
+    if (!ingValues) {
+      // If we can't find nutritional info, we return it with 0s but we must warn the user
+      const unknownContribution: NutrientValues = {
+        energy: 0, energyKJ: 0, carbs: 0, sugars: 0, totalSugars: 0, addedSugars: 0,
+        proteins: 0, totalFats: 0, saturatedFats: 0, transFats: 0, fiber: 0, sodium: 0
+      };
+      ingredientBreakdown.push({
+        name: `⚠️ ${name} (SIN DATOS)`,
+        contribution: unknownContribution,
+        percentageByWeight: (ri.amount / initialWeight) * 100
+      });
+      return;
+    }
+
+    const carbs = Number(ingValues.carbs) || 0;
+    const proteins = Number(ingValues.proteins) || 0;
+    const totalFats = Number(ingValues.totalFats) || 0;
+    const satFats = Number(ingValues.saturatedFats) || 0;
+    const transFats = Number(ingValues.transFats) || 0;
+    const fiber = Number(ingValues.fiber) || 0;
+    const sodium = Number(ingValues.sodium) || 0;
+
+    // Atwater factor energy calculation if missing or 0
+    const atwaterKcal = (carbs * CONVERSION_FACTORS.CARBS_KCAL_PER_G) + 
+                        (proteins * CONVERSION_FACTORS.PROTEIN_KCAL_PER_G) + 
+                        (totalFats * CONVERSION_FACTORS.FATS_KCAL_PER_G);
+    const effectiveEnergy = (ingValues.energy && Number(ingValues.energy) > 0) ? Number(ingValues.energy) : atwaterKcal;
+    const effectiveEnergyKJ = (ingValues.energyKJ && Number(ingValues.energyKJ) > 0) 
+      ? Number(ingValues.energyKJ) 
+      : Math.round(effectiveEnergy * CONVERSION_FACTORS.KCAL_TO_KJ);
+
+    const effectiveTotalSugars = ingValues.totalSugars !== undefined 
+      ? Number(ingValues.totalSugars) 
+      : (Number(ingValues.sugars) || 0);
+    const effectiveAddedSugars = ingValues.addedSugars !== undefined 
+      ? Number(ingValues.addedSugars) 
+      : ((ingValues as any).functionalGroup === 'azucares' ? effectiveTotalSugars : 0);
 
     const factor = ri.amount / 100;
     const contribution: NutrientValues = {
-      energy: (ingValues.energy || 0) * factor,
-      energyKJ: (ingValues.energyKJ || ((ingValues.energy || 0) * CONVERSION_FACTORS.KCAL_TO_KJ) || 0) * factor,
-      carbs: (ingValues.carbs || 0) * factor,
-      sugars: (ingValues.sugars || 0) * factor,
-      totalSugars: (ingValues.totalSugars || ingValues.sugars || 0) * factor,
-      addedSugars: (ingValues.addedSugars || 0) * factor,
-      proteins: (ingValues.proteins || 0) * factor,
-      totalFats: (ingValues.totalFats || 0) * factor,
-      saturatedFats: (ingValues.saturatedFats || 0) * factor,
-      transFats: (ingValues.transFats || 0) * factor,
-      fiber: (ingValues.fiber || 0) * factor,
-      sodium: (ingValues.sodium || 0) * factor,
+      energy: effectiveEnergy * factor,
+      energyKJ: effectiveEnergyKJ * factor,
+      carbs: carbs * factor,
+      sugars: effectiveTotalSugars * factor,
+      totalSugars: effectiveTotalSugars * factor,
+      addedSugars: effectiveAddedSugars * factor,
+      proteins: proteins * factor,
+      totalFats: totalFats * factor,
+      saturatedFats: satFats * factor,
+      transFats: transFats * factor,
+      fiber: fiber * factor,
+      sodium: sodium * factor,
     };
 
     Object.keys(totalNutrients).forEach(key => {
@@ -146,22 +217,27 @@ export function calculateNutrition(
     .map(i => i.name.toUpperCase());
 
   // Adjustment by final yield
-  const safeFinalYield = recipe.finalYield || initialWeight;
-  const yieldFactor = safeFinalYield / initialWeight;
-  const adjustedNutrients: NutrientValues = {} as any;
+  // In food science (CAA / Codex), all nutrients added in the batch remain in the final batch (only water loss/evaporation occurs).
+  // safeFinalYield is the total weight of the finished cooked/frozen batch.
+  const safeFinalYield = (recipe.finalYield && Number(recipe.finalYield) > 0) ? Number(recipe.finalYield) : initialWeight;
+  const safeServingSize = (recipe.servingSize && Number(recipe.servingSize) > 0) ? Number(recipe.servingSize) : 60; // 60g default for ice cream / pastry
+
+  // Adjusted nutrients for the entire finished batch
+  const adjustedNutrients: NutrientValues = { ...totalNutrients };
+
+  // Per 100g of finished product concentration
+  const per100g: NutrientValues = {} as any;
   Object.keys(totalNutrients).forEach(key => {
-    (adjustedNutrients as any)[key] = (totalNutrients as any)[key] * yieldFactor;
+    (per100g as any)[key] = ((totalNutrients as any)[key] / safeFinalYield) * 100;
   });
 
   // Per serving calculation
-  const safeServingSize = recipe.servingSize || 100;
-  const servingsTotal = (safeFinalYield / safeServingSize) || 1;
   const perServing: NutrientValues = {} as any;
-  Object.keys(adjustedNutrients).forEach(key => {
-    (perServing as any)[key] = (adjustedNutrients as any)[key] / servingsTotal;
+  Object.keys(per100g).forEach(key => {
+    (perServing as any)[key] = ((per100g as any)[key] / 100) * safeServingSize;
   });
 
-  // %DV calculation
+  // %DV calculation according to CAA (2000 kcal diet)
   const percentDV: Partial<NutrientValues> = {};
   Object.keys(perServing).forEach(key => {
     const dailyVal = (DAILY_VALUES_REFERENCE as any)[key];
@@ -170,49 +246,49 @@ export function calculateNutrition(
     }
   });
 
-  // Octagon Warnings (Ley 27.642)
-  // These are calculated based on 100g of the adjusted final product
-  const per100g = {} as any;
-  Object.keys(adjustedNutrients).forEach(key => {
-    per100g[key] = (adjustedNutrients as any)[key] * (100 / safeFinalYield);
-  });
-
+  // Octagon Warnings (Ley 27.642) - based on 100g or 100ml of finished product
   const warnings: string[] = [];
   const totalKcal = per100g.energy;
 
-  // Sugars > 10% of total energy
-  const kcalFromSugars = per100g.sugars * CONVERSION_FACTORS.CARBS_KCAL_PER_G;
-  if (kcalFromSugars >= (totalKcal * LABELING_THRESHOLDS.SUGARS_ENERGY_PERCENT / 100)) {
+  // Sugars > 10% of total energy (added / free sugars per Ley 27.642)
+  const evaluatedSugars = (per100g.addedSugars && per100g.addedSugars > 0) ? per100g.addedSugars : (per100g.totalSugars || per100g.sugars);
+  const kcalFromSugars = evaluatedSugars * CONVERSION_FACTORS.CARBS_KCAL_PER_G;
+  if (totalKcal > 0 && kcalFromSugars >= (totalKcal * LABELING_THRESHOLDS.SUGARS_ENERGY_PERCENT / 100)) {
     warnings.push('EXCESO EN AZÚCARES');
   }
 
   // Total Fats > 30% of total energy
   const kcalFromFats = per100g.totalFats * CONVERSION_FACTORS.FATS_KCAL_PER_G;
-  if (kcalFromFats >= (totalKcal * LABELING_THRESHOLDS.TOTAL_FATS_ENERGY_PERCENT / 100)) {
+  if (totalKcal > 0 && kcalFromFats >= (totalKcal * LABELING_THRESHOLDS.TOTAL_FATS_ENERGY_PERCENT / 100)) {
     warnings.push('EXCESO EN GRASAS TOTALES');
   }
 
   // Saturated Fats > 10% of total energy
   const kcalFromSatFats = per100g.saturatedFats * CONVERSION_FACTORS.FATS_KCAL_PER_G;
-  if (kcalFromSatFats >= (totalKcal * LABELING_THRESHOLDS.SAT_FATS_ENERGY_PERCENT / 100)) {
+  if (totalKcal > 0 && kcalFromSatFats >= (totalKcal * LABELING_THRESHOLDS.SAT_FATS_ENERGY_PERCENT / 100)) {
     warnings.push('EXCESO EN GRASAS SATURADAS');
   }
 
   // Sodium >= 1mg/kcal OR >= 300mg/100g
-  if (per100g.sodium >= totalKcal * LABELING_THRESHOLDS.SODIUM_RATIO_MG_KCAL || per100g.sodium >= LABELING_THRESHOLDS.SODIUM_MAX_MG_100G) {
+  if (totalKcal > 0 && (per100g.sodium >= totalKcal * LABELING_THRESHOLDS.SODIUM_RATIO_MG_KCAL || per100g.sodium >= LABELING_THRESHOLDS.SODIUM_MAX_MG_100G)) {
     warnings.push('EXCESO EN SODIO');
   }
 
-  // Calories threshold depends on state
+  // Calories threshold depends on state (Solid: 275 kcal/100g, Liquid: 25 kcal/100ml)
   const calorieThreshold = recipe.isLiquid 
     ? LABELING_THRESHOLDS.CALORIES_LIQUID_KCAL_100ML 
     : LABELING_THRESHOLDS.CALORIES_SOLID_KCAL_100G;
 
   if (totalKcal >= calorieThreshold) {
-    // Only if it has excessive sugar/fat/sodium? Actually the law says if it exceeds ANY nutrient limit AND exceeds calories.
     if (warnings.length > 0) {
       warnings.push('EXCESO EN CALORÍAS');
     }
+  }
+
+  // Add warning for unknown ingredients
+  const hasUnknownIngredients = ingredientBreakdown.some(ib => ib.name.includes('(SIN DATOS)'));
+  if (hasUnknownIngredients) {
+    warnings.push('CONTIENE INGREDIENTES SIN DATOS NUTRICIONALES (VALORES SUBESTIMADOS)');
   }
 
   // Allergen Calculation
@@ -253,6 +329,7 @@ export function calculateNutrition(
   return {
     totalNutrients,
     adjustedNutrients,
+    per100g,
     perServing,
     percentDV,
     warnings,

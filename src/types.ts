@@ -104,6 +104,7 @@ export interface TrialIngredient {
 export interface CalculationResult {
   totalNutrients: NutrientValues;
   adjustedNutrients: NutrientValues; // adjusted by yield
+  per100g?: NutrientValues; // concentration per 100g or 100ml
   perServing: NutrientValues;
   percentDV: Partial<NutrientValues>;
   warnings: string[];
@@ -151,6 +152,15 @@ export interface ProjectTask {
   completed: boolean;
   createdAt: number;
   deadline?: number;
+  area?: AssignmentArea;
+  assignee?: string;
+}
+
+export interface MeetingTopic {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: number;
 }
 
 export interface SensoryAnalysis {
@@ -186,6 +196,7 @@ export interface DevelopmentProject {
   prodTrialStartTime?: string;
   prodTrialEndTime?: string;
   tasks?: ProjectTask[];
+  meetingTopics?: MeetingTopic[];
   sensoryAnalysis?: SensoryAnalysis;
   areaAssignments?: AreaAssignment[];
 }

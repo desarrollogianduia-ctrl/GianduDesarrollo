@@ -86,7 +86,9 @@ export const DataManagementModal: React.FC<DataManagementModalProps> = ({
       GrupoFuncional: ing.functionalGroup || "",
       Energia_kcal: ing.energy,
       Carbohidratos_g: ing.carbs,
-      Azucares_g: ing.sugars,
+      AzucaresTotales_g: ing.totalSugars !== undefined ? ing.totalSugars : ing.sugars,
+      AzucaresAnadidos_g: ing.addedSugars || 0,
+      Azucares_g: ing.totalSugars !== undefined ? ing.totalSugars : ing.sugars,
       Proteinas_g: ing.proteins,
       GrasasTotales_g: ing.totalFats,
       GrasasSaturadas_g: ing.saturatedFats,
@@ -153,21 +155,34 @@ export const DataManagementModal: React.FC<DataManagementModalProps> = ({
             const json = XLSX.utils.sheet_to_json(sheet);
             
             if (name.toLowerCase().includes("ingredient")) {
-              importedData.ingredients = json.map((row: any) => ({
-                id: row.ID || row.id || `ing_${Math.random().toString(36).substr(2, 9)}`,
-                name: row.Nombre || row.name || row.Name || "Sin nombre",
-                energy: Number(row.Energia_kcal || row.energy || 0),
-                carbs: Number(row.Carbohidratos_g || row.carbs || 0),
-                sugars: Number(row.Azucares_g || row.sugars || 0),
-                proteins: Number(row.Proteinas_g || row.proteins || 0),
-                totalFats: Number(row.GrasasTotales_g || row.totalFats || 0),
-                saturatedFats: Number(row.GrasasSaturadas_g || row.saturatedFats || 0),
-                transFats: 0,
-                fiber: Number(row.Fibra_g || row.fiber || 0),
-                sodium: Number(row.Sodio_mg || row.sodium || 0),
-                category: row.Categoria || row.category || "generico",
-                isGlutenFree: row.SinTACC === "SI" || row.isGlutenFree === true
-              }));
+              importedData.ingredients = json.map((row: any) => {
+                const c = Number(row.Carbohidratos_g || row.carbs || 0);
+                const p = Number(row.Proteinas_g || row.proteins || 0);
+                const f = Number(row.GrasasTotales_g || row.totalFats || 0);
+                const atwater = (c * 4) + (p * 4) + (f * 9);
+                const energyVal = Number(row.Energia_kcal || row.energy || atwater);
+                const totSug = Number(row.AzucaresTotales_g ?? row.Azucares_g ?? row.totalSugars ?? row.sugars ?? 0);
+                const addSug = Number(row.AzucaresAnadidos_g ?? row.addedSugars ?? 0);
+
+                return {
+                  id: row.ID || row.id || `ing_${Math.random().toString(36).substr(2, 9)}`,
+                  name: row.Nombre || row.name || row.Name || "Sin nombre",
+                  energy: energyVal,
+                  energyKJ: Number(row.Energia_kJ || row.energyKJ || Math.round(energyVal * 4.184)),
+                  carbs: c,
+                  sugars: totSug,
+                  totalSugars: totSug,
+                  addedSugars: addSug,
+                  proteins: p,
+                  totalFats: f,
+                  saturatedFats: Number(row.GrasasSaturadas_g || row.saturatedFats || 0),
+                  transFats: Number(row.GrasasTrans_g || row.transFats || 0),
+                  fiber: Number(row.Fibra_g || row.fiber || 0),
+                  sodium: Number(row.Sodio_mg || row.sodium || 0),
+                  category: row.Categoria || row.category || "generico",
+                  isGlutenFree: row.SinTACC === "SI" || row.isGlutenFree === true
+                };
+              });
             }
             
             if (name.toLowerCase().includes("receta") || name.toLowerCase().includes("recipe")) {

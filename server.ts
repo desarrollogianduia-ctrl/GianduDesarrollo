@@ -84,17 +84,21 @@ app.post("/api/ai/nutritional-info", async (req, res, next) => {
     const ai = getGenAI();
     
     const prompt = `Find the nutritional information EXCLUSIVELY per 100g (or 100ml for liquids) for "${ingredientName}". 
-    The item should be common in the Argentine food market (Ley 27.642 context).
+    The item should be common in the Argentine food market (Ley 27.642 context / Código Alimentario Argentino).
     
     CRITICAL: 
     1. All values MUST be per 100g/ml of product.
-    2. Verificá la información con bases de datos confiables de Argentina (SADI, ARCOR, etc.).
-    3. Return a valid JSON.
+    2. Distinguish clearly between TOTAL SUGARS (azúcares totales intrínsecos + añadidos) and ADDED SUGARS (azúcares añadidos/libres según CAA y Ley 27.642). For example: pure sugar has 100g total and 100g added; whole milk has 4.8g total and 0g added; chocolate with 40% sugar has 40g total and 40g added.
+    3. Calculate or verify energy in kcal and kJ using Atwater factors (carbs*4 + proteins*4 + fats*9).
+    4. Return a valid JSON.
     
     Return a JSON object with:
     - energy (kcal)
-    - carbs (g)
-    - sugars (g)
+    - energyKJ (kJ)
+    - carbs (g, carbohidratos totales)
+    - totalSugars (g, azúcares totales)
+    - addedSugars (g, azúcares añadidos según CAA y Ley 27.642)
+    - sugars (g, igual a totalSugars)
     - proteins (g)
     - totalFats (g)
     - saturatedFats (g)
@@ -113,7 +117,28 @@ app.post("/api/ai/nutritional-info", async (req, res, next) => {
     })) as any;
 
     const text = response.text || "{}";
-    res.json(JSON.parse(text));
+    const parsed = JSON.parse(text);
+
+    if (parsed.totalSugars === undefined && parsed.sugars !== undefined) {
+      parsed.totalSugars = Number(parsed.sugars) || 0;
+    }
+    if (parsed.sugars === undefined && parsed.totalSugars !== undefined) {
+      parsed.sugars = Number(parsed.totalSugars) || 0;
+    }
+    if (parsed.addedSugars === undefined) {
+      parsed.addedSugars = 0;
+    }
+    const carbs = Number(parsed.carbs) || 0;
+    const proteins = Number(parsed.proteins) || 0;
+    const totalFats = Number(parsed.totalFats) || 0;
+    if (!parsed.energy || Number(parsed.energy) <= 0) {
+      parsed.energy = Math.round((carbs * 4) + (proteins * 4) + (totalFats * 9));
+    }
+    if (!parsed.energyKJ || Number(parsed.energyKJ) <= 0) {
+      parsed.energyKJ = Math.round(Number(parsed.energy) * 4.184);
+    }
+
+    res.json(parsed);
   } catch (error: any) {
     console.error("[AI] Nutritional Info Error:", error);
     next(error);

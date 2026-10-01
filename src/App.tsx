@@ -26,11 +26,14 @@ import {
   History,
   Save,
   ChevronDown,
+  ChevronUp,
   LayoutDashboard,
   UploadCloud,
   Camera,
   Loader2,
   FolderOpen,
+  PanelLeftClose,
+  PanelLeftOpen,
   Search,
   FlaskConical,
   Sparkles,
@@ -47,6 +50,7 @@ import {
   ArrowRight,
   ChevronLeft as ChevronLeft2, // Prevent overlap if any
   ArrowUp,
+  ArrowDown,
   Upload,
   Paperclip,
   GitMerge,
@@ -57,6 +61,11 @@ import {
   Calendar,
   ShieldAlert,
   Undo2,
+  Maximize2,
+  Minimize2,
+  Columns,
+  Sliders,
+  Hash,
   Pause,
   Play,
   Milk,
@@ -109,6 +118,7 @@ import {
   ProjectStatus,
   AssignmentArea,
   ProjectTask,
+  MeetingTopic,
   KnowledgeDocument,
   RecipeAudit,
   WasteEntry,
@@ -593,6 +603,8 @@ export default function App() {
   const [adminPassInput, setAdminPassInput] = useState("");
   const [tempDevCode, setTempDevCode] = useState("");
   const [showTaskDashboard, setShowTaskDashboard] = useState(false);
+  const [showCompletedTasks, setShowCompletedTasks] = useState(false);
+  const [discussedProjectIds, setDiscussedProjectIds] = useState<string[]>([]);
   const [devFilterName, setDevFilterName] = useState("");
   const [devFilterArea, setDevFilterArea] = useState<ProductArea | "todos">(
     "todos",
@@ -603,6 +615,7 @@ export default function App() {
   const [devStatusFilter, setDevStatusFilter] = useState<
     "activos" | "archivados"
   >("activos");
+  const [devFilterMeetingMode, setDevFilterMeetingMode] = useState(false);
 
   const [dashboardFilterArea, setDashboardFilterArea] = useState<
     ProductArea | "todos"
@@ -626,7 +639,10 @@ export default function App() {
   const [loginError, setLoginError] = useState<string | null>(null);
 
   const [newTaskText, setNewTaskText] = useState("");
+  const [newMeetingTopicText, setNewMeetingTopicText] = useState("");
   const [newTaskDeadline, setNewTaskDeadline] = useState("");
+  const [newTaskArea, setNewTaskArea] = useState<AssignmentArea | "">("");
+  const [newTaskAssignee, setNewTaskAssignee] = useState("");
   const [ingTargetSearch, setIngTargetSearch] = useState("");
 
   // Auth Effect
@@ -641,10 +657,14 @@ export default function App() {
   useEffect(() => {
     if (user) {
       const unsubscribe = subscribeIngredients((data) => {
-        // If data is empty but we want to provide a starting point,
-        // we could show a prompt, but forcing INITIAL_INGREDIENTS
-        // makes deleting the last item impossible or confusing.
-        setIngredients(data);
+        // Guarantee that built-in baseline raw materials are always available
+        const merged = [...data];
+        INITIAL_INGREDIENTS.forEach((initIng) => {
+          if (!merged.some((m) => m.id === initIng.id || m.name.toLowerCase().trim() === initIng.name.toLowerCase().trim())) {
+            merged.push(initIng);
+          }
+        });
+        setIngredients(merged);
       });
       return unsubscribe;
     } else {
@@ -817,7 +837,7 @@ export default function App() {
   }, [recipes, view, recipesSearchQuery, recipeStatusFilter, recipeCategoryFilter, recipeTypeFilter]);
 
   const filteredDevelopments = useMemo(() => {
-    return developments
+    let list = developments
       .filter((d) =>
         devStatusFilter === "archivados"
           ? d.status === "archivado"
@@ -833,14 +853,40 @@ export default function App() {
           devFilterPriority === "todos" || d.priority === devFilterPriority;
 
         return matchesName && matchesArea && matchesPriority;
-      })
-      .sort((a, b) => b.updatedAt - a.updatedAt);
+      });
+
+    if (devFilterMeetingMode) {
+      const latestByProduct: Record<string, DevelopmentProject> = {};
+      list.forEach((dev) => {
+        const key = dev.productName.toLowerCase().trim();
+        if (!latestByProduct[key]) {
+          latestByProduct[key] = dev;
+        } else {
+          const currentLatest = latestByProduct[key];
+          const isNewer =
+            dev.sequenceNumber > currentLatest.sequenceNumber ||
+            (dev.sequenceNumber === currentLatest.sequenceNumber &&
+              dev.trialLetter > currentLatest.trialLetter) ||
+            (dev.sequenceNumber === currentLatest.sequenceNumber &&
+              dev.trialLetter === currentLatest.trialLetter &&
+              (dev.updatedAt || 0) > (currentLatest.updatedAt || 0));
+
+          if (isNewer) {
+            latestByProduct[key] = dev;
+          }
+        }
+      });
+      list = Object.values(latestByProduct);
+    }
+
+    return list.sort((a, b) => b.updatedAt - a.updatedAt);
   }, [
     developments,
     devFilterName,
     devFilterArea,
     devFilterPriority,
     devStatusFilter,
+    devFilterMeetingMode,
   ]);
 
   const allCalendarEvents = useMemo(() => {
@@ -868,7 +914,36 @@ export default function App() {
         relatedProjectId: dev.id,
       })),
     );
-    return [...events, ...devEvents];
+    const taskEvents: CalendarEvent[] = developments.flatMap((dev) =>
+      (dev.tasks || [])
+        .filter((t) => t.deadline && !t.completed)
+        .map((t) => ({
+          id: `task_${t.id}`,
+          title: `[${(t.area || "Gral").toUpperCase()}] ${t.text} (${dev.productName})`,
+          startDate: t.deadline!,
+          endDate: t.deadline! + 3600000,
+          type: "tarea" as const,
+          color:
+            t.area === "compras"
+              ? "#3b82f6"
+              : t.area === "desarrollo"
+                ? "#8b5cf6"
+                : t.area === "produccion"
+                  ? "#10b981"
+                  : t.area === "sistema"
+                    ? "#f59e0b"
+                    : t.area === "pcp"
+                      ? "#ec4899"
+                      : t.area === "mantenimiento"
+                        ? "#ef4444"
+                        : "#f59e0b",
+          participants: t.assignee ? [{ name: t.assignee }] : [],
+          ownerId: dev.createdBy,
+          relatedProjectId: dev.id,
+        })),
+    );
+
+    return [...events, ...devEvents, ...taskEvents];
   }, [events, developments]);
 
   const allPendingTasks = useMemo(() => {
@@ -906,10 +981,111 @@ export default function App() {
       });
   }, [developments]);
 
+  const allTasksFromActiveProjects = useMemo(() => {
+    return developments
+      .filter((d) => d.status !== "archivado")
+      .flatMap((dev) =>
+        (dev.tasks || []).map((t) => ({
+          ...t,
+          projectName: dev.productName,
+          projectPriority: dev.priority,
+          projectArea: dev.area,
+          projectId: dev.id,
+        })),
+      )
+      .sort((a, b) => {
+        // In this view, we want to show completed at the bottom
+        if (a.completed !== b.completed) {
+          return a.completed ? 1 : -1;
+        }
+        // Then by deadline
+        if (a.deadline && b.deadline) {
+          return a.deadline - b.deadline;
+        }
+        return b.createdAt - a.createdAt;
+      });
+  }, [developments]);
+
+  const meetingDevelopments = useMemo(() => {
+    const activeDevs = developments.filter((d) => d.status !== "archivado");
+    const latestByProduct: Record<string, DevelopmentProject> = {};
+
+    activeDevs.forEach((dev) => {
+      const key = dev.productName.toLowerCase().trim();
+      if (!latestByProduct[key]) {
+        latestByProduct[key] = dev;
+      } else {
+        const currentLatest = latestByProduct[key];
+        const isNewer =
+          dev.sequenceNumber > currentLatest.sequenceNumber ||
+          (dev.sequenceNumber === currentLatest.sequenceNumber &&
+            dev.trialLetter > currentLatest.trialLetter) ||
+          (dev.sequenceNumber === currentLatest.sequenceNumber &&
+            dev.trialLetter === currentLatest.trialLetter &&
+            (dev.updatedAt || 0) > (currentLatest.updatedAt || 0));
+
+        if (isNewer) {
+          latestByProduct[key] = dev;
+        }
+      }
+    });
+
+    return Object.values(latestByProduct).sort((a, b) => {
+      const priorityScore = { alta: 3, media: 2, baja: 1 };
+      const scoreA = priorityScore[a.priority] || 0;
+      const scoreB = priorityScore[b.priority] || 0;
+      if (scoreA !== scoreB) return scoreB - scoreA;
+      return (b.updatedAt || 0) - (a.updatedAt || 0);
+    });
+  }, [developments]);
+
   const [copiedLabel, setCopiedLabel] = useState(false);
+  const [copiedLinear, setCopiedLinear] = useState(false);
+  const [formulationViewMode, setFormulationViewMode] = useState<"split" | "fullscreen">("split");
+  const [matrixSearchQuery, setMatrixSearchQuery] = useState("");
+  const [matrixDensity, setMatrixDensity] = useState<"comfortable" | "compact">("comfortable");
+  const [matrixSortBy, setMatrixSortBy] = useState<"default" | "weight_desc" | "weight_asc" | "name">("default");
+  const [showCustomScale, setShowCustomScale] = useState(false);
+  const [customScaleInput, setCustomScaleInput] = useState("");
   const [ingSearch, setIngSearch] = useState("");
   const [ingCategory, setIngCategory] = useState<string>("all");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isTechnicalParamsOpen, setIsTechnicalParamsOpen] = useState(true);
+  const [isCatalogOpen, setIsCatalogOpen] = useState(true);
+
+  const filteredMatrixIngredients = useMemo(() => {
+    if (!selectedRecipe) return [];
+    let list = selectedRecipe.ingredients.map((ri, originalIndex) => ({
+      ...ri,
+      originalIndex,
+    }));
+    if (matrixSearchQuery.trim()) {
+      const q = matrixSearchQuery.toLowerCase().trim();
+      list = list.filter((item) => {
+        const ing = ingredients.find((i) => i.id === item.ingredientId);
+        const sub = recipes.find((r) => r.id === item.ingredientId);
+        const name = item.isRecipe ? (sub?.name || "") : (ing?.name || item.note || "");
+        const brand = !item.isRecipe ? (ing?.brand || "") : "";
+        return name.toLowerCase().includes(q) || brand.toLowerCase().includes(q);
+      });
+    }
+    if (matrixSortBy === "weight_desc") {
+      list.sort((a, b) => b.amount - a.amount);
+    } else if (matrixSortBy === "weight_asc") {
+      list.sort((a, b) => a.amount - b.amount);
+    } else if (matrixSortBy === "name") {
+      list.sort((a, b) => {
+        const nameA = a.isRecipe
+          ? (recipes.find((r) => r.id === a.ingredientId)?.name || "")
+          : (ingredients.find((i) => i.id === a.ingredientId)?.name || a.note || "");
+        const nameB = b.isRecipe
+          ? (recipes.find((r) => r.id === b.ingredientId)?.name || "")
+          : (ingredients.find((i) => i.id === b.ingredientId)?.name || b.note || "");
+        return nameA.localeCompare(nameB);
+      });
+    }
+    return list;
+  }, [selectedRecipe, ingredients, recipes, matrixSearchQuery, matrixSortBy]);
 
   // Custom Confirmation Dialog State
   const [confirmModal, setConfirmModal] = useState<{
@@ -1076,6 +1252,7 @@ export default function App() {
         setRecipes((prev) => [...prev, newRecipe]);
       }
       setSelectedRecipeId(newRecipe.id);
+      setIsCatalogOpen(false); // Colapsar catálogo para ampliar el espacio de trabajo tras importar
     } catch (error) {
       alert(
         error instanceof Error ? error.message : "Error al procesar el archivo",
@@ -1327,6 +1504,7 @@ export default function App() {
       }
 
       setSelectedRecipeId(newRecipe.id);
+      setIsCatalogOpen(false); // Colapsar catálogo para ampliar el espacio de trabajo tras importar
     } catch (error) {
       console.error("Excel Import Error:", error);
       alert(
@@ -1371,6 +1549,43 @@ export default function App() {
     navigator.clipboard.writeText(text);
     setCopiedLabel(true);
     setTimeout(() => setCopiedLabel(false), 2000);
+  };
+
+  const copyLinearToClipboard = () => {
+    if (!selectedRecipe) return;
+    const text = generateLinearNutritionalText(selectedRecipe, nutritionData);
+    navigator.clipboard.writeText(text);
+    setCopiedLinear(true);
+    setTimeout(() => setCopiedLinear(false), 2000);
+  };
+
+  const handleScaleRecipe = (targetWeight: number) => {
+    if (!selectedRecipe || recipeTotalWeight <= 0) return;
+    const factor = targetWeight / recipeTotalWeight;
+    const scaledIngredients = selectedRecipe.ingredients.map((ri) => ({
+      ...ri,
+      amount: Math.round(ri.amount * factor * 100) / 100,
+    }));
+    handleUpdateRecipe({
+      ...selectedRecipe,
+      ingredients: scaledIngredients,
+      totalYield: targetWeight,
+      finalYield: targetWeight,
+    });
+  };
+
+  const handleMoveIngredient = (fromIndex: number, direction: "up" | "down") => {
+    if (!selectedRecipe) return;
+    const toIndex = direction === "up" ? fromIndex - 1 : fromIndex + 1;
+    if (toIndex < 0 || toIndex >= selectedRecipe.ingredients.length) return;
+    const newIngredients = [...selectedRecipe.ingredients];
+    const temp = newIngredients[fromIndex];
+    newIngredients[fromIndex] = newIngredients[toIndex];
+    newIngredients[toIndex] = temp;
+    handleUpdateRecipe({
+      ...selectedRecipe,
+      ingredients: newIngredients,
+    });
   };
 
   const handleIngredientWebSearch = async (forceGeneric = false) => {
@@ -1679,6 +1894,20 @@ export default function App() {
         return;
       }
 
+      const carbsVal = Number(newIngData.carbs) || 0;
+      const proteinsVal = Number(newIngData.proteins) || 0;
+      const totalFatsVal = Number(newIngData.totalFats) || 0;
+      const atwaterKcal = (carbsVal * 4) + (proteinsVal * 4) + (totalFatsVal * 9);
+      const energyVal = (newIngData.energy && Number(newIngData.energy) > 0) ? Number(newIngData.energy) : atwaterKcal;
+      const energyKJVal = (newIngData.energyKJ && Number(newIngData.energyKJ) > 0) ? Number(newIngData.energyKJ) : Math.round(energyVal * 4.184);
+
+      const totalSugarsVal = newIngData.totalSugars !== undefined 
+        ? Number(newIngData.totalSugars) 
+        : (Number(newIngData.sugars) || 0);
+      const addedSugarsVal = newIngData.addedSugars !== undefined 
+        ? Number(newIngData.addedSugars) 
+        : 0;
+
       const newIng: Ingredient = {
         ...newIngData,
         id: newIngData.id || `ing_${Date.now()}`,
@@ -1686,14 +1915,14 @@ export default function App() {
         category:
           (newIngData.category as "generico" | "especifico") || "especifico",
         functionalGroup: newIngData.functionalGroup || "otros",
-        energy: Number(newIngData.energy) || 0,
-        energyKJ: Number(newIngData.energyKJ) || 0,
-        carbs: Number(newIngData.carbs) || 0,
-        sugars: Number(newIngData.sugars) || 0,
-        totalSugars: Number(newIngData.totalSugars) || 0,
-        addedSugars: Number(newIngData.addedSugars) || 0,
-        proteins: Number(newIngData.proteins) || 0,
-        totalFats: Number(newIngData.totalFats) || 0,
+        energy: energyVal,
+        energyKJ: energyKJVal,
+        carbs: carbsVal,
+        sugars: totalSugarsVal,
+        totalSugars: totalSugarsVal,
+        addedSugars: addedSugarsVal,
+        proteins: proteinsVal,
+        totalFats: totalFatsVal,
         saturatedFats: Number(newIngData.saturatedFats) || 0,
         transFats: Number(newIngData.transFats) || 0,
         fiber: Number(newIngData.fiber) || 0,
@@ -2167,6 +2396,8 @@ export default function App() {
       createdAt: Date.now(),
       deadline:
         parsedDeadline && !isNaN(parsedDeadline) ? parsedDeadline : undefined,
+      area: newTaskArea || undefined,
+      assignee: newTaskAssignee.trim() || undefined,
     };
     const updatedTasks = [...(dev.tasks || []), newTask];
     await saveDevelopment(
@@ -2175,6 +2406,44 @@ export default function App() {
     );
     setNewTaskText("");
     setNewTaskDeadline("");
+    setNewTaskArea("");
+    setNewTaskAssignee("");
+  };
+
+  const handleAddMeetingTopic = async (dev: DevelopmentProject) => {
+    if (!newMeetingTopicText.trim() || !user) return;
+    const newTopic: MeetingTopic = {
+      id: `topic_${Date.now()}`,
+      text: newMeetingTopicText.trim(),
+      completed: false,
+      createdAt: Date.now(),
+    };
+    const updatedTopics = [...(dev.meetingTopics || []), newTopic];
+    await saveDevelopment(
+      { ...dev, meetingTopics: updatedTopics, updatedAt: Date.now() },
+      user.uid,
+    );
+    setNewMeetingTopicText("");
+  };
+
+  const handleToggleMeetingTopic = async (dev: DevelopmentProject, topicId: string) => {
+    if (!user) return;
+    const updatedTopics = (dev.meetingTopics || []).map((t) =>
+      t.id === topicId ? { ...t, completed: !t.completed } : t,
+    );
+    await saveDevelopment(
+      { ...dev, meetingTopics: updatedTopics, updatedAt: Date.now() },
+      user.uid,
+    );
+  };
+
+  const handleDeleteMeetingTopic = async (dev: DevelopmentProject, topicId: string) => {
+    if (!user) return;
+    const updatedTopics = (dev.meetingTopics || []).filter((t) => t.id !== topicId);
+    await saveDevelopment(
+      { ...dev, meetingTopics: updatedTopics, updatedAt: Date.now() },
+      user.uid,
+    );
   };
 
   const handleDeleteTask = async (dev: DevelopmentProject, taskId: string) => {
@@ -3105,6 +3374,18 @@ export default function App() {
                         <option value="low">Baja</option>
                       </select>
                       <button
+                        onClick={() => setDevFilterMeetingMode(!devFilterMeetingMode)}
+                        className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all flex items-center gap-2 border ${
+                          devFilterMeetingMode
+                            ? "bg-purple-500/20 border-purple-500/50 text-purple-400 hover:bg-purple-500/30"
+                            : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white"
+                        }`}
+                        title="Muestra solo la última versión de cada producto (Modo Reunión)"
+                      >
+                        <Layers size={18} />
+                        {devFilterMeetingMode ? "Ver Todas las Versiones" : "Agrupar por Producto"}
+                      </button>
+                      <button
                         onClick={() => setShowTaskDashboard(!showTaskDashboard)}
                         className={`px-6 py-3 rounded-2xl text-sm font-bold transition-all flex items-center gap-2 border ${
                           showTaskDashboard
@@ -3132,178 +3413,175 @@ export default function App() {
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-amber-500/5 border border-amber-500/20 rounded-[32px] p-8 shrink-0 mb-8"
                     >
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                          <div className="p-3 bg-amber-500/20 rounded-2xl text-amber-500">
-                            <Calendar size={24} />
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-4">
+                          <div className="p-4 bg-amber-500/20 rounded-[24px] text-amber-500 shadow-lg shadow-amber-500/10">
+                            <Calendar size={32} />
                           </div>
                           <div>
-                            <h2 className="text-2xl font-light text-white tracking-tight">
-                              Tareas Semanales{" "}
+                            <h2 className="text-3xl font-light text-white tracking-tight">
+                              Reunión de Seguimiento I+D{" "}
                               <span className="text-amber-500/60 font-mono ml-2 text-sm italic">
-                                Organizador Global
+                                Temas y Productos Activos
                               </span>
                             </h2>
-                            <p className="text-white/40 text-xs mt-1">
-                              Todas las tareas pendientes de tus proyectos en
-                              curso.
+                            <p className="text-white/40 text-sm mt-1">
+                              Revisión de la última versión de cada producto y sus hitos alcanzados.
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-3xl font-display font-light text-amber-500 leading-none">
-                            {allPendingTasks.length}
+                        <div className="flex items-center gap-4">
+                          <div className="text-right px-6 py-3 bg-white/5 rounded-2xl border border-white/5">
+                            <div className="text-2xl font-mono font-bold text-amber-500 leading-none">
+                              {meetingDevelopments.length}
+                            </div>
+                            <div className="text-[9px] text-white/30 uppercase tracking-[0.2em] font-black mt-1">
+                              Productos
+                            </div>
                           </div>
-                          <div className="text-[10px] text-white/30 uppercase tracking-widest mt-1">
-                            Pendientes
-                          </div>
+                          <button
+                            onClick={() => setShowTaskDashboard(false)}
+                            className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-white/40 hover:text-white transition-all"
+                          >
+                            <X size={20} />
+                          </button>
                         </div>
                       </div>
 
-                      <div className="overflow-hidden rounded-2xl border border-white/5 bg-black/20">
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr className="bg-white/5">
-                              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold border-b border-white/5">
-                                Producto Asociado
-                              </th>
-                              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold border-b border-white/5">
-                                Tarea
-                              </th>
-                              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold border-b border-white/5">
-                                Prioridad
-                              </th>
-                              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold border-b border-white/5">
-                                Vencimiento
-                              </th>
-                              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold border-b border-white/5">
-                                Acción
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-white/5">
-                            {allPendingTasks.length === 0 ? (
-                              <tr>
-                                <td
-                                  colSpan={5}
-                                  className="px-6 py-12 text-center text-white/30 italic text-sm"
-                                >
-                                  No hay tareas pendientes en proyectos activos.
-                                </td>
-                              </tr>
-                            ) : (
-                              allPendingTasks.map((task) => (
-                                <tr
-                                  key={task.id}
-                                  className="hover:bg-white/[0.02] transition-colors group"
-                                >
-                                  <td className="px-6 py-4">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-white font-medium">
-                                        {task.projectName}
-                                      </span>
-                                      <span
-                                        className={`text-[8px] px-1.5 py-0.5 rounded border border-white/10 text-white/40 uppercase`}
+                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        {meetingDevelopments.length === 0 ? (
+                          <div className="col-span-full py-20 text-center bg-black/20 rounded-[32px] border border-dashed border-white/10">
+                            <p className="text-white/20 italic">No hay productos activos para tratar en la reunión.</p>
+                          </div>
+                        ) : (
+                          meetingDevelopments.map((dev) => (
+                            <div 
+                              key={dev.id}
+                              className="bg-[var(--surface)] border border-white/5 rounded-[32px] overflow-hidden flex flex-col group/meeting-card hover:border-amber-500/30 transition-all shadow-xl"
+                            >
+                              <div className="p-6 bg-white/5 border-b border-white/5 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDiscussedProjectIds(prev => 
+                                        prev.includes(dev.id) 
+                                          ? prev.filter(id => id !== dev.id) 
+                                          : [...prev, dev.id]
+                                      );
+                                    }}
+                                    className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${
+                                      discussedProjectIds.includes(dev.id)
+                                        ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                                        : "bg-white/5 border-white/10 text-white/20 hover:border-amber-500/50 hover:text-amber-500"
+                                    }`}
+                                    title={discussedProjectIds.includes(dev.id) ? "Tema ya tratado" : "Marcar como tratado en reunión"}
+                                  >
+                                    {discussedProjectIds.includes(dev.id) ? <Check size={16} /> : <div className="w-2 h-2 rounded-full bg-current opacity-20" />}
+                                  </button>
+                                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono font-bold text-[10px] ${
+                                    dev.priority === 'alta' ? 'bg-rose-500/20 text-rose-400' :
+                                    dev.priority === 'media' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
+                                  }`}>
+                                    {dev.trialLetter}{dev.sequenceNumber.toString().padStart(3, '0')}
+                                  </div>
+                                  <div>
+                                    <h3 className={`text-lg font-bold transition-colors ${
+                                      discussedProjectIds.includes(dev.id) ? "text-white/40 line-through" : "text-white group-hover/meeting-card:text-amber-500"
+                                    }`}>
+                                      {dev.productName}
+                                    </h3>
+                                    <span className="text-[10px] uppercase font-black tracking-widest text-white/20">
+                                      {dev.area} • {dev.code}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                  <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border ${
+                                    dev.status === 'en_progreso' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
+                                    dev.status === 'pausado' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
+                                    'bg-white/5 border-white/10 text-white/40'
+                                  }`}>
+                                    {dev.status}
+                                  </span>
+                                  <span className="text-[9px] font-mono text-white/20 mt-1">
+                                    Act: {(window as any).formatTinyDate(dev.updatedAt)}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex-1 p-6 space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="text-[10px] uppercase font-black tracking-[0.2em] text-white/40 flex items-center gap-2">
+                                    <ListTodo size={14} /> Tareas y Hitos de la Versión
+                                  </h4>
+                                  <span className="text-[9px] font-mono text-amber-500/60">
+                                    {(dev.tasks || []).filter(t => t.completed).length} / {(dev.tasks || []).length} completadas
+                                  </span>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                  {(dev.tasks || []).length === 0 ? (
+                                    <p className="text-xs text-white/10 italic">Sin tareas definidas para esta versión.</p>
+                                  ) : (
+                                    (dev.tasks || []).map((task) => (
+                                      <div 
+                                        key={task.id}
+                                        onClick={() => handleToggleTask(dev, task.id)}
+                                        className={`flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer border group/task ${
+                                          task.completed 
+                                            ? "bg-emerald-500/5 border-emerald-500/20 opacity-60" 
+                                            : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-amber-500/20"
+                                        }`}
                                       >
-                                        {task.projectArea}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="px-6 py-4">
-                                    <span className="text-white/70 text-sm">
-                                      {task.text}
-                                    </span>
-                                  </td>
-                                  <td className="px-6 py-4">
-                                    <span
-                                      className={`text-[10px] font-bold uppercase px-2 py-1 rounded-lg ${
-                                        task.projectPriority === "alta"
-                                          ? "bg-rose-500/20 text-rose-400"
-                                          : task.projectPriority === "media"
-                                            ? "bg-amber-500/20 text-amber-400"
-                                            : "bg-emerald-500/20 text-emerald-400"
-                                      }`}
-                                    >
-                                      {task.projectPriority}
-                                    </span>
-                                  </td>
-                                  <td className="px-6 py-4">
-                                    {task.deadline ? (
-                                      <div className="flex items-center gap-1.5">
-                                        <Calendar
-                                          size={12}
-                                          className={
-                                            !task.completed &&
-                                            task.deadline < Date.now()
-                                              ? "text-rose-500"
-                                              : "text-white/20"
-                                          }
-                                        />
-                                        <span
-                                          className={`text-[10px] font-bold uppercase tracking-wider ${
-                                            !task.completed &&
-                                            task.deadline < Date.now()
-                                              ? "text-rose-500"
-                                              : "text-white/40"
-                                          }`}
-                                        >
-                                          {new Date(
-                                            task.deadline,
-                                          ).toLocaleDateString("es-AR", {
-                                            day: "2-digit",
-                                            month: "2-digit",
-                                          })}
-                                        </span>
+                                        <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
+                                          task.completed 
+                                            ? "bg-emerald-500 border-emerald-500 text-white" 
+                                            : "border-white/20 group-hover/task:border-amber-500/50"
+                                        }`}>
+                                          {task.completed && <Check size={12} />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className={`text-sm leading-snug truncate ${task.completed ? "text-white/40 line-through" : "text-white/80 font-medium"}`}>
+                                            {task.text}
+                                          </p>
+                                          <div className="flex items-center gap-2 mt-0.5">
+                                            {task.assignee && (
+                                              <span className="text-[8px] uppercase font-bold text-white/20">
+                                                {task.assignee}
+                                              </span>
+                                            )}
+                                            {task.area && (
+                                              <span className="text-[8px] uppercase font-black text-amber-500/40">
+                                                {task.area}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
                                       </div>
-                                    ) : (
-                                      <span className="text-white/10 text-[10px] uppercase font-bold tracking-widest">
-                                        ---
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="px-6 py-4">
-                                    <button
-                                      onClick={async () => {
-                                        if (!user) return;
-                                        const dev = developments.find(
-                                          (d) => d.id === task.projectId,
-                                        );
-                                        if (dev) {
-                                          const updatedTasks = (
-                                            dev.tasks || []
-                                          ).map((t) =>
-                                            t.id === task.id
-                                              ? { ...t, completed: true }
-                                              : t,
-                                          );
-                                          try {
-                                            await saveDevelopment(
-                                              {
-                                                ...dev,
-                                                tasks: updatedTasks,
-                                                updatedAt: Date.now(),
-                                              },
-                                              user.uid,
-                                            );
-                                          } catch (err) {
-                                            console.error(
-                                              "Error updating task from dashboard:",
-                                              err,
-                                            );
-                                          }
-                                        }
-                                      }}
-                                      className="p-2 bg-white/5 hover:bg-emerald-500/20 text-white/20 hover:text-emerald-500 rounded-lg transition-all"
-                                      title="Marcar como completada"
-                                    >
-                                      <Check size={16} />
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="p-4 bg-black/20 mt-auto flex items-center justify-between border-t border-white/5">
+                                <button 
+                                  onClick={() => handleStartProjectFormulation(dev)}
+                                  className="text-[10px] font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 transition-colors flex items-center gap-1.5"
+                                >
+                                  <FlaskConical size={14} /> Ir a Formulación
+                                </button>
+                                <div className="flex items-center gap-3">
+                                  {dev.testingDate && (
+                                    <div className="flex items-center gap-1.5 text-[9px] text-purple-400 font-bold uppercase">
+                                      <ClipboardCheck size={12} /> {(window as any).formatTinyDate(dev.testingDate)}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </motion.div>
                   )}
@@ -3935,11 +4213,31 @@ export default function App() {
                                                             <Check size={12} />
                                                           )}
                                                         </button>
-                                                        <span
-                                                          className={`text-sm transition-all flex-1 ${task.completed ? "text-white/20 line-through" : "text-white/80"}`}
-                                                        >
-                                                          {task.text}
-                                                        </span>
+                                                        <div className="flex flex-col flex-1">
+                                                          <span
+                                                            className={`text-sm transition-all ${task.completed ? "text-white/20 line-through" : "text-white/80"}`}
+                                                          >
+                                                            {task.text}
+                                                          </span>
+                                                          <div className="flex items-center gap-2">
+                                                            {task.area && (
+                                                              <span className={`text-[8px] uppercase font-black px-1.5 py-0.5 rounded-md bg-white/5 ${
+                                                                task.area === 'compras' ? 'text-blue-400' :
+                                                                task.area === 'desarrollo' ? 'text-purple-400' :
+                                                                task.area === 'produccion' ? 'text-emerald-400' :
+                                                                task.area === 'sistema' ? 'text-amber-400' :
+                                                                task.area === 'pcp' ? 'text-pink-400' : 'text-rose-400'
+                                                              }`}>
+                                                                {task.area}
+                                                              </span>
+                                                            )}
+                                                            {task.assignee && (
+                                                              <span className="text-[8px] uppercase text-white/30 font-bold">
+                                                                Resp: {task.assignee}
+                                                              </span>
+                                                            )}
+                                                          </div>
+                                                        </div>
                                                         <button
                                                           onClick={() =>
                                                             handleDeleteTask(
@@ -3987,7 +4285,7 @@ export default function App() {
                                             )}
                                           </div>
 
-                                          <div className="flex flex-col gap-2 pt-4">
+                                          <div className="flex flex-col gap-3 pt-4 border-t border-white/5 mt-2">
                                             <div className="flex gap-2">
                                               <input
                                                 type="text"
@@ -4011,6 +4309,30 @@ export default function App() {
                                                 <Plus size={18} />
                                               </button>
                                             </div>
+                                            
+                                            <div className="grid grid-cols-2 gap-2">
+                                              <select
+                                                value={newTaskArea}
+                                                onChange={(e) => setNewTaskArea(e.target.value as any)}
+                                                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white/60 outline-none focus:border-[var(--accent)] appearance-none"
+                                              >
+                                                <option value="" className="bg-[#121212]">Asignar Área...</option>
+                                                <option value="compras" className="bg-[#121212]">Compras</option>
+                                                <option value="desarrollo" className="bg-[#121212]">Desarrollo</option>
+                                                <option value="produccion" className="bg-[#121212]">Producción</option>
+                                                <option value="sistema" className="bg-[#121212]">Sistema</option>
+                                                <option value="pcp" className="bg-[#121212]">PCP</option>
+                                                <option value="mantenimiento" className="bg-[#121212]">Mantenimiento</option>
+                                              </select>
+                                              <input
+                                                type="text"
+                                                placeholder="Responsable (Persona)..."
+                                                value={newTaskAssignee}
+                                                onChange={(e) => setNewTaskAssignee(e.target.value)}
+                                                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white/60 outline-none focus:border-[var(--accent)]"
+                                              />
+                                            </div>
+
                                             <div className="flex items-center gap-2 px-1">
                                               <Calendar
                                                 size={12}
@@ -4027,7 +4349,7 @@ export default function App() {
                                                     e.target.value,
                                                   )
                                                 }
-                                                className="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-[10px] text-white/60 outline-none focus:border-[var(--accent)] transition-all"
+                                                className="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-[10px] text-white/60 outline-none focus:border-[var(--accent)] transition-all flex-1"
                                               />
                                               {newTaskDeadline && (
                                                 <button
@@ -5155,43 +5477,64 @@ export default function App() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="grid h-full grid-cols-1 lg:grid-cols-[280px_1fr] bg-[var(--border)] gap-[1px]"
+                  className={`h-full bg-[var(--border)] gap-[1px] transition-all duration-300 ${
+                    isCatalogOpen
+                      ? "grid grid-cols-1 lg:grid-cols-[300px_1fr]"
+                      : "flex flex-col w-full"
+                  }`}
                 >
-                  {/* Pane 0: List focused on recipes */}
-                  <aside className="pane bg-[var(--bg)] custom-scrollbar overflow-y-auto shrink-0 flex flex-col">
-                    <div className="pane-title flex items-center justify-between mb-6">
-                      <span>
-                        {view === "trial_formulas"
-                          ? "Formulaciones de Pruebas"
-                          : "Catálogo de Recetas"}
-                      </span>
-                      {view === "recipes" && (
-                        <button
-                          onClick={() => {
-                            const newId = `recipe_${Date.now()}`;
-                            const newRecipe: Recipe = {
-                              id: newId,
-                              name: "Nueva Receta",
-                              type: "base",
-                              ingredients: [],
-                              servingSize: 100,
-                              servingMeasure: "1 porción",
-                              totalYield: 0,
-                              finalYield: 0,
-                              portionsPerPackage: 1,
-                              isLiquid: false,
-                              status: "formulacion",
-                              estimatedDevTime: "1 semana",
-                            };
-                            saveRecipe(newRecipe, user.uid);
-                            setSelectedRecipeId(newId);
-                          }}
-                          className="p-1.5 bg-[var(--accent)] rounded hover:brightness-110 transition-all text-white"
-                        >
-                          <Plus size={14} />
-                        </button>
-                      )}
-                    </div>
+                  {/* Pane 0: List focused on recipes (Desplegable / Colapsable) */}
+                  {isCatalogOpen && (
+                    <aside className="pane bg-[var(--bg)] custom-scrollbar overflow-y-auto shrink-0 flex flex-col border-r border-white/5 animate-in slide-in-from-left duration-200">
+                      <div className="pane-title flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FolderOpen size={16} className="text-[var(--accent)] shrink-0" />
+                          <span className="font-bold truncate">
+                            {view === "trial_formulas"
+                              ? "Formulaciones de Pruebas"
+                              : "Catálogo de Recetas"}
+                          </span>
+                          <span className="text-[9px] font-mono font-bold text-white/40 bg-white/5 px-2 py-0.5 rounded-full border border-white/5 shrink-0">
+                            {filteredRecipesByView.length}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {view === "recipes" && (
+                            <button
+                              onClick={() => {
+                                const newId = `recipe_${Date.now()}`;
+                                const newRecipe: Recipe = {
+                                  id: newId,
+                                  name: "Nueva Receta",
+                                  type: "base",
+                                  ingredients: [],
+                                  servingSize: 100,
+                                  servingMeasure: "1 porción",
+                                  totalYield: 0,
+                                  finalYield: 0,
+                                  portionsPerPackage: 1,
+                                  isLiquid: false,
+                                  status: "formulacion",
+                                  estimatedDevTime: "1 semana",
+                                };
+                                saveRecipe(newRecipe, user.uid);
+                                setSelectedRecipeId(newId);
+                              }}
+                              className="p-1.5 bg-[var(--accent)] rounded-lg hover:brightness-110 transition-all text-white shadow-sm"
+                              title="Crear Nueva Receta"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setIsCatalogOpen(false)}
+                            className="p-1.5 bg-white/5 hover:bg-white/15 border border-white/10 rounded-lg text-white/50 hover:text-white transition-all"
+                            title="Ocultar catálogo para ampliar el espacio de trabajo"
+                          >
+                            <PanelLeftClose size={15} />
+                          </button>
+                        </div>
+                      </div>
 
                     {/* Segmented Control for active vs archived recipes */}
                     <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 gap-1 mb-6 select-none shrink-0">
@@ -5276,7 +5619,11 @@ export default function App() {
                       {filteredRecipesByView.map((recipe) => (
                         <div
                           key={recipe.id}
-                          onClick={() => setSelectedRecipeId(recipe.id)}
+                          onClick={() => {
+                            setSelectedRecipeId(recipe.id);
+                            // Auto-collapse catalog on selection for better workspace focus
+                            setIsCatalogOpen(false);
+                          }}
                           className={`group w-full text-left p-4 rounded-2xl transition-all border cursor-pointer relative overflow-hidden ${selectedRecipeId === recipe.id ? "bg-[var(--accent)] border-[var(--accent)] shadow-xl shadow-[var(--accent)]/20" : "bg-[var(--surface)] border-[var(--border)] hover:border-white/20"}`}
                         >
                           {selectedRecipeId === recipe.id && (
@@ -5383,8 +5730,17 @@ export default function App() {
                         />
                         Importar Excel
                       </button>
+                      <button
+                        onClick={() => setIsCatalogOpen(false)}
+                        className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-[9px] font-bold uppercase tracking-wider text-white/50 hover:text-white transition-all flex items-center justify-center gap-1.5"
+                        title="Ocultar catálogo para maximizar el ancho de trabajo"
+                      >
+                        <PanelLeftClose size={13} />
+                        <span>Ocultar Catálogo (Expandir)</span>
+                      </button>
                     </div>
                   </aside>
+                  )}
 
                   {/* Main Interaction Pane */}
                   <div className="flex flex-col h-full bg-[var(--bg)] overflow-hidden">
@@ -5402,12 +5758,21 @@ export default function App() {
                             comenzar la formulación o el análisis nutricional.
                           </p>
                         </div>
+                        {!isCatalogOpen && (
+                          <button
+                            onClick={() => setIsCatalogOpen(true)}
+                            className="px-6 py-3.5 bg-[var(--accent)] text-white rounded-2xl text-xs font-bold uppercase tracking-wider flex items-center gap-2.5 shadow-xl shadow-[var(--accent)]/20 hover:brightness-110 active:scale-95 transition-all"
+                          >
+                            <PanelLeftOpen size={18} />
+                            <span>Desplegar Catálogo de Recetas</span>
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <>
                         <div className="px-8 py-6 bg-[var(--bg)] border-b border-[var(--border)]">
                           <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                               <button
                                 onClick={() => {
                                   if (
@@ -5424,7 +5789,7 @@ export default function App() {
                                     setSelectedRecipeId(null);
                                   }
                                 }}
-                                className="p-3 text-[var(--accent)] hover:bg-[var(--accent)]/10 rounded-xl transition-all flex items-center gap-2 group"
+                                className="p-3 text-[var(--accent)] hover:bg-[var(--accent)]/10 rounded-xl transition-all flex items-center gap-2 group shrink-0"
                                 title="Volver"
                               >
                                 <ChevronLeft
@@ -5434,6 +5799,25 @@ export default function App() {
                                 <span className="text-[10px] uppercase font-bold tracking-widest hidden sm:inline">
                                   Volver
                                 </span>
+                              </button>
+
+                              {/* Botón para Desplegar u Ocultar Catálogo */}
+                              <button
+                                onClick={() => setIsCatalogOpen(!isCatalogOpen)}
+                                className={`px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 transition-all border shrink-0 ${
+                                  !isCatalogOpen
+                                    ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-lg shadow-[var(--accent)]/25 hover:brightness-110 active:scale-95"
+                                    : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10"
+                                }`}
+                                title={isCatalogOpen ? "Ocultar catálogo (modo pantalla completa)" : "Desplegar catálogo de recetas"}
+                              >
+                                {isCatalogOpen ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}
+                                <span>{isCatalogOpen ? "Ocultar Catálogo" : "Ver Catálogo"}</span>
+                                {!isCatalogOpen && (
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/30 text-white/90 font-normal">
+                                    {filteredRecipesByView.length}
+                                  </span>
+                                )}
                               </button>
                               <div
                                 className={`w-12 h-12 rounded-xl flex items-center justify-center ${
@@ -5795,237 +6179,366 @@ export default function App() {
                         </div>
 
                         {/* Dynamic Pane Content based on Step or Module Type */}
-                        <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-2 bg-[var(--border)] gap-[1px]">
-                          {/* Left Side: Inputs / Formulation */}
+                        <div className={`flex-1 overflow-hidden grid bg-[var(--border)] gap-[1px] ${
+                          formulationViewMode === "fullscreen" && (selectedRecipe.status === "formulacion" || selectedRecipe.isTrialFormula)
+                            ? "grid-cols-1"
+                            : "grid-cols-1 lg:grid-cols-2"
+                        }`}>
+                          {/* Left Side: Inputs / Formulation Matrix */}
                           <div className="flex flex-col overflow-hidden bg-[var(--bg)]">
                             {(selectedRecipe.isTrialFormula === true ||
                               selectedRecipe.status === "formulacion" ||
                               selectedRecipe.status === "creado_en_sistema" ||
                               selectedRecipe.status === "finalizado") && (
-                              <div className="flex-1 p-8 custom-scrollbar overflow-y-auto space-y-8">
-                                <div className="flex items-center justify-between">
-                                  <h3 className="text-sm font-bold uppercase tracking-widest text-white flex items-center gap-2">
-                                    <Layers
-                                      size={14}
-                                      className="text-[var(--accent)]"
-                                    />
-                                    {selectedRecipe.isTrialFormula
-                                      ? `Formulación Experimental (Trial: ${selectedRecipe.trialCode || "A"})`
-                                      : "Protocolo de Ingredientes TÉCNICO"}
-                                  </h3>
-                                  <span className="text-[10px] font-mono text-[var(--text-s)] opacity-50">
-                                    {selectedRecipe.ingredients.length}{" "}
-                                    COMPONENTES
-                                  </span>
+                              <div className="flex-1 p-6 lg:p-8 custom-scrollbar overflow-y-auto space-y-6">
+                                {/* Matrix Header & Ergonomic Controls */}
+                                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-white/5">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center border border-[var(--accent)]/20 shadow-md">
+                                      <Layers size={18} />
+                                    </div>
+                                    <div>
+                                      <h3 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                                        {selectedRecipe.isTrialFormula
+                                          ? `Matriz Experimental (Ensayo: ${selectedRecipe.trialCode || "A"})`
+                                          : "Matriz de Formulación Técnica"}
+                                      </h3>
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-[10px] font-mono text-[var(--accent)] font-semibold">
+                                          {filteredMatrixIngredients.length}{matrixSearchQuery ? ` de ${selectedRecipe.ingredients.length}` : ""} componentes
+                                        </span>
+                                        <span className="text-[10px] text-white/20">•</span>
+                                        <span className="text-[10px] font-mono text-white/50">
+                                          Base: {recipeTotalWeight.toLocaleString("es-AR")} g
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Quick Scale & View Mode Controls */}
+                                  <div className="flex flex-wrap items-center gap-1.5 self-stretch md:self-auto">
+                                    <button
+                                      onClick={() => handleScaleRecipe(100)}
+                                      className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-[var(--accent)] hover:text-white border border-white/10 text-white/70 text-[9px] font-mono font-bold uppercase tracking-wider transition-all"
+                                      title="Escalar automáticamente la fórmula a base porcentual 100 g"
+                                    >
+                                      Base 100g
+                                    </button>
+                                    <button
+                                      onClick={() => handleScaleRecipe(1000)}
+                                      className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-[var(--accent)] hover:text-white border border-white/10 text-white/70 text-[9px] font-mono font-bold uppercase tracking-wider transition-all"
+                                      title="Escalar automáticamente la fórmula a 1.000 g (1 kg)"
+                                    >
+                                      Base 1.000g
+                                    </button>
+                                    <button
+                                      onClick={() => setShowCustomScale(true)}
+                                      className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 text-[9px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1"
+                                      title="Escalar a lote personalizado"
+                                    >
+                                      <Scale size={11} className="text-[var(--accent)]" />
+                                      Lote...
+                                    </button>
+
+                                    <div className="h-4 w-[1px] bg-white/10 mx-0.5 hidden sm:block" />
+
+                                    <button
+                                      onClick={() => setMatrixDensity(matrixDensity === "comfortable" ? "compact" : "comfortable")}
+                                      className={`px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-all flex items-center gap-1 ${
+                                        matrixDensity === "compact"
+                                          ? "bg-[var(--accent)]/15 border-[var(--accent)] text-[var(--accent)]"
+                                          : "bg-white/5 border-white/10 text-white/50 hover:text-white"
+                                      }`}
+                                      title="Alternar entre vista compacta y cómoda"
+                                    >
+                                      <Sliders size={11} />
+                                      {matrixDensity === "compact" ? "Compacta" : "Cómoda"}
+                                    </button>
+
+                                    <button
+                                      onClick={() => setFormulationViewMode(formulationViewMode === "fullscreen" ? "split" : "fullscreen")}
+                                      className={`px-2.5 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-all flex items-center gap-1 ${
+                                        formulationViewMode === "fullscreen"
+                                          ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-lg shadow-[var(--accent)]/20"
+                                          : "bg-white/5 border-white/10 text-white/50 hover:text-white"
+                                      }`}
+                                      title={formulationViewMode === "fullscreen" ? "Volver a vista dividida" : "Expandir matriz a pantalla completa"}
+                                    >
+                                      {formulationViewMode === "fullscreen" ? (
+                                        <>
+                                          <Minimize2 size={11} />
+                                          <span className="hidden sm:inline">Dividida</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Maximize2 size={11} />
+                                          <span className="hidden sm:inline">Expandida</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  </div>
                                 </div>
 
-                                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl overflow-hidden shadow-2xl">
+                                {/* Matrix Search & Sort Filter */}
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white/[0.02] border border-white/5 rounded-2xl p-2.5">
+                                  <div className="relative flex-1">
+                                    <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                                    <input
+                                      type="text"
+                                      placeholder="Buscar componente en la matriz (nombre o marca)..."
+                                      value={matrixSearchQuery}
+                                      onChange={(e) => setMatrixSearchQuery(e.target.value)}
+                                      className="w-full bg-white/5 border border-white/5 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-[var(--accent)] transition-all"
+                                    />
+                                    {matrixSearchQuery && (
+                                      <button
+                                        onClick={() => setMatrixSearchQuery("")}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white"
+                                      >
+                                        <X size={12} />
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-[10px] uppercase font-bold text-white/30 tracking-wider">Ordenar:</span>
+                                    <select
+                                      value={matrixSortBy}
+                                      onChange={(e) => setMatrixSortBy(e.target.value as any)}
+                                      className="bg-white/5 border border-white/10 rounded-xl px-2.5 py-2 text-[10px] uppercase font-bold text-white/70 focus:border-[var(--accent)] outline-none cursor-pointer"
+                                    >
+                                      <option value="default" className="bg-[var(--surface)]">Orden (#)</option>
+                                      <option value="weight_desc" className="bg-[var(--surface)]">Mayor Peso (g ↓)</option>
+                                      <option value="weight_asc" className="bg-[var(--surface)]">Menor Peso (g ↑)</option>
+                                      <option value="name" className="bg-[var(--surface)]">Nombre (A-Z)</option>
+                                    </select>
+                                  </div>
+                                </div>
+
+                                {/* Matrix Table */}
+                                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-xl">
                                   <div className="overflow-x-auto custom-scrollbar">
-                                    <table className="w-full text-left border-collapse min-w-[650px]">
+                                    <table className="w-full text-left border-collapse min-w-[620px]">
                                       <thead>
-                                        <tr className="bg-white/5 border-b border-white/5">
-                                          <th className="px-8 py-5 text-[10px] uppercase font-bold text-white/30 tracking-[0.2em]">
-                                            Materia Prima / Componente
-                                          </th>
-                                          <th className="px-8 py-5 text-[10px] uppercase font-bold text-white/30 tracking-[0.2em] text-right">
-                                            Peso (g)
-                                          </th>
-                                          <th className="px-8 py-5 text-[10px] uppercase font-bold text-white/30 tracking-[0.2em] text-right">
-                                            Aporte
-                                          </th>
-                                          <th className="px-6 py-5"></th>
+                                        <tr className="bg-white/5 border-b border-white/5 text-[9px] uppercase font-bold text-white/40 tracking-[0.18em]">
+                                          <th className="w-12 py-3 px-3 text-center">#</th>
+                                          <th className="py-3 px-3">Materia Prima / Componente</th>
+                                          <th className="w-36 py-3 px-3 text-right">Peso (g)</th>
+                                          <th className="w-32 py-3 px-3 text-right">% Aporte</th>
+                                          <th className="w-24 py-3 px-3 text-right">Kcal</th>
+                                          <th className="w-28 py-3 px-3 text-center">Acciones</th>
                                         </tr>
                                       </thead>
-                                      <tbody className="divide-y divide-white/5">
-                                        {selectedRecipe.ingredients.map(
-                                          (ri, idx) => {
+                                      <tbody className="divide-y divide-white/5 text-xs">
+                                        {filteredMatrixIngredients.length === 0 ? (
+                                          <tr>
+                                            <td colSpan={6} className="py-8 text-center text-white/40 text-xs">
+                                              {matrixSearchQuery ? "No se encontraron ingredientes con ese filtro." : "No hay componentes en la fórmula. Añade una materia prima debajo."}
+                                            </td>
+                                          </tr>
+                                        ) : (
+                                          filteredMatrixIngredients.map((ri) => {
                                             const subRecipe = ri.isRecipe
-                                              ? recipes.find(
-                                                  (r) => r.id === ri.ingredientId,
-                                                )
+                                              ? recipes.find((r) => r.id === ri.ingredientId)
                                               : null;
                                             const ingredient = !ri.isRecipe
-                                              ? ingredients.find(
-                                                  (i) => i.id === ri.ingredientId,
-                                                )
+                                              ? ingredients.find((i) => i.id === ri.ingredientId)
                                               : null;
-                                            const percentage =
-                                              recipeTotalWeight > 0
-                                                ? (ri.amount /
-                                                    recipeTotalWeight) *
-                                                  100
-                                                : 0;
+                                            const percentage = recipeTotalWeight > 0
+                                              ? (ri.amount / recipeTotalWeight) * 100
+                                              : 0;
+
+                                            const ingEnergy = ingredient?.energy || (subRecipe ? 150 : 0);
+                                            const approxKcal = (ingEnergy * ri.amount) / 100;
+
+                                            const rowPadding = matrixDensity === "compact" ? "py-2 px-3" : "py-3.5 px-3.5";
 
                                             return (
                                               <tr
-                                                key={idx}
-                                                className="hover:bg-white/[0.04] group transition-all duration-300 border-b border-white/[0.03]"
+                                                key={ri.originalIndex}
+                                                className="hover:bg-white/[0.03] group transition-colors border-b border-white/[0.02]"
                                               >
-                                                <td className="px-8 py-8">
-                                                  <div className="flex items-center gap-5">
-                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all group-hover:scale-110 ${ri.isRecipe ? "bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-lg shadow-rose-500/5" : "bg-white/5 text-white/40 border border-white/5"}`}>
-                                                      {ri.isRecipe ? <Layers size={22} /> : <Milk size={22} />}
+                                                {/* Index Column */}
+                                                <td className={`${rowPadding} text-center font-mono text-[10px] text-white/30 font-bold`}>
+                                                  {String(ri.originalIndex + 1).padStart(2, "0")}
+                                                </td>
+
+                                                {/* Component Info */}
+                                                <td className={rowPadding}>
+                                                  <div className="flex items-center gap-3">
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                                                      ri.isRecipe
+                                                        ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                                                        : "bg-white/5 text-white/40 border border-white/5"
+                                                    }`}>
+                                                      {ri.isRecipe ? <Layers size={14} /> : <Milk size={14} />}
                                                     </div>
                                                     <div className="flex flex-col min-w-0">
-                                                      <div className="flex items-center gap-3">
-                                                        <span className="text-lg font-semibold text-white tracking-tight truncate max-w-[350px]">
+                                                      <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-semibold text-white truncate max-w-[260px] lg:max-w-[340px]">
                                                           {ri.isRecipe
-                                                            ? subRecipe?.name ||
-                                                              "Sub-Receta No Encontrada"
-                                                            : ingredient?.name ||
-                                                              ri.note ||
-                                                              "Ingrediente No Encontrado"}
+                                                            ? subRecipe?.name || "Sub-Receta No Encontrada"
+                                                            : ingredient?.name || ri.note || "Ingrediente No Encontrado"}
                                                         </span>
-                                                        {!ri.isRecipe &&
-                                                          !ingredient &&
-                                                          ri.note && (
-                                                            <button
-                                                              onClick={() =>
-                                                                handleSearchWeb(
-                                                                  idx,
-                                                                  ri.note!,
-                                                                )
-                                                              }
-                                                              className="group relative flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-r from-amber-500/10 to-amber-600/5 text-amber-500 rounded-xl hover:from-amber-500/20 hover:to-amber-600/10 transition-all border border-amber-500/20 shadow-lg shadow-amber-500/5 active:scale-95 overflow-hidden"
-                                                              title="Vincular con Materia Prima mediante IA"
-                                                            >
-                                                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
-                                                              <Sparkles
-                                                                size={16}
-                                                                className="relative z-10 group-hover:rotate-12 transition-transform"
-                                                              />
-                                                              <span className="relative z-10 text-[10px] font-black uppercase tracking-[0.1em]">
-                                                                Vincular IA
-                                                              </span>
-                                                            </button>
-                                                          )}
+                                                        {!ri.isRecipe && !ingredient && ri.note && (
+                                                          <button
+                                                            onClick={() => handleSearchWeb(ri.originalIndex, ri.note!)}
+                                                            className="flex items-center gap-1 px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded text-[8px] font-bold uppercase tracking-wider hover:bg-amber-500/20 transition-all border border-amber-500/20"
+                                                            title="Vincular con Materia Prima mediante IA"
+                                                          >
+                                                            <Sparkles size={10} />
+                                                            Vincular
+                                                          </button>
+                                                        )}
                                                       </div>
-                                                      <div className="flex items-center gap-3 mt-1.5">
-                                                        <span className={`text-[10px] uppercase font-black tracking-[0.15em] px-2.5 py-1 rounded-lg border ${ri.isRecipe ? "bg-rose-500/10 border-rose-500/20 text-rose-400" : "bg-white/5 border-white/5 text-white/30"}`}>
-                                                          {ri.isRecipe
-                                                            ? "Sub-Fórmula"
-                                                            : (ingredient?.category || "Insumo")}
+                                                      <div className="flex items-center gap-2 mt-0.5">
+                                                        <span className={`text-[8px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded border ${
+                                                          ri.isRecipe
+                                                            ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                                                            : "bg-white/5 border-white/5 text-white/30"
+                                                        }`}>
+                                                          {ri.isRecipe ? "Sub-Fórmula" : (ingredient?.category || "Insumo")}
                                                         </span>
-                                                        <span className="text-[10px] text-white/20 font-bold uppercase tracking-widest truncate">
-                                                          {ri.isRecipe
-                                                            ? "Lab. Interno"
-                                                            : ingredient?.brand ||
-                                                              (ingredient?.category ===
-                                                              "generico"
-                                                                ? "Genérico"
-                                                                : "S/M")}
+                                                        <span className="text-[9px] text-white/30 font-medium truncate max-w-[150px]">
+                                                          {ri.isRecipe ? "Lab. Interno" : ingredient?.brand || (ingredient?.category === "generico" ? "Genérico" : "S/M")}
                                                         </span>
                                                       </div>
                                                     </div>
                                                   </div>
                                                 </td>
-                                                <td className="px-8 py-8 text-right">
-                                                  <div className="inline-flex items-center gap-4 bg-black/40 rounded-[1.25rem] px-5 py-3.5 border border-white/5 focus-within:border-[var(--accent)]/50 focus-within:ring-8 focus-within:ring-[var(--accent)]/5 transition-all shadow-inner">
+
+                                                {/* Weight input */}
+                                                <td className={`${rowPadding} text-right`}>
+                                                  <div className="inline-flex items-center gap-1.5 bg-black/40 rounded-xl px-2.5 py-1 border border-white/10 focus-within:border-[var(--accent)] transition-all">
                                                     <input
                                                       type="number"
+                                                      step="any"
                                                       value={ri.amount}
                                                       onChange={(e) => {
-                                                        const val =
-                                                          parseFloat(
-                                                            e.target.value,
-                                                          ) || 0;
-                                                        const newIngredients = [
-                                                          ...selectedRecipe.ingredients,
-                                                        ];
-                                                        newIngredients[idx] = {
+                                                        const val = parseFloat(e.target.value) || 0;
+                                                        const newIngredients = [...selectedRecipe.ingredients];
+                                                        newIngredients[ri.originalIndex] = {
                                                           ...ri,
                                                           amount: val,
                                                         };
-                                                        const newTotal =
-                                                          newIngredients.reduce(
-                                                            (acc, curr) =>
-                                                              acc + curr.amount,
-                                                            0,
-                                                          );
+                                                        const newTotal = newIngredients.reduce((acc, curr) => acc + curr.amount, 0);
                                                         handleUpdateRecipe({
                                                           ...selectedRecipe,
-                                                          ingredients:
-                                                            newIngredients,
+                                                          ingredients: newIngredients,
                                                           totalYield: newTotal,
                                                           finalYield: newTotal,
                                                         });
                                                       }}
-                                                      className="w-28 bg-transparent text-right text-xl font-mono font-black text-[var(--accent)] focus:text-white transition-all outline-none"
+                                                      className="w-20 bg-transparent text-right text-xs font-mono font-bold text-[var(--accent)] focus:text-white outline-none"
                                                     />
-                                                    <span className="text-xs font-black text-white/10 uppercase tracking-widest">
-                                                      g
-                                                    </span>
+                                                    <span className="text-[10px] font-bold text-white/20 uppercase">g</span>
                                                   </div>
                                                 </td>
-                                                <td className="px-8 py-8 text-right">
-                                                  <div className="flex flex-col items-end gap-2">
-                                                    <span className="text-xl font-mono font-black text-white/90 tracking-tighter">
+
+                                                {/* Percentage */}
+                                                <td className={`${rowPadding} text-right`}>
+                                                  <div className="flex flex-col items-end gap-1">
+                                                    <span className="text-xs font-mono font-bold text-white/90">
                                                       {percentage.toFixed(2)}%
                                                     </span>
-                                                    <div className="w-20 h-1.5 bg-white/5 rounded-full overflow-hidden shadow-inner">
-                                                      <div 
-                                                        className="h-full bg-gradient-to-r from-[var(--accent)] to-rose-400 transition-all duration-700 ease-out" 
+                                                    <div className="w-16 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                      <div
+                                                        className="h-full bg-gradient-to-r from-[var(--accent)] to-rose-400"
                                                         style={{ width: `${Math.min(percentage, 100)}%` }}
                                                       />
                                                     </div>
                                                   </div>
                                                 </td>
-                                                <td className="px-6 py-8 text-center">
-                                                  <button
-                                                    onClick={() =>
-                                                      removeIngredientFromRecipe(
-                                                        idx,
-                                                      )
-                                                    }
-                                                    className="p-4 text-white/10 hover:text-white hover:bg-red-500/20 border border-transparent hover:border-red-500/20 rounded-2xl transition-all active:scale-90"
-                                                  >
-                                                    <Trash2 size={20} />
-                                                  </button>
+
+                                                {/* Kcal contribution */}
+                                                <td className={`${rowPadding} text-right font-mono text-[11px] text-white/50`}>
+                                                  {approxKcal > 0 ? `${approxKcal.toFixed(0)} kcal` : "--"}
+                                                </td>
+
+                                                {/* Actions */}
+                                                <td className={`${rowPadding} text-center`}>
+                                                  <div className="inline-flex items-center gap-1">
+                                                    <button
+                                                      onClick={() => handleMoveIngredient(ri.originalIndex, "up")}
+                                                      disabled={ri.originalIndex === 0}
+                                                      className="p-1 text-white/30 hover:text-white disabled:opacity-10 transition-colors"
+                                                      title="Mover arriba"
+                                                    >
+                                                      <ArrowUp size={12} />
+                                                    </button>
+                                                    <button
+                                                      onClick={() => handleMoveIngredient(ri.originalIndex, "down")}
+                                                      disabled={ri.originalIndex === selectedRecipe.ingredients.length - 1}
+                                                      className="p-1 text-white/30 hover:text-white disabled:opacity-10 transition-colors"
+                                                      title="Mover abajo"
+                                                    >
+                                                      <ArrowDown size={12} />
+                                                    </button>
+                                                    <button
+                                                      onClick={() => removeIngredientFromRecipe(ri.originalIndex)}
+                                                      className="p-1 text-white/30 hover:text-rose-400 transition-colors ml-1"
+                                                      title="Eliminar de la fórmula"
+                                                    >
+                                                      <Trash2 size={13} />
+                                                    </button>
+                                                  </div>
                                                 </td>
                                               </tr>
                                             );
-                                          },
+                                          })
                                         )}
-                                        {/* Total Row with Validation */}
-                                        <tr className="bg-white/5 border-t-2 border-white/5">
-                                          <td className="px-8 py-8">
-                                            <div className="flex items-center gap-3">
-                                              <div className="w-2 h-2 rounded-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]" />
-                                              <span className="text-[12px] uppercase font-black tracking-[0.3em] text-white/60">
-                                                Balance Total
-                                              </span>
-                                            </div>
+
+                                        {/* Total Summary Row */}
+                                        <tr className="bg-white/[0.04] border-t-2 border-white/10 font-bold">
+                                          <td className={`${matrixDensity === "compact" ? "py-2.5 px-3" : "py-3 px-3.5"} text-center`}>
+                                            <div className="w-2 h-2 rounded-full bg-[var(--accent)] mx-auto shadow-[0_0_8px_var(--accent)]" />
                                           </td>
-                                          <td className="px-8 py-8 text-right">
-                                            <div className="flex flex-col items-end gap-1">
-                                              <span className="text-2xl font-mono font-bold text-white tracking-tight">
+                                          <td className={matrixDensity === "compact" ? "py-2.5 px-3" : "py-3 px-3.5"}>
+                                            <span className="text-[11px] uppercase font-bold tracking-wider text-white/70">
+                                              Balance Total de Masa
+                                            </span>
+                                          </td>
+                                          <td className={`${matrixDensity === "compact" ? "py-2.5 px-3" : "py-3 px-3.5"} text-right`}>
+                                            <div className="flex flex-col items-end">
+                                              <span className="text-sm font-mono font-bold text-white">
                                                 {recipeTotalWeight.toLocaleString("es-AR")} g
                                               </span>
-                                              <span className="text-[10px] text-white/20 uppercase font-bold tracking-widest">
-                                                Masa Total Bruta
+                                              <span className="text-[8px] text-white/30 uppercase tracking-widest">
+                                                Masa Bruta
                                               </span>
                                             </div>
                                           </td>
-                                          <td className="px-8 py-8 text-right">
+                                          <td className={`${matrixDensity === "compact" ? "py-2.5 px-3" : "py-3 px-3.5"} text-right`}>
                                             <div className="flex flex-col items-end">
-                                              <span className={`text-2xl font-mono font-bold ${Math.abs(recipeTotalWeight - 100) < 0.01 || Math.abs(recipeTotalWeight - 1000) < 0.01 ? "text-emerald-400" : "text-amber-400"}`}>
+                                              <span className={`text-sm font-mono font-bold ${
+                                                Math.abs(recipeTotalWeight - 100) < 0.01 || Math.abs(recipeTotalWeight - 1000) < 0.01
+                                                  ? "text-emerald-400"
+                                                  : "text-amber-400"
+                                              }`}>
                                                 {selectedRecipe.ingredients.length > 0 ? "100.00%" : "0.00%"}
                                               </span>
                                               {selectedRecipe.ingredients.length > 0 && Math.abs(recipeTotalWeight - 100) > 0.01 && Math.abs(recipeTotalWeight - 1000) > 0.01 && (
-                                                <span className="text-[9px] text-white/30 uppercase font-bold tracking-tighter mt-1 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                                                  Ajustar a base 100/1000
-                                                </span>
+                                                <button
+                                                  onClick={() => handleScaleRecipe(100)}
+                                                  className="text-[8px] text-amber-300 font-bold uppercase tracking-wider bg-amber-500/20 px-1.5 py-0.5 rounded mt-0.5 hover:bg-amber-500/30"
+                                                  title="Ajustar proporcionalmente a base 100g (%)"
+                                                >
+                                                  Ajustar 100g
+                                                </button>
                                               )}
                                             </div>
                                           </td>
-                                          <td className="px-6 py-8 text-center">
-                                            {selectedRecipe.ingredients.length > 0 && Math.abs(selectedRecipe.ingredients.reduce((acc, ri) => acc + (recipeTotalWeight > 0 ? (ri.amount / recipeTotalWeight) * 100 : 0), 0) - 100) < 0.01 ? (
-                                              <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20 shadow-lg shadow-emerald-500/10">
-                                                <Check size={20} strokeWidth={3} />
+                                          <td className={`${matrixDensity === "compact" ? "py-2.5 px-3" : "py-3 px-3.5"} text-right font-mono text-[11px] text-white/60`}>
+                                            {roundValue(nutritionData.perServing.energy, "energy")} kcal
+                                          </td>
+                                          <td className={`${matrixDensity === "compact" ? "py-2.5 px-3" : "py-3 px-3.5"} text-center`}>
+                                            {selectedRecipe.ingredients.length > 0 && (Math.abs(recipeTotalWeight - 100) < 0.01 || Math.abs(recipeTotalWeight - 1000) < 0.01) ? (
+                                              <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30" title="Fórmula 100% balanceada">
+                                                <Check size={13} strokeWidth={3} />
                                               </div>
                                             ) : (
-                                              <div className="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/20 shadow-lg shadow-amber-500/10">
-                                                <AlertCircle size={20} strokeWidth={3} />
+                                              <div className="w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/30" title="Base diferente de 100 o 1.000g">
+                                                <AlertCircle size={13} strokeWidth={3} />
                                               </div>
                                             )}
                                           </td>
@@ -6035,200 +6548,404 @@ export default function App() {
                                   </div>
                                 </div>
 
-                                <div className="flex flex-col md:flex-row gap-6 pt-4">
-                                  <div className="flex-1 relative">
-                                    <div className="flex flex-col sm:flex-row gap-3">
-                                      <div className="relative flex-1">
-                                        <Plus
-                                          size={16}
-                                          className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--accent)]"
-                                        />
-                                        <input
-                                          type="text"
-                                          placeholder="AÑADIR MATERIA PRIMA (BUSCAR POR NOMBRE O MARCA)..."
-                                          value={ingTargetSearch}
-                                          onChange={(e) =>
-                                            setIngTargetSearch(e.target.value)
-                                          }
-                                          className="w-full bg-white/[0.03] border border-white/10 rounded-2xl pl-12 pr-6 py-5 text-[11px] font-bold uppercase tracking-[0.15em] text-white outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] transition-all placeholder:text-white/20 shadow-xl"
-                                        />
-                                        {ingTargetSearch && (
-                                          <div className="absolute bottom-full left-0 right-0 mb-3 bg-[#121212] border border-white/10 rounded-[28px] overflow-hidden shadow-2xl max-h-80 overflow-y-auto z-50 backdrop-blur-xl">
+                                {/* Add Raw Material / Subrecipe Section */}
+                                <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                                  <div className="relative flex-1">
+                                    <Plus
+                                      size={15}
+                                      className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--accent)]"
+                                    />
+                                    <input
+                                      type="text"
+                                      placeholder="AÑADIR MATERIA PRIMA (BUSCAR POR NOMBRE O MARCA)..."
+                                      value={ingTargetSearch}
+                                      onChange={(e) => setIngTargetSearch(e.target.value)}
+                                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs font-bold uppercase tracking-wider text-white outline-none focus:border-[var(--accent)] focus:bg-white/[0.05] transition-all placeholder:text-white/20 shadow-md"
+                                    />
+                                    {ingTargetSearch && (
+                                      <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#141414] border border-white/10 rounded-2xl overflow-hidden shadow-2xl max-h-72 overflow-y-auto z-50 backdrop-blur-xl">
+                                        <button
+                                          onClick={() => {
+                                            setResolvingIngredient({
+                                              index: selectedRecipe.ingredients.length,
+                                              name: ingTargetSearch,
+                                              isSearching: false,
+                                              data: {
+                                                name: ingTargetSearch,
+                                                category: "especifico",
+                                              },
+                                            });
+                                            setIngTargetSearch("");
+                                          }}
+                                          className="w-full text-left px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] hover:bg-white/5 transition-all flex items-center gap-2 border-b border-white/5"
+                                        >
+                                          <PlusCircle size={15} />
+                                          <span>Crear "{ingTargetSearch}" como nueva materia prima</span>
+                                        </button>
+                                        {ingredients
+                                          .filter(
+                                            (i) =>
+                                              i.name.toLowerCase().includes(ingTargetSearch.toLowerCase()) ||
+                                              i.brand?.toLowerCase().includes(ingTargetSearch.toLowerCase()),
+                                          )
+                                          .slice(0, 8)
+                                          .map((ing) => (
                                             <button
+                                              key={ing.id}
                                               onClick={() => {
-                                                setResolvingIngredient({
-                                                  index:
-                                                    selectedRecipe.ingredients
-                                                      .length,
-                                                  name: ingTargetSearch,
-                                                  isSearching: false,
-                                                  data: {
-                                                    name: ingTargetSearch,
-                                                    category: "especifico",
-                                                  },
-                                                });
+                                                addIngredientToRecipe(ing.id);
                                                 setIngTargetSearch("");
                                               }}
-                                              className="w-full text-left px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[var(--accent)] hover:bg-white/5 transition-all flex items-center gap-3 border-b border-white/5"
+                                              className="w-full text-left px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-white/70 hover:bg-white/5 hover:text-white transition-all flex items-center justify-between group"
                                             >
-                                              <PlusCircle size={18} />
-                                              <span>Crear "{ingTargetSearch}" como nueva materia prima</span>
+                                              <div className="flex flex-col">
+                                                <span className="group-hover:text-[var(--accent)] transition-colors">{ing.name}</span>
+                                                <span className="text-[9px] opacity-40 italic font-medium tracking-normal mt-0.5">
+                                                  {ing.brand || "Marca Genérica"}
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                {ingredients.find(
+                                                  (ei) =>
+                                                    ei.name.toLowerCase() === ing.name.toLowerCase() &&
+                                                    ei.id !== ing.id,
+                                                ) && (
+                                                  <span className="text-[8px] bg-amber-500/10 text-amber-500 px-1.5 py-0.2 rounded uppercase">
+                                                    Duplicado
+                                                  </span>
+                                                )}
+                                                <ArrowRight size={13} className="opacity-0 group-hover:opacity-100 transition-all" />
+                                              </div>
                                             </button>
-                                            {ingredients
-                                              .filter(
-                                                (i) =>
-                                                  i.name
-                                                    .toLowerCase()
-                                                    .includes(
-                                                      ingTargetSearch.toLowerCase(),
-                                                    ) ||
-                                                  i.brand
-                                                    ?.toLowerCase()
-                                                    .includes(
-                                                      ingTargetSearch.toLowerCase(),
-                                                    ),
-                                              )
-                                              .slice(0, 10)
-                                              .map((ing) => (
-                                                <button
-                                                  key={ing.id}
-                                                  onClick={() => {
-                                                    addIngredientToRecipe(
-                                                      ing.id,
-                                                    );
-                                                    setIngTargetSearch("");
-                                                  }}
-                                                  className="w-full text-left px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-white/70 hover:bg-white/5 hover:text-white transition-all flex items-center justify-between group"
-                                                >
-                                                  <div className="flex flex-col">
-                                                    <span className="group-hover:text-[var(--accent)] transition-colors">{ing.name}</span>
-                                                    <span className="text-[9px] opacity-40 italic font-medium tracking-normal mt-0.5">
-                                                      {ing.brand || "Marca Genérica"}
-                                                    </span>
-                                                  </div>
-                                                  <div className="flex items-center gap-3">
-                                                    {ingredients.find(
-                                                      (ei) =>
-                                                        ei.name.toLowerCase() ===
-                                                          ing.name.toLowerCase() &&
-                                                        ei.id !== ing.id,
-                                                    ) && (
-                                                      <span className="text-[8px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded uppercase">
-                                                        Duplicado
-                                                      </span>
-                                                    )}
-                                                    <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
-                                                  </div>
-                                                </button>
-                                              ))}
+                                          ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => setIsAddingSubRecipe(true)}
+                                    className="px-5 py-3 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-rose-500/20 transition-all flex items-center justify-center gap-2 shadow-sm shrink-0"
+                                  >
+                                    <Layers size={14} />
+                                    Sub-Receta
+                                  </button>
+                                </div>
+
+                                {/* Technical Parameters Card - Expandable / Desplegable & Clear */}
+                                <div className="bg-white/[0.02] rounded-2xl border border-white/5 overflow-hidden transition-all shadow-md">
+                                  {/* Header / Toggle Bar */}
+                                  <button
+                                    onClick={() => setIsTechnicalParamsOpen(!isTechnicalParamsOpen)}
+                                    className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left hover:bg-white/[0.02] transition-colors"
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center border border-[var(--accent)]/20 shrink-0">
+                                        <Sliders size={14} />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <h4 className="text-xs font-bold uppercase text-white tracking-wider flex items-center gap-2">
+                                          <span>Parámetros Técnicos de Formulación</span>
+                                          <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-white/50 font-normal">
+                                            {isTechnicalParamsOpen ? "Desplegado" : "Click para desplegar"}
+                                          </span>
+                                        </h4>
+                                        <p className="text-[10px] text-white/40 truncate mt-0.5 font-mono">
+                                          Lote: {selectedRecipe.finalYield || recipeTotalWeight}g • Porción: {selectedRecipe.servingSize || 60}g ({selectedRecipe.servingMeasure || "1 bocha"}) • {selectedRecipe.isLiquid ? "Líquido" : "Sólido"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] hidden sm:inline">
+                                        {isTechnicalParamsOpen ? "Ocultar Campos" : "Desplegar Parámetros"}
+                                      </span>
+                                      <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-white/50">
+                                        {isTechnicalParamsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                      </div>
+                                    </div>
+                                  </button>
+
+                                  {/* Expandable Body */}
+                                  {isTechnicalParamsOpen && (
+                                    <div className="p-5 pt-1 border-t border-white/5 space-y-5 animate-in fade-in duration-200">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {/* Campo 1: Rendimiento Final del Lote */}
+                                        <div className="bg-black/40 rounded-2xl p-4 border border-white/10 space-y-3 flex flex-col justify-between">
+                                          <div>
+                                            <div className="flex items-center justify-between">
+                                              <label className="text-[10px] uppercase font-bold text-white/60 tracking-wider">
+                                                Rendimiento Final de Lote
+                                              </label>
+                                              <span className="text-[9px] font-mono text-white/30">
+                                                Insumos: {recipeTotalWeight}g
+                                              </span>
+                                            </div>
+                                            <p className="text-[9px] text-white/30 mt-0.5">
+                                              Peso final del producto cocinado, pasteurizado o congelado.
+                                            </p>
                                           </div>
-                                        )}
+
+                                          <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2 border border-white/10 focus-within:border-[var(--accent)] transition-all">
+                                            <input
+                                              type="number"
+                                              value={selectedRecipe.finalYield || ""}
+                                              placeholder={String(recipeTotalWeight || 1000)}
+                                              onChange={(e) =>
+                                                handleUpdateRecipe({
+                                                  ...selectedRecipe,
+                                                  finalYield: parseFloat(e.target.value) || 0,
+                                                })
+                                              }
+                                              className="w-full bg-transparent text-base font-mono font-bold text-white outline-none"
+                                            />
+                                            <span className="text-xs font-bold text-white/40 uppercase">
+                                              {selectedRecipe.isLiquid ? "ml" : "g"}
+                                            </span>
+                                          </div>
+
+                                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/5">
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleUpdateRecipe({
+                                                  ...selectedRecipe,
+                                                  finalYield: recipeTotalWeight,
+                                                })
+                                              }
+                                              className="text-[9px] font-bold text-[var(--accent)] hover:underline flex items-center gap-1"
+                                              title="Igualar rendimiento al peso total de los ingredientes"
+                                            >
+                                              <RefreshCw size={10} />
+                                              <span>Sincronizar ({recipeTotalWeight}g)</span>
+                                            </button>
+                                            {selectedRecipe.finalYield > 0 && selectedRecipe.finalYield !== recipeTotalWeight && (
+                                              <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                                                selectedRecipe.finalYield < recipeTotalWeight
+                                                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                                                  : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                              }`}>
+                                                {selectedRecipe.finalYield < recipeTotalWeight
+                                                  ? `Merma: -${Math.round(recipeTotalWeight - selectedRecipe.finalYield)}g (${((1 - selectedRecipe.finalYield / recipeTotalWeight) * 100).toFixed(1)}%)`
+                                                  : `Expansión: +${Math.round(selectedRecipe.finalYield - recipeTotalWeight)}g`}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {/* Campo 2: Tamaño de Porción Oficial */}
+                                        <div className="bg-black/40 rounded-2xl p-4 border border-white/10 space-y-3 flex flex-col justify-between">
+                                          <div>
+                                            <div className="flex items-center justify-between">
+                                              <label className="text-[10px] uppercase font-bold text-white/60 tracking-wider">
+                                                Tamaño de Porción
+                                              </label>
+                                              <span className="text-[9px] font-mono text-[var(--accent)] font-bold">
+                                                Reglamentario CAA
+                                              </span>
+                                            </div>
+                                            <p className="text-[9px] text-white/30 mt-0.5">
+                                              Base de cálculo para la tabla nutricional y sellos.
+                                            </p>
+                                          </div>
+
+                                          <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2 border border-white/10 focus-within:border-[var(--accent)] transition-all">
+                                            <input
+                                              type="number"
+                                              value={selectedRecipe.servingSize || ""}
+                                              placeholder="60"
+                                              onChange={(e) =>
+                                                handleUpdateRecipe({
+                                                  ...selectedRecipe,
+                                                  servingSize: parseFloat(e.target.value) || 0,
+                                                })
+                                              }
+                                              className="w-full bg-transparent text-base font-mono font-bold text-[var(--accent)] outline-none"
+                                            />
+                                            <span className="text-xs font-bold text-white/40 uppercase">
+                                              {selectedRecipe.isLiquid ? "ml" : "g"}
+                                            </span>
+                                          </div>
+
+                                          {/* Presets de porción según rubro */}
+                                          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/5">
+                                            {[
+                                              { label: "60g Helado", value: 60, measure: "1 bocha" },
+                                              { label: "100g Gral", value: 100, measure: "1 porción" },
+                                              { label: "50g Torta", value: 50, measure: "1 rebanada" },
+                                              { label: "30g Choco", value: 30, measure: "2 barritas" },
+                                            ].map((p) => (
+                                              <button
+                                                key={p.value}
+                                                type="button"
+                                                onClick={() =>
+                                                  handleUpdateRecipe({
+                                                    ...selectedRecipe,
+                                                    servingSize: p.value,
+                                                    servingMeasure: p.measure,
+                                                  })
+                                                }
+                                                className={`px-2 py-0.5 rounded text-[8px] font-bold font-mono transition-all border ${
+                                                  selectedRecipe.servingSize === p.value
+                                                    ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                                                    : "bg-white/5 text-white/40 border-white/5 hover:text-white"
+                                                }`}
+                                              >
+                                                {p.label}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+
+                                        {/* Campo 3: Medida Casera de Referencia */}
+                                        <div className="bg-black/40 rounded-2xl p-4 border border-white/10 space-y-3 flex flex-col justify-between">
+                                          <div>
+                                            <label className="text-[10px] uppercase font-bold text-white/60 tracking-wider block">
+                                              Medida Casera (CAA)
+                                            </label>
+                                            <p className="text-[9px] text-white/30 mt-0.5">
+                                              Acompaña la porción en el rótulo lineal.
+                                            </p>
+                                          </div>
+
+                                          <div className="bg-white/5 rounded-xl px-3 py-2 border border-white/10 focus-within:border-[var(--accent)] transition-all">
+                                            <input
+                                              type="text"
+                                              value={selectedRecipe.servingMeasure || ""}
+                                              placeholder="Ej: 1 bocha, 1 rebanada, 1 taza"
+                                              onChange={(e) =>
+                                                handleUpdateRecipe({
+                                                  ...selectedRecipe,
+                                                  servingMeasure: e.target.value,
+                                                })
+                                              }
+                                              className="w-full bg-transparent text-sm font-semibold text-white outline-none"
+                                            />
+                                          </div>
+
+                                          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/5">
+                                            {["1 bocha", "1 porción", "1 unidad", "1 rebanada", "1 pote"].map((m) => (
+                                              <button
+                                                key={m}
+                                                type="button"
+                                                onClick={() =>
+                                                  handleUpdateRecipe({
+                                                    ...selectedRecipe,
+                                                    servingMeasure: m,
+                                                  })
+                                                }
+                                                className={`px-2 py-0.5 rounded text-[8px] font-bold transition-all border ${
+                                                  selectedRecipe.servingMeasure === m
+                                                    ? "bg-[var(--accent)] text-white border-[var(--accent)]"
+                                                    : "bg-white/5 text-white/40 border-white/5 hover:text-white"
+                                                }`}
+                                              >
+                                                {m}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+
+                                        {/* Campo 4: Porciones por Envase */}
+                                        <div className="bg-black/40 rounded-2xl p-4 border border-white/10 space-y-3 flex flex-col justify-between">
+                                          <div>
+                                            <label className="text-[10px] uppercase font-bold text-white/60 tracking-wider block">
+                                              Porciones por Envase
+                                            </label>
+                                            <p className="text-[9px] text-white/30 mt-0.5">
+                                              Rendimiento de unidades comerciales por lote.
+                                            </p>
+                                          </div>
+
+                                          <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2 border border-white/10 focus-within:border-[var(--accent)] transition-all">
+                                            <input
+                                              type="number"
+                                              value={selectedRecipe.portionsPerPackage || 1}
+                                              onChange={(e) =>
+                                                handleUpdateRecipe({
+                                                  ...selectedRecipe,
+                                                  portionsPerPackage: parseInt(e.target.value) || 1,
+                                                })
+                                              }
+                                              className="w-full bg-transparent text-base font-mono font-bold text-white outline-none"
+                                            />
+                                            <span className="text-xs font-bold text-white/40 uppercase">
+                                              porc.
+                                            </span>
+                                          </div>
+
+                                          <div className="text-[9px] text-white/40 pt-1 border-t border-white/5 font-mono">
+                                            Rinde aprox. <span className="text-white font-bold">{Math.max(1, Math.round((selectedRecipe.finalYield || recipeTotalWeight) / (selectedRecipe.servingSize || 60)))}</span> porciones por lote completo.
+                                          </div>
+                                        </div>
+
+                                        {/* Campo 5: Naturaleza del Alimento */}
+                                        <div className="bg-black/40 rounded-2xl p-4 border border-white/10 space-y-3 flex flex-col justify-between md:col-span-2">
+                                          <div>
+                                            <label className="text-[10px] uppercase font-bold text-white/60 tracking-wider block">
+                                              Naturaleza Física y Umbral Regulatorio
+                                            </label>
+                                            <p className="text-[9px] text-white/30 mt-0.5">
+                                              Define si los umbrales de calorías aplican para sólido (275 kcal / 100g) o líquido (25 kcal / 100ml) según Ley 27.642.
+                                            </p>
+                                          </div>
+
+                                          <div className="flex items-center gap-3">
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleUpdateRecipe({
+                                                  ...selectedRecipe,
+                                                  isLiquid: false,
+                                                })
+                                              }
+                                              className={`flex-1 py-2.5 px-4 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                                                !selectedRecipe.isLiquid
+                                                  ? "bg-[var(--accent)] text-white border-[var(--accent)] shadow-md"
+                                                  : "bg-white/5 text-white/40 border-white/5 hover:text-white"
+                                              }`}
+                                            >
+                                              <Package size={14} />
+                                              <span>Sólido (Helados / Pastelería / Chocolates)</span>
+                                            </button>
+
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleUpdateRecipe({
+                                                  ...selectedRecipe,
+                                                  isLiquid: true,
+                                                })
+                                              }
+                                              className={`flex-1 py-2.5 px-4 rounded-xl border text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                                                selectedRecipe.isLiquid
+                                                  ? "bg-rose-500 text-white border-rose-500 shadow-md"
+                                                  : "bg-white/5 text-white/40 border-white/5 hover:text-white"
+                                              }`}
+                                            >
+                                              <Milk size={14} />
+                                              <span>Líquido (Bebidas / Siropes / Jarabes)</span>
+                                            </button>
+                                          </div>
+
+                                          <div className="text-[9px] text-white/40 pt-1 border-t border-white/5">
+                                            {!selectedRecipe.isLiquid ? (
+                                              <span>* Umbral de exceso de calorías en sólidos: <strong className="text-white">≥ 275 kcal / 100g</strong>.</span>
+                                            ) : (
+                                              <span>* Umbral de exceso de calorías en líquidos: <strong className="text-white">≥ 25 kcal / 100ml</strong>.</span>
+                                            )}
+                                          </div>
+                                        </div>
                                       </div>
-                                      <button
-                                        onClick={() =>
-                                          setIsAddingSubRecipe(true)
-                                        }
-                                        className="px-8 py-5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-2xl text-[11px] font-bold uppercase tracking-widest hover:bg-rose-500/20 transition-all flex items-center gap-2 shadow-lg"
-                                      >
-                                        <Layers size={16} />
-                                        Sub-Receta
-                                      </button>
                                     </div>
-                                  </div>
+                                  )}
                                 </div>
 
-                                <div className="p-6 bg-rose-500/5 rounded-2xl border border-rose-500/10">
-                                  <h4 className="text-[10px] uppercase font-bold text-rose-400 tracking-widest mb-4">
-                                    Parámetros Técnicos
-                                  </h4>
-                                  <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                      <div className="flex flex-col gap-2">
-                                        <span className="text-[10px] text-[var(--text-s)] uppercase font-bold">
-                                          Rendimiento Final (
-                                          {selectedRecipe.finalYield}g)
-                                        </span>
-                                        <input
-                                          type="range"
-                                          min={10}
-                                          max={selectedRecipe.totalYield * 1.5}
-                                          value={selectedRecipe.finalYield}
-                                          onChange={(e) =>
-                                            handleUpdateRecipe({
-                                              ...selectedRecipe,
-                                              finalYield:
-                                                parseFloat(e.target.value) || 0,
-                                            })
-                                          }
-                                          className="w-full h-1 bg-[var(--border)] rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
-                                        />
-                                      </div>
-                                      <div className="flex flex-col gap-2">
-                                        <span className="text-[10px] text-[var(--text-s)] uppercase font-bold">
-                                          Porción ({selectedRecipe.servingSize}
-                                          g)
-                                        </span>
-                                        <input
-                                          type="range"
-                                          min={1}
-                                          max={400}
-                                          value={selectedRecipe.servingSize}
-                                          onChange={(e) =>
-                                            handleUpdateRecipe({
-                                              ...selectedRecipe,
-                                              servingSize:
-                                                parseFloat(e.target.value) || 0,
-                                            })
-                                          }
-                                          className="w-full h-1 bg-[var(--border)] rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="bg-black/20 rounded-xl p-4 flex flex-col justify-center gap-2">
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-[9px] uppercase font-bold text-[var(--text-s)]">
-                                          Sólido/Líquido
-                                        </span>
-                                        <button
-                                          onClick={() =>
-                                            handleUpdateRecipe({
-                                              ...selectedRecipe,
-                                              isLiquid:
-                                                !selectedRecipe.isLiquid,
-                                            })
-                                          }
-                                          className={`w-12 h-6 rounded-full relative transition-all ${selectedRecipe.isLiquid ? "bg-rose-500" : "bg-slate-600"}`}
-                                        >
-                                          <div
-                                            className={`absolute top-1 h-4 w-4 bg-white rounded-full transition-all ${selectedRecipe.isLiquid ? "left-7" : "left-1"}`}
-                                          />
-                                        </button>
-                                      </div>
-                                      <div className="flex justify-between items-center">
-                                        <span className="text-[9px] uppercase font-bold text-[var(--text-s)]">
-                                          Porciones/Empaque
-                                        </span>
-                                        <input
-                                          type="number"
-                                          value={
-                                            selectedRecipe.portionsPerPackage
-                                          }
-                                          onChange={(e) =>
-                                            handleUpdateRecipe({
-                                              ...selectedRecipe,
-                                              portionsPerPackage:
-                                                parseInt(e.target.value) || 1,
-                                            })
-                                          }
-                                          className="w-12 bg-transparent border-b border-white/20 text-right text-xs font-mono outline-none"
-                                        />
-                                      </div>
-                                    </div>
+                                {/* Step Continue Action */}
+                                <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                  <div className="text-[10px] text-white/40 italic">
+                                    {selectedRecipe.isTrialFormula
+                                      ? "Fórmula de ensayo experimental. Puedes validar sellos y rótulo en el panel lateral."
+                                      : "Ajusta las cantidades y parámetros para obtener el informe nutricional oficial."}
                                   </div>
-                                </div>
-
-                                <div className="pt-4 flex justify-end">
-                                  {!selectedRecipe.isTrialFormula ? (
+                                  {!selectedRecipe.isTrialFormula && (
                                     <button
                                       onClick={() =>
                                         handleUpdateRecipe({
@@ -6236,17 +6953,11 @@ export default function App() {
                                           status: "informacion_nutricional",
                                         })
                                       }
-                                      className="flex items-center gap-3 bg-[var(--accent)] text-white px-8 py-4 rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-[var(--accent)]/30 hover:scale-105 transition-all"
+                                      className="flex items-center gap-2 bg-[var(--accent)] text-white px-6 py-3 rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg shadow-[var(--accent)]/25 hover:brightness-110 transition-all shrink-0"
                                     >
-                                      CONTINUAR A INFO NUTRICIONAL
-                                      <ArrowRight size={18} />
+                                      <span>Continuar a Info Nutricional</span>
+                                      <ArrowRight size={15} />
                                     </button>
-                                  ) : (
-                                    <div className="flex items-center gap-4">
-                                      <span className="text-[10px] text-white/20 italic uppercase tracking-widest">
-                                        Formulación en Modo Experimental
-                                      </span>
-                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -6330,7 +7041,9 @@ export default function App() {
                                           { n: "Fibra Alimentaria", id: "fiber", u: "g" },
                                           { n: "Sodio", id: "sodium", u: "mg" },
                                         ].map((row, i) => {
-                                          const val100g = (nutritionData.adjustedNutrients as any)[row.id] * (100 / (selectedRecipe.finalYield || 1));
+                                          const val100g = nutritionData.per100g 
+                                            ? (nutritionData.per100g as any)[row.id] 
+                                            : ((nutritionData.adjustedNutrients as any)[row.id] * (100 / (selectedRecipe.finalYield || recipeTotalWeight || 1)));
                                           const valServing = (nutritionData.perServing as any)[row.id];
                                           const percent = (nutritionData.percentDV as any)[row.id];
                                           
@@ -6385,12 +7098,192 @@ export default function App() {
                             )}
                           </div>
 
-                          {/* Right Side: Results / Visuals */}
-                          <div className="flex flex-col bg-[var(--surface)] custom-scrollbar overflow-y-auto p-8 space-y-10 border-l border-[var(--border)]">
+                          {/* Right Side: Results / Visuals / Live Formulation Companion */}
+                          <div className={`flex flex-col bg-[var(--surface)] custom-scrollbar overflow-y-auto p-6 lg:p-8 space-y-8 border-l border-[var(--border)] ${
+                            formulationViewMode === "fullscreen" && (selectedRecipe.status === "formulacion" || selectedRecipe.isTrialFormula) ? "hidden" : "flex"
+                          }`}>
+                            {/* Live Companion Panel when formulating (Step 1) */}
+                            {selectedRecipe.status === "formulacion" && !selectedRecipe.isTrialFormula && (
+                              <div className="space-y-6">
+                                {/* Card: Texto Oficial de Información Nutricional (Packaging / CAA) */}
+                                <div className="bg-black/40 p-5 rounded-2xl border border-[var(--accent)]/30 shadow-xl space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
+                                      <h4 className="text-[10px] uppercase font-bold text-[var(--accent)] tracking-widest">
+                                        Rótulo Nutricional Lineal (Packaging / CAA)
+                                      </h4>
+                                    </div>
+                                    <button
+                                      onClick={copyLinearToClipboard}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent)] text-black rounded-lg text-[9px] font-black uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all shadow-md"
+                                      title="Copiar texto exacto para rótulo o packaging"
+                                    >
+                                      {copiedLinear ? (
+                                        <>
+                                          <Check size={12} strokeWidth={3} />
+                                          <span>¡Copiado!</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy size={12} />
+                                          <span>Copiar Rótulo</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  </div>
+                                  <div className="p-3.5 bg-[var(--surface)] rounded-xl border border-white/5 text-[11px] font-mono leading-relaxed text-white/90 whitespace-pre-wrap select-all selection:bg-[var(--accent)] selection:text-black">
+                                    {generateLinearNutritionalText(selectedRecipe, nutritionData)}
+                                  </div>
+                                  <span className="text-[9px] text-white/30 italic block">
+                                    * Formato regulatorio oficial actualizado en tiempo real según cambios en la matriz.
+                                  </span>
+                                </div>
+
+                                {/* Card: Live Warning Octagons */}
+                                <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/5 space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="text-[10px] uppercase font-bold text-white/60 tracking-widest flex items-center gap-2">
+                                      <ShieldAlert size={14} className="text-amber-400" />
+                                      Sellos de Advertencia en Tiempo Real (Ley 27.642)
+                                    </h4>
+                                    <span className="text-[9px] font-mono text-white/30">
+                                      Ref: Porción {selectedRecipe.servingSize}g
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-3 justify-center py-2">
+                                    {nutritionData.warnings.length > 0 ? (
+                                      nutritionData.warnings.map((w, idx) => {
+                                        const parts = w.split(" EN ");
+                                        return (
+                                          <div
+                                            key={idx}
+                                            className="octagon w-28 h-28 flex flex-col items-center justify-center text-center p-2 shadow-lg"
+                                          >
+                                            <span className="text-[9px] font-black leading-none mb-1 opacity-90">EXCESO EN</span>
+                                            <span className="text-[11px] font-[1000] leading-tight tracking-tight px-1">
+                                              {parts[1] || parts[0]}
+                                            </span>
+                                            <span className="mt-1 text-[7px] font-bold opacity-40 uppercase">Min. Salud</span>
+                                          </div>
+                                        );
+                                      })
+                                    ) : (
+                                      <div className="w-full py-4 px-5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center gap-3 text-center">
+                                        <Check size={18} className="text-emerald-400 shrink-0" />
+                                        <span className="text-xs font-bold text-emerald-400">
+                                          Fórmula Libre de Sellos de Advertencia
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Card: Key Nutrient Snapshot */}
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="stat-card !p-4 !rounded-2xl">
+                                    <span className="text-[9px] uppercase font-bold text-[var(--text-s)] tracking-wider">
+                                      Valor Energético
+                                    </span>
+                                    <p className="text-xl font-bold text-white font-mono mt-1">
+                                      {roundValue(nutritionData.perServing.energy, "energy")} <span className="text-xs font-normal text-white/50">kcal</span>
+                                    </p>
+                                    <span className="text-[9px] text-[var(--accent)] font-mono">
+                                      {roundValue(nutritionData.perServing.energyKJ, "energyKJ")} kJ ({nutritionData.percentDV.energy?.toFixed(0) || "0"}% VD)
+                                    </span>
+                                  </div>
+
+                                  <div className="stat-card !p-4 !rounded-2xl">
+                                    <span className="text-[9px] uppercase font-bold text-[var(--text-s)] tracking-wider">
+                                      Azúcares Totales
+                                    </span>
+                                    <p className="text-xl font-bold text-white font-mono mt-1">
+                                      {roundValue(nutritionData.perServing.totalSugars, "totalSugars")} <span className="text-xs font-normal text-white/50">g</span>
+                                    </p>
+                                    <span className="text-[9px] text-white/40 font-mono">
+                                      Añadidos: {roundValue(nutritionData.perServing.addedSugars, "addedSugars")}g
+                                    </span>
+                                  </div>
+
+                                  <div className="stat-card !p-4 !rounded-2xl">
+                                    <span className="text-[9px] uppercase font-bold text-[var(--text-s)] tracking-wider">
+                                      Grasas Totales
+                                    </span>
+                                    <p className="text-xl font-bold text-white font-mono mt-1">
+                                      {roundValue(nutritionData.perServing.totalFats, "totalFats")} <span className="text-xs font-normal text-white/50">g</span>
+                                    </p>
+                                    <span className="text-[9px] text-white/40 font-mono">
+                                      Saturadas: {roundValue(nutritionData.perServing.saturatedFats, "saturatedFats")}g
+                                    </span>
+                                  </div>
+
+                                  <div className="stat-card !p-4 !rounded-2xl">
+                                    <span className="text-[9px] uppercase font-bold text-[var(--text-s)] tracking-wider">
+                                      Sodio
+                                    </span>
+                                    <p className="text-xl font-bold text-white font-mono mt-1">
+                                      {roundValue(nutritionData.perServing.sodium, "sodium")} <span className="text-xs font-normal text-white/50">mg</span>
+                                    </p>
+                                    <span className="text-[9px] text-white/40 font-mono">
+                                      {nutritionData.percentDV.sodium?.toFixed(0) || "0"}% VD
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <button
+                                  onClick={() =>
+                                    handleUpdateRecipe({
+                                      ...selectedRecipe,
+                                      status: "informacion_nutricional",
+                                    })
+                                  }
+                                  className="w-full py-3.5 bg-[var(--accent)] text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-[var(--accent)]/20 hover:brightness-110 transition-all"
+                                >
+                                  <span>Ver Informe Nutricional Detallado</span>
+                                  <ArrowRight size={14} />
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Standard Nutritional & Marketing View */}
                             {(selectedRecipe.isTrialFormula === true ||
-                              selectedRecipe.status ===
-                                "informacion_nutricional") && (
+                              selectedRecipe.status === "informacion_nutricional") && (
                               <>
+                                {/* Top Dedicated Nutritional Label Card */}
+                                <div className="bg-black/40 p-5 rounded-2xl border border-[var(--accent)]/30 shadow-xl space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-[var(--accent)] animate-pulse" />
+                                      <h4 className="text-[10px] uppercase font-bold text-[var(--accent)] tracking-widest">
+                                        Rótulo Nutricional Lineal (Packaging / CAA)
+                                      </h4>
+                                    </div>
+                                    <button
+                                      onClick={copyLinearToClipboard}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent)] text-black rounded-lg text-[9px] font-black uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all shadow-md"
+                                      title="Copiar texto exacto para rótulo"
+                                    >
+                                      {copiedLinear ? (
+                                        <>
+                                          <Check size={12} strokeWidth={3} />
+                                          <span>¡Copiado!</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy size={12} />
+                                          <span>Copiar Rótulo</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  </div>
+                                  <div className="p-3.5 bg-[var(--surface)] rounded-xl border border-white/5 text-[11px] font-mono leading-relaxed text-white/90 whitespace-pre-wrap select-all selection:bg-[var(--accent)] selection:text-black">
+                                    {generateLinearNutritionalText(selectedRecipe, nutritionData)}
+                                  </div>
+                                  <span className="text-[9px] text-white/30 italic block">
+                                    * Formato regulatorio oficial Ley 27.642 / CAA.
+                                  </span>
+                                </div>
+
                                 <section>
                                   <h3 className="text-xs font-bold uppercase tracking-widest text-white mb-6">
                                     Octógonos de Advertencia
@@ -6637,7 +7530,6 @@ export default function App() {
                                       </h4>
                                       <div className="text-[11px] font-sans leading-relaxed text-white/80">
                                         {nutritionData.ingredientList.map((name, idx) => {
-                                          const flourEnrichmentText = "Harina de trigo enriquecida según Ley 25.630. Contiene hierro (30mg/kg), ácido fólico (2.2mg/kg), tiamina (6.3mg/kg), riboflavina (1.3mg/kg), niacina (13mg/kg)";
                                           const isFlour = name.includes("HARINA") || name.includes("TRIGO");
                                           return (
                                             <span key={idx}>
@@ -6732,7 +7624,9 @@ export default function App() {
                                               { n: "Fibra (g)", id: "fiber" },
                                               { n: "Sodio (mg)", id: "sodium" },
                                             ].map((row, ridx) => {
-                                              const val100 = (nutritionData.adjustedNutrients as any)[row.id] * (100 / (selectedRecipe.finalYield || 1));
+                                              const val100 = nutritionData.per100g 
+                                                ? (nutritionData.per100g as any)[row.id] 
+                                                : ((nutritionData.adjustedNutrients as any)[row.id] * (100 / (selectedRecipe.finalYield || recipeTotalWeight || 1)));
                                               const valServ = (nutritionData.perServing as any)[row.id];
                                               const pvd = (nutritionData.percentDV as any)[row.id];
                                               return (
@@ -6751,18 +7645,29 @@ export default function App() {
 
                                     {/* Copy Section */}
                                     <div className="bg-black/40 p-6 rounded-2xl border border-[var(--accent)]/30 shadow-2xl shadow-[var(--accent)]/5">
-                                      <div className="flex justify-between items-center mb-4">
+                                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4">
                                         <h4 className="text-[10px] uppercase font-bold text-[var(--accent)] tracking-widest flex items-center gap-2">
                                           <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
-                                          6. Texto Final para Marketing (Copy/Paste)
+                                          6. Textos Oficiales para Packaging y Marketing
                                         </h4>
-                                        <button
-                                          onClick={copyToClipboard}
-                                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent)] text-black rounded-lg text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all"
-                                        >
-                                          <Copy size={12} />
-                                          {copiedLabel ? "¡COPIADO!" : "COPIAR TEXTO"}
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                          <button
+                                            onClick={copyLinearToClipboard}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all"
+                                            title="Copiar únicamente el texto lineal de información nutricional para packaging"
+                                          >
+                                            <Copy size={11} />
+                                            {copiedLinear ? "¡RÓTULO COPIADO!" : "COPIAR RÓTULO"}
+                                          </button>
+                                          <button
+                                            onClick={copyToClipboard}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent)] text-black rounded-lg text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all"
+                                            title="Copiar reporte técnico completo"
+                                          >
+                                            <Copy size={11} />
+                                            {copiedLabel ? "¡COPIADO!" : "COPIAR INFORME"}
+                                          </button>
+                                        </div>
                                       </div>
                                       <div className="label-copy-box custom-scrollbar max-h-[300px] overflow-y-auto leading-relaxed text-[9px] font-mono text-white/50 bg-[var(--surface)] p-4 rounded-xl border border-white/5 whitespace-pre-wrap selection:bg-[var(--accent)] selection:text-black">
                                         {generateLabelText(selectedRecipe, nutritionData)}
@@ -8022,46 +8927,74 @@ export default function App() {
                           )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-5">
                           {[
-                            { id: "energy", label: "Energía (kcal)", unit: "kcal" },
+                            { id: "energy", label: "Energía (kcal)", unit: "kcal", hint: "Atwater: C*4 + P*4 + G*9" },
+                            { id: "carbs", label: "Carbohidratos Totales", unit: "g" },
+                            { id: "totalSugars", label: "Azúcares Totales", unit: "g", hint: "Intrínsecos + Añadidos" },
+                            { id: "addedSugars", label: "Azúcares Añadidos", unit: "g", hint: "Agregados (Ley 27.642)" },
                             { id: "proteins", label: "Proteínas", unit: "g" },
-                            { id: "carbs", label: "Carbohidratos", unit: "g" },
-                            { id: "sugars", label: "Azúcares", unit: "g" },
                             { id: "totalFats", label: "Grasas Totales", unit: "g" },
-                            { id: "saturatedFats", label: "G. Saturadas", unit: "g" },
-                            { id: "fiber", label: "Fibra", unit: "g" },
+                            { id: "saturatedFats", label: "Grasas Saturadas", unit: "g" },
+                            { id: "transFats", label: "Grasas Trans", unit: "g" },
+                            { id: "fiber", label: "Fibra Alimentaria", unit: "g" },
                             { id: "sodium", label: "Sodio", unit: "mg" },
-                          ].map((nutrient) => (
-                            <div key={nutrient.id} className="relative group">
-                              <label className="text-[9px] uppercase font-black text-white/20 tracking-widest block mb-1">
-                                {nutrient.label}
-                              </label>
-                              <div className="flex items-end gap-2 border-b border-white/10 group-focus-within:border-[var(--accent)] transition-all pb-1">
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  value={(resolvingIngredient.data as any)[nutrient.id] || 0}
-                                  onChange={(e) => {
-                                    const val = parseFloat(e.target.value) || 0;
-                                    const update: any = { [nutrient.id]: val };
-                                    if (nutrient.id === "energy") {
-                                      update.energyKJ = Math.round(val * 4.184);
-                                    }
-                                    setResolvingIngredient({
-                                      ...resolvingIngredient,
-                                      data: {
-                                        ...resolvingIngredient.data,
-                                        ...update,
-                                      },
-                                    });
-                                  }}
-                                  className="bg-transparent text-lg font-mono text-white outline-none w-full"
-                                />
-                                <span className="text-[10px] font-black text-white/10 uppercase tracking-widest mb-1">{nutrient.unit}</span>
+                          ].map((nutrient) => {
+                            const curVal = (resolvingIngredient.data as any)?.[nutrient.id] ?? 
+                              (nutrient.id === "totalSugars" ? ((resolvingIngredient.data as any)?.sugars ?? 0) : 0);
+
+                            return (
+                              <div key={nutrient.id} className="relative group">
+                                <div className="flex items-center justify-between mb-1">
+                                  <label className="text-[9px] uppercase font-black text-white/40 tracking-wider block">
+                                    {nutrient.label}
+                                  </label>
+                                  {nutrient.hint && (
+                                    <span className="text-[8px] text-[var(--accent)] font-medium opacity-70">
+                                      {nutrient.hint}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-end gap-2 border-b border-white/10 group-focus-within:border-[var(--accent)] transition-all pb-1">
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    value={curVal}
+                                    onChange={(e) => {
+                                      const val = parseFloat(e.target.value) || 0;
+                                      const currentData = resolvingIngredient.data || {};
+                                      const update: any = { [nutrient.id]: val };
+                                      if (nutrient.id === "totalSugars") {
+                                        update.sugars = val;
+                                      }
+                                      if (nutrient.id === "energy") {
+                                        update.energyKJ = Math.round(val * 4.184);
+                                      }
+                                      // If energy is currently 0, auto-estimate Atwater
+                                      if (nutrient.id === "carbs" || nutrient.id === "proteins" || nutrient.id === "totalFats") {
+                                        const c = nutrient.id === "carbs" ? val : (currentData.carbs || 0);
+                                        const p = nutrient.id === "proteins" ? val : (currentData.proteins || 0);
+                                        const f = nutrient.id === "totalFats" ? val : (currentData.totalFats || 0);
+                                        if (!currentData.energy || currentData.energy <= 0) {
+                                          update.energy = Math.round((c * 4) + (p * 4) + (f * 9));
+                                          update.energyKJ = Math.round(update.energy * 4.184);
+                                        }
+                                      }
+                                      setResolvingIngredient({
+                                        ...resolvingIngredient,
+                                        data: {
+                                          ...currentData,
+                                          ...update,
+                                        },
+                                      });
+                                    }}
+                                    className="bg-transparent text-lg font-mono text-white outline-none w-full"
+                                  />
+                                  <span className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">{nutrient.unit}</span>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                         
                         {resolvingIngredient.data?.confidenceNote && (
@@ -8320,6 +9253,52 @@ export default function App() {
     </div>
   );
 }
+export function generateLinearNutritionalText(recipe: Recipe, data: CalculationResult): string {
+  const servingUnit = recipe.isLiquid ? "ml" : "g";
+  const servingSize = recipe.servingSize || 100;
+
+  const formatNum = (val: number | undefined, decimals = 1): string => {
+    if (val === undefined || isNaN(val)) return "0";
+    if (Math.abs(val) < 0.0001) return "0";
+    const factor = Math.pow(10, decimals);
+    const rounded = Math.round(val * factor) / factor;
+    if (Number.isInteger(rounded)) return rounded.toString();
+    return rounded.toFixed(decimals).replace(".", ",");
+  };
+
+  const pServ = data.perServing;
+  const pDV = data.percentDV;
+
+  const energyKcal = Math.round(pServ.energy || 0);
+  const energyKJ = pServ.energyKJ ? Math.round(pServ.energyKJ) : Math.round(energyKcal * 4.184);
+  const energyPercent = pDV.energy ? Math.round(pDV.energy) : Math.round((energyKcal / 2000) * 100);
+
+  const carbs = formatNum(pServ.carbs);
+  const carbsPercent = pDV.carbs ? Math.round(pDV.carbs) : Math.round(((pServ.carbs || 0) / 300) * 100);
+
+  const totalSugars = formatNum(pServ.totalSugars ?? pServ.sugars);
+  const addedSugars = formatNum(pServ.addedSugars ?? 0);
+
+  const proteins = formatNum(pServ.proteins);
+  const proteinsPercent = pDV.proteins ? Math.round(pDV.proteins) : Math.round(((pServ.proteins || 0) / 75) * 100);
+
+  const totalFats = formatNum(pServ.totalFats);
+  const totalFatsPercent = pDV.totalFats ? Math.round(pDV.totalFats) : Math.round(((pServ.totalFats || 0) / 55) * 100);
+
+  const satFats = formatNum(pServ.saturatedFats);
+  const satFatsPercent = pDV.saturatedFats ? Math.round(pDV.saturatedFats) : Math.round(((pServ.saturatedFats || 0) / 22) * 100);
+
+  const transFats = formatNum(pServ.transFats);
+
+  const fiber = formatNum(pServ.fiber);
+  const fiberPercent = pDV.fiber ? Math.round(pDV.fiber) : Math.round(((pServ.fiber || 0) / 25) * 100);
+
+  const sodium = formatNum(pServ.sodium, 0);
+  const sodiumPercent = pDV.sodium ? Math.round(pDV.sodium) : Math.round(((pServ.sodium || 0) / 2000) * 100);
+
+  return `Información nutricional por porción (${servingSize} ${servingUnit}): Valor Energético:  ${energyKcal} kcal =  ${energyKJ} kJ (${energyPercent}% VD); Carbohidratos: ${carbs} g (${carbsPercent}% VD); Azúcares Totales: ${totalSugars} g; Azúcares Añadidos: ${addedSugars} g; Proteínas: ${proteins} g (${proteinsPercent}% VD); Grasas Totales: ${totalFats} g (${totalFatsPercent}% VD); Grasas Saturadas: ${satFats} g (${satFatsPercent}% VD); Grasas Trans: ${transFats} g; Fibra alimentaria: ${fiber} g (${fiberPercent}% VD); Sodio: ${sodium} mg (${sodiumPercent}% VD).\n% Valores Diarios con base a una dieta de 2000 kcal u 8400 kJ. Sus valores diarios pueden ser mayores o menores dependiendo de sus necesidades energéticas.`;
+}
+
 function generateLabelText(recipe: Recipe, data: CalculationResult): string {
   const flourEnrichmentText = "Harina de trigo enriquecida según Ley 25.630. Contiene hierro (30mg/kg), ácido fólico (2.2mg/kg), tiamina (6.3mg/kg), riboflavina (1.3mg/kg), niacina (13mg/kg)";
   
@@ -8331,6 +9310,7 @@ function generateLabelText(recipe: Recipe, data: CalculationResult): string {
   }).join(", ");
 
   const serving = `${recipe.servingSize}g${recipe.servingMeasure ? ` (${recipe.servingMeasure})` : ""}`;
+  const linearNutritionalText = generateLinearNutritionalText(recipe, data);
   
   const rows = [
     { n: "Valor Energético (kcal)", id: "energy", u: "" },
@@ -8354,7 +9334,9 @@ function generateLabelText(recipe: Recipe, data: CalculationResult): string {
   tableText += "----------------------------------------------------------------------\n";
 
   rows.forEach(row => {
-    const val100g = (data.adjustedNutrients as any)[row.id] * (100 / (recipe.finalYield || 1));
+    const val100g = data.per100g 
+      ? (data.per100g as any)[row.id] 
+      : ((data.adjustedNutrients as any)[row.id] * (100 / (recipe.finalYield || recipe.ingredients.reduce((a, b) => a + b.amount, 0) || 1)));
     const valServing = (data.perServing as any)[row.id];
     const percent = (data.percentDV as any)[row.id];
     const pStr = percent ? `${percent.toFixed(0)}%` : "0%";
@@ -8373,10 +9355,13 @@ ${ingList}.
 3) ALÉRGENOS:
 ${data.allergenDeclaration || "NO CONTIENE ALÉRGENOS DECLARABLES"}.
 
-4) CUADRO NUTRICIONAL:
+4) INFORMACIÓN NUTRICIONAL LINEAL (FORMATO RÓTULO CAA / PACKAGING):
+${linearNutritionalText}
+
+5) CUADRO NUTRICIONAL COMPLETO:
 ${tableText}
 (*) % Valores Diarios con base a una dieta de 2000 kcal u 8400 kJ. Sus valores diarios pueden ser mayores o menores dependiendo de sus necesidades energéticas.
 
-5) SELLOS DE ADVERTENCIA:
+6) SELLOS DE ADVERTENCIA:
 ${data.warnings.length > 0 ? data.warnings.join(", ") : "NO REQUIERE SELLOS DE ADVERTENCIA"}`;
 }
