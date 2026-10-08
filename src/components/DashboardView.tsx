@@ -318,8 +318,8 @@ export function DashboardView({ developments, recipes }: DashboardViewProps) {
                   }`}>
                     <div className="flex items-center gap-4">
                       <div className={`w-2 h-10 rounded-full ${
-                        item.priority === 'alta' ? 'bg-rose-500' : 
-                        item.priority === 'media' ? 'bg-amber-500' : 'bg-blue-500'
+                        item.priority === 'alta' ? 'bg-red-500' : 
+                        item.priority === 'media' ? 'bg-amber-500' : 'bg-emerald-500'
                       }`} />
                       <div className="space-y-1">
                         <p className="text-xs font-bold text-white">{item.projectName}</p>

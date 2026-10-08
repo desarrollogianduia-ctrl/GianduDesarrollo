@@ -81,6 +81,7 @@ import {
   FlaskRound,
   Wheat,
   Binary,
+  BarChart3,
   Thermometer,
   Fingerprint,
   Utensils,
@@ -103,6 +104,7 @@ import { AIAssistant } from "./components/AIAssistant";
 import { TrialManager } from "./components/TrialManager";
 import { WasteManager } from "./components/WasteManager";
 import { CalendarView } from "./components/CalendarView";
+import { RDPerformanceReport } from "./components/RDPerformanceReport";
 import {
   Ingredient,
   Recipe,
@@ -124,6 +126,7 @@ import {
   WasteEntry,
   WasteReason,
   CalendarEvent,
+  RescheduleEntry,
 } from "./types";
 import { INITIAL_INGREDIENTS, INITIAL_RECIPE } from "./utils/initialData";
 import { calculateNutrition, roundValue } from "./services/nutritionService";
@@ -191,7 +194,7 @@ const PROJECT_PRIORITIES = [
   {
     id: "baja",
     label: "Baja",
-    color: "bg-rose-500/20 text-rose-400 border-rose-500/20",
+    color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/20",
   },
 ];
 
@@ -209,6 +212,7 @@ type AppView =
   | "conteo_ciclico"
   | "trial_manager"
   | "gestion_costos"
+  | "rd_report"
   | "calendario";
 
 interface ExpandableTextProps {
@@ -643,7 +647,15 @@ export default function App() {
   const [newTaskDeadline, setNewTaskDeadline] = useState("");
   const [newTaskArea, setNewTaskArea] = useState<AssignmentArea | "">("");
   const [newTaskAssignee, setNewTaskAssignee] = useState("");
+  const [newTaskDependency, setNewTaskDependency] = useState("");
   const [ingTargetSearch, setIngTargetSearch] = useState("");
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [rescheduleType, setRescheduleType] = useState<'trial' | 'task'>('trial');
+  const [rescheduleDev, setRescheduleDev] = useState<DevelopmentProject | null>(null);
+  const [rescheduleTask, setRescheduleTask] = useState<ProjectTask | null>(null);
+  const [rescheduleNewDate, setRescheduleNewDate] = useState("");
+  const [rescheduleReason, setRescheduleReason] = useState("");
+  const [notifications, setNotifications] = useState<{id: string, text: string, type: 'info' | 'warning'}[]>([]);
 
   // Auth Effect
   useEffect(() => {
@@ -652,6 +664,50 @@ export default function App() {
       setAuthLoading(false);
     });
   }, []);
+
+  // Notifications logic for deadlines
+  useEffect(() => {
+    if (developments.length > 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayTs = today.getTime();
+      const endOfToday = todayTs + 86400000;
+
+      const newNotifications: {id: string, text: string, type: 'info' | 'warning'}[] = [];
+
+      developments.forEach(dev => {
+        // Check trial execution date
+        if (dev.trialExecutionDate && dev.trialExecutionDate >= todayTs && dev.trialExecutionDate < endOfToday) {
+          newNotifications.push({
+            id: `trial_${dev.id}`,
+            text: `Hoy es la fecha de ejecución para: ${dev.productName}`,
+            type: 'info'
+          });
+        }
+        
+        // Check task deadlines
+        (dev.tasks || []).forEach(task => {
+          if (!task.completed && task.deadline && task.deadline >= todayTs && task.deadline < endOfToday) {
+            newNotifications.push({
+              id: `task_${task.id}`,
+              text: `Tarea vence hoy: ${task.text} (${dev.productName})`,
+              type: 'warning'
+            });
+          }
+        });
+      });
+
+      // Filter out notifications already seen in this session to avoid spam
+      setNotifications(prev => {
+        const prevIds = new Set(prev.map(n => n.id));
+        const combined = [...prev];
+        newNotifications.forEach(n => {
+          if (!prevIds.has(n.id)) combined.push(n);
+        });
+        return combined;
+      });
+    }
+  }, [developments]);
 
   // Sync Ingredients
   useEffect(() => {
@@ -908,7 +964,9 @@ export default function App() {
                   ? "#f59e0b"
                   : assign.area === "pcp"
                     ? "#ec4899"
-                    : "#ef4444",
+                    : assign.area === "mantenimiento"
+                      ? "#ef4444"
+                      : "#fb923c", // logistica orange
         participants: [],
         ownerId: dev.createdBy,
         relatedProjectId: dev.id,
@@ -936,7 +994,9 @@ export default function App() {
                       ? "#ec4899"
                       : t.area === "mantenimiento"
                         ? "#ef4444"
-                        : "#f59e0b",
+                        : t.area === "logistica"
+                          ? "#fb923c"
+                          : "#f59e0b",
           participants: t.assignee ? [{ name: t.assignee }] : [],
           ownerId: dev.createdBy,
           relatedProjectId: dev.id,
@@ -2346,6 +2406,19 @@ export default function App() {
 
   const handleToggleTask = async (dev: DevelopmentProject, taskId: string) => {
     if (!user) return;
+    
+    const taskToToggle = dev.tasks?.find(t => t.id === taskId);
+    if (!taskToToggle) return;
+
+    // Dependency check
+    if (!taskToToggle.completed && taskToToggle.dependencyId) {
+      const dependency = dev.tasks?.find(t => t.id === taskToToggle.dependencyId);
+      if (dependency && !dependency.completed) {
+        alert(`No se puede completar esta tarea porque depende de: "${dependency.text}", que aún no ha sido finalizada.`);
+        return;
+      }
+    }
+
     const updatedTasks = (dev.tasks || []).map((t) =>
       t.id === taskId ? { ...t, completed: !t.completed } : t,
     );
@@ -2353,6 +2426,28 @@ export default function App() {
       { ...dev, tasks: updatedTasks, updatedAt: Date.now() },
       user.uid,
     );
+  };
+
+  const handleToggleViewed = async (dev: DevelopmentProject) => {
+    if (!user) return;
+    await saveDevelopment(
+      { ...dev, isViewed: !dev.isViewed, updatedAt: Date.now() },
+      user.uid,
+    );
+  };
+
+  const handleResetAllViewed = async () => {
+    if (!user || !window.confirm("¿Estás seguro de que quieres desmarcar todos los proyectos como vistos?")) return;
+    try {
+      for (const dev of developments) {
+        if (dev.isViewed) {
+          await saveDevelopment({ ...dev, isViewed: false, updatedAt: Date.now() }, user.uid);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error al resetear estados.");
+    }
   };
 
   const handleUpdateAreaAssignment = async (
@@ -2384,6 +2479,65 @@ export default function App() {
     );
   };
 
+  const handleRescheduleTrial = (dev: DevelopmentProject) => {
+    setRescheduleType('trial');
+    setRescheduleDev(dev);
+    setRescheduleTask(null);
+    setRescheduleNewDate(dev.trialExecutionDate ? new Date(dev.trialExecutionDate).toISOString().split('T')[0] : "");
+    setRescheduleReason("");
+    setIsRescheduleModalOpen(true);
+  };
+
+  const handleRescheduleTask = (dev: DevelopmentProject, task: ProjectTask) => {
+    setRescheduleType('task');
+    setRescheduleDev(dev);
+    setRescheduleTask(task);
+    setRescheduleNewDate(task.deadline ? new Date(task.deadline).toISOString().split('T')[0] : "");
+    setRescheduleReason("");
+    setIsRescheduleModalOpen(true);
+  };
+
+  const confirmReschedule = async () => {
+    if (!rescheduleNewDate || !rescheduleReason.trim() || !rescheduleDev || !user) {
+      alert("Por favor completa la nueva fecha y el motivo.");
+      return;
+    }
+
+    const newDateTs = new Date(rescheduleNewDate).getTime();
+    const entry: RescheduleEntry = {
+      previousDate: (rescheduleType === 'trial' ? rescheduleDev.trialExecutionDate : rescheduleTask?.deadline) || 0,
+      newDate: newDateTs,
+      reason: rescheduleReason.trim(),
+      timestamp: Date.now()
+    };
+
+    try {
+      if (rescheduleType === 'trial') {
+        await saveDevelopment({
+          ...rescheduleDev,
+          trialExecutionDate: newDateTs,
+          rescheduleHistory: [...(rescheduleDev.rescheduleHistory || []), entry],
+          updatedAt: Date.now()
+        }, user.uid);
+      } else if (rescheduleTask) {
+        const updatedTasks = (rescheduleDev.tasks || []).map(t => 
+          t.id === rescheduleTask.id 
+            ? { ...t, deadline: newDateTs, rescheduleHistory: [...(t.rescheduleHistory || []), entry] }
+            : t
+        );
+        await saveDevelopment({
+          ...rescheduleDev,
+          tasks: updatedTasks,
+          updatedAt: Date.now()
+        }, user.uid);
+      }
+      setIsRescheduleModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert("Error al reprogramar.");
+    }
+  };
+
   const handleAddTask = async (dev: DevelopmentProject) => {
     if (!newTaskText.trim() || !user) return;
     const parsedDeadline = newTaskDeadline
@@ -2398,6 +2552,7 @@ export default function App() {
         parsedDeadline && !isNaN(parsedDeadline) ? parsedDeadline : undefined,
       area: newTaskArea || undefined,
       assignee: newTaskAssignee.trim() || undefined,
+      dependencyId: newTaskDependency || undefined,
     };
     const updatedTasks = [...(dev.tasks || []), newTask];
     await saveDevelopment(
@@ -2408,6 +2563,7 @@ export default function App() {
     setNewTaskDeadline("");
     setNewTaskArea("");
     setNewTaskAssignee("");
+    setNewTaskDependency("");
   };
 
   const handleAddMeetingTopic = async (dev: DevelopmentProject) => {
@@ -2894,6 +3050,7 @@ export default function App() {
             { id: "conteo_ciclico", icon: ClipboardCheck, label: "Conteo Cíclico" },
             { id: "gestion_costos", icon: Trash2, label: "Gestión de Costos" },
             { id: "calendario", icon: Calendar, label: "Calendario I+D" },
+            { id: "rd_report", icon: BarChart3, label: "Reporte I+D" },
             { id: "asistente_formulacion", icon: Sparkles, label: "Asistente Formulación" },
           ].map((item) => (
             <button
@@ -3050,6 +3207,7 @@ export default function App() {
               {view === "asistente_formulacion" && "Asistente de Formulación AI"}
               {view === "gestion_costos" && "Gestión de Costos"}
               {view === "calendario" && "Calendario I+D"}
+              {view === "rd_report" && "Reporte de Performance I+D"}
             </h2>
             <div className="badge">LAB Hub v3.0</div>
           </div>
@@ -3237,6 +3395,22 @@ export default function App() {
                 </motion.div>
               )}
 
+              {view === "rd_report" && (
+                <motion.div
+                  key="rd_report"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  className="h-full overflow-y-auto custom-scrollbar p-8"
+                >
+                  <RDPerformanceReport 
+                    developments={developments}
+                    recipes={recipes}
+                    ingredients={ingredients}
+                  />
+                </motion.div>
+              )}
+
               {view === "developments" && (
                 <motion.div
                   key="developments"
@@ -3403,6 +3577,14 @@ export default function App() {
                           </span>
                         )}
                       </button>
+                      <button
+                        onClick={handleResetAllViewed}
+                        className="px-6 py-3 rounded-2xl text-sm font-bold bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 whitespace-nowrap"
+                        title="Desmarcar todos los vistos"
+                      >
+                        <RefreshCw size={18} />
+                        Limpiar Vistos
+                      </button>
                     </div>
                   </div>
 
@@ -3480,7 +3662,7 @@ export default function App() {
                                     {discussedProjectIds.includes(dev.id) ? <Check size={16} /> : <div className="w-2 h-2 rounded-full bg-current opacity-20" />}
                                   </button>
                                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-mono font-bold text-[10px] ${
-                                    dev.priority === 'alta' ? 'bg-rose-500/20 text-rose-400' :
+                                    dev.priority === 'alta' ? 'bg-red-500/20 text-red-400' :
                                     dev.priority === 'media' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
                                   }`}>
                                     {dev.trialLetter}{dev.sequenceNumber.toString().padStart(3, '0')}
@@ -3591,6 +3773,9 @@ export default function App() {
                       <table className="w-full text-left border-collapse min-w-[1360px]">
                         <thead>
                           <tr className="bg-white/5 border-b border-[var(--border)]">
+                            <th className="px-6 py-5 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.2em] text-center w-[80px]">
+                              Visto
+                            </th>
                             <th className="px-6 py-5 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.2em] whitespace-nowrap">
                               Código
                             </th>
@@ -3621,7 +3806,7 @@ export default function App() {
                           {filteredDevelopments.length === 0 ? (
                             <tr>
                               <td
-                                colSpan={8}
+                                colSpan={9}
                                 className="p-20 text-center text-[var(--text-s)] font-light italic text-xl"
                               >
                                 No hay proyectos que coincidan con los filtros.
@@ -3645,6 +3830,14 @@ export default function App() {
                                   }}
                                   className={`hover:bg-white/[0.03] group/row transition-all cursor-pointer ${expandedDevId === dev.id ? "bg-white/[0.02]" : ""}`}
                                 >
+                                  <td className="px-6 py-6 text-center" onClick={(e) => e.stopPropagation()}>
+                                    <button 
+                                      onClick={() => handleToggleViewed(dev)}
+                                      className={`w-6 h-6 rounded-lg border-2 transition-all flex items-center justify-center mx-auto ${dev.isViewed ? 'bg-emerald-500 border-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-white/10 hover:border-white/30 text-transparent'}`}
+                                    >
+                                      <Check size={14} strokeWidth={4} />
+                                    </button>
+                                  </td>
                                   <td className="px-6 py-6">
                                     <div className="flex flex-col gap-2">
                                       <div className="flex items-center gap-2 group/code">
@@ -3860,14 +4053,23 @@ export default function App() {
                                   <td className="px-6 py-6 font-mono">
                                     <div className="flex flex-col gap-1">
                                       {dev.trialExecutionDate && (
-                                        <div className="text-[10px] text-rose-400 flex items-center gap-2">
-                                          <FlaskConical
-                                            size={10}
-                                            className="opacity-50"
-                                          />
-                                          {(window as any).formatTinyDate(
-                                            dev.trialExecutionDate,
-                                          )}
+                                        <div className="flex items-center gap-2 group/date">
+                                          <div className="text-[10px] text-rose-400 flex items-center gap-2">
+                                            <FlaskConical
+                                              size={10}
+                                              className="opacity-50"
+                                            />
+                                            {(window as any).formatTinyDate(
+                                              dev.trialExecutionDate,
+                                            )}
+                                          </div>
+                                          <button
+                                            onClick={() => handleRescheduleTrial(dev)}
+                                            className="opacity-0 group-hover/date:opacity-100 p-1 text-white/40 hover:text-amber-500 transition-all"
+                                            title="Posponer/Reprogramar Prueba"
+                                          >
+                                            <Clock size={10} />
+                                          </button>
                                         </div>
                                       )}
                                       {dev.testingDate && (
@@ -4145,7 +4347,7 @@ export default function App() {
                                 {expandedDevId === dev.id && (
                                   <tr className="bg-white/[0.01]">
                                     <td
-                                      colSpan={8}
+                                      colSpan={9}
                                       className="px-12 py-10 border-b border-[var(--border)]"
                                     >
                                       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -4226,7 +4428,8 @@ export default function App() {
                                                                 task.area === 'desarrollo' ? 'text-purple-400' :
                                                                 task.area === 'produccion' ? 'text-emerald-400' :
                                                                 task.area === 'sistema' ? 'text-amber-400' :
-                                                                task.area === 'pcp' ? 'text-pink-400' : 'text-rose-400'
+                                                                task.area === 'pcp' ? 'text-pink-400' : 
+                                                                task.area === 'mantenimiento' ? 'text-rose-400' : 'text-orange-400'
                                                               }`}>
                                                                 {task.area}
                                                               </span>
@@ -4323,6 +4526,17 @@ export default function App() {
                                                 <option value="sistema" className="bg-[#121212]">Sistema</option>
                                                 <option value="pcp" className="bg-[#121212]">PCP</option>
                                                 <option value="mantenimiento" className="bg-[#121212]">Mantenimiento</option>
+                                                <option value="logistica" className="bg-[#121212]">Logística</option>
+                                              </select>
+                                              <select
+                                                value={newTaskDependency}
+                                                onChange={(e) => setNewTaskDependency(e.target.value)}
+                                                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white/60 outline-none focus:border-[var(--accent)] appearance-none"
+                                              >
+                                                <option value="" className="bg-[#121212]">Sin dependencia...</option>
+                                                {(dev.tasks || []).map(t => (
+                                                  <option key={t.id} value={t.id} className="bg-[#121212]">Depende de: {t.text.slice(0, 20)}...</option>
+                                                ))}
                                               </select>
                                               <input
                                                 type="text"
@@ -4362,46 +4576,6 @@ export default function App() {
                                                 </button>
                                               )}
                                             </div>
-                                          </div>
-                                        </div>
-
-                                        <div className="space-y-6">
-                                          <h4 className="text-sm font-bold uppercase tracking-widest text-[var(--accent)] flex items-center gap-2">
-                                            <ShieldAlert size={16} /> Asignación de Áreas
-                                          </h4>
-                                          <div className="space-y-4">
-                                            {[
-                                              { id: 'compras', label: 'Compras', color: 'text-blue-400' },
-                                              { id: 'desarrollo', label: 'Desarrollo', color: 'text-purple-400' },
-                                              { id: 'produccion', label: 'Producción', color: 'text-emerald-400' },
-                                              { id: 'sistema', label: 'Sistema', color: 'text-amber-400' },
-                                              { id: 'pcp', label: 'PCP', color: 'text-pink-400' },
-                                              { id: 'mantenimiento', label: 'Mantenimiento', color: 'text-rose-400' }
-                                            ].map((areaItem) => {
-                                              const assignment = (dev.areaAssignments || []).find(a => a.area === areaItem.id);
-                                              let dateVal = "";
-                                              if (assignment) {
-                                                const d = new Date(assignment.date);
-                                                dateVal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                                              }
-                                              
-                                              return (
-                                                <div key={areaItem.id} className="bg-white/5 border border-white/5 p-3 rounded-2xl space-y-2">
-                                                  <div className="flex items-center gap-2">
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${areaItem.color.replace('text-', 'bg-')}`} />
-                                                    <span className={`text-[10px] uppercase font-black tracking-widest ${areaItem.color}`}>
-                                                      {areaItem.label}
-                                                    </span>
-                                                  </div>
-                                                  <input 
-                                                    type="date"
-                                                    value={dateVal}
-                                                    onChange={(e) => handleUpdateAreaAssignment(dev, areaItem.id as AssignmentArea, e.target.value)}
-                                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-3 py-1.5 text-[10px] text-white/60 focus:border-[var(--accent)] outline-none transition-all"
-                                                  />
-                                                </div>
-                                              );
-                                            })}
                                           </div>
                                         </div>
 
@@ -9249,6 +9423,119 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {isRescheduleModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-[var(--surface)] border border-white/10 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              <div className="p-6 border-b border-white/5 bg-[var(--accent)]/5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)]">
+                    <Clock size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white uppercase tracking-tight">Reprogramar</h3>
+                    <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">
+                      {rescheduleType === 'trial' ? 'Prueba de Producto' : 'Pendiente Crítico'}
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsRescheduleModalOpen(false)}
+                  className="p-2 hover:bg-white/5 rounded-xl transition-all"
+                >
+                  <X size={20} className="text-white/20" />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div className="space-y-4">
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                    <p className="text-[9px] uppercase font-black text-[var(--accent)] tracking-[2px] mb-1">Elemento:</p>
+                    <p className="text-white font-bold italic">{rescheduleType === 'trial' ? rescheduleDev?.productName : rescheduleTask?.text}</p>
+                    <p className="text-[10px] text-white/30 font-mono mt-1">
+                      Fecha Actual: {rescheduleType === 'trial' 
+                        ? (window as any).formatTinyDate(rescheduleDev?.trialExecutionDate)
+                        : (window as any).formatTinyDate(rescheduleTask?.deadline)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-black text-white/30 tracking-widest ml-1">Nueva Fecha</label>
+                    <input 
+                      type="date"
+                      value={rescheduleNewDate}
+                      onChange={(e) => setRescheduleNewDate(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[var(--accent)] outline-none transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-black text-white/30 tracking-widest ml-1">Motivo del Cambio</label>
+                    <textarea 
+                      placeholder="Ej: Retraso en recepción de MP, cambio de prioridad, etc..."
+                      value={rescheduleReason}
+                      onChange={(e) => setRescheduleReason(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[var(--accent)] outline-none transition-all h-24 resize-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setIsRescheduleModalOpen(false)}
+                    className="flex-1 px-6 py-3 bg-white/5 text-white/40 rounded-2xl hover:bg-white/10 transition-all font-bold uppercase text-[10px] tracking-widest"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={confirmReschedule}
+                    className="flex-1 px-6 py-3 bg-[var(--accent)] text-white rounded-2xl hover:scale-[1.02] transition-all font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-[var(--accent)]/20"
+                  >
+                    Confirmar Cambio
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Local Notifications Overlay */}
+      <div className="fixed bottom-8 right-8 z-[200] flex flex-col gap-3 pointer-events-none">
+        <AnimatePresence>
+          {notifications.map((n) => (
+            <motion.div
+              key={n.id}
+              initial={{ opacity: 0, x: 20, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.9 }}
+              className={`p-4 rounded-2xl shadow-2xl border backdrop-blur-md pointer-events-auto flex items-center gap-4 max-w-sm ${n.type === 'warning' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}
+            >
+              <div className={`p-2 rounded-xl ${n.type === 'warning' ? 'bg-amber-500/20' : 'bg-blue-500/20'}`}>
+                {n.type === 'warning' ? <AlertCircle size={18} /> : <Info size={18} />}
+              </div>
+              <p className="text-xs font-bold leading-tight">{n.text}</p>
+              <button 
+                onClick={() => setNotifications(prev => prev.filter(item => item.id !== n.id))}
+                className="ml-auto p-1 hover:bg-white/5 rounded-lg"
+              >
+                <X size={14} />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
       </ErrorBoundary>
     </div>
   );

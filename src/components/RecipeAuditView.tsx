@@ -559,23 +559,23 @@ export function RecipeAuditView({
                         {recipe.name}
                       </h3>
                     </div>
-                    <select
-                      value={recipe.priority || 'baja'}
-                      onChange={async (e) => {
-                        if (onUpdateRecipe) {
-                          await onUpdateRecipe({
-                            ...recipe,
-                            priority: e.target.value as 'baja' | 'media' | 'alta'
-                          });
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className={`text-[8px] uppercase tracking-tighter font-black px-2 py-1 rounded-md border transition-all cursor-pointer ${
-                        recipe.priority === 'alta' ? 'bg-rose-500/10 border-rose-500/30 text-rose-400' :
-                        recipe.priority === 'media' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' :
-                        'bg-white/5 border-white/10 text-white/30'
-                      }`}
-                    >
+                      <select
+                        value={recipe.priority || 'baja'}
+                        onChange={async (e) => {
+                          if (onUpdateRecipe) {
+                            await onUpdateRecipe({
+                              ...recipe,
+                              priority: e.target.value as 'baja' | 'media' | 'alta'
+                            });
+                          }
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className={`text-[8px] uppercase tracking-tighter font-black px-2 py-1 rounded-md border transition-all cursor-pointer ${
+                          recipe.priority === 'alta' ? 'bg-red-500/10 border-red-500/30 text-red-400' :
+                          recipe.priority === 'media' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' :
+                          'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                        }`}
+                      >
                       <option value="baja" className="bg-[#0a0a0a]">PRIO BAJA</option>
                       <option value="media" className="bg-[#0a0a0a]">PRIO MEDIA</option>
                       <option value="alta" className="bg-[#0a0a0a]">PRIO ALTA</option>

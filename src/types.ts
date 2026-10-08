@@ -139,11 +139,18 @@ export interface KnowledgeDocument {
 export type ProductArea = 'pasteleria' | 'paletas' | 'chocolates' | 'helados' | 'popolo' | 'semielaborados' | 'vitrina' | 'terceros';
 export type ProjectPriority = 'alta' | 'media' | 'baja';
 export type ProjectStatus = 'pendiente' | 'en_progreso' | 'en_cola' | 'pausado' | 'finalizado' | 'archivado';
-export type AssignmentArea = 'compras' | 'desarrollo' | 'produccion' | 'sistema' | 'pcp' | 'mantenimiento';
+export type AssignmentArea = 'compras' | 'desarrollo' | 'produccion' | 'sistema' | 'pcp' | 'mantenimiento' | 'logistica';
 
 export interface AreaAssignment {
   area: AssignmentArea;
   date: number; // timestamp
+}
+
+export interface RescheduleEntry {
+  previousDate: number;
+  newDate: number;
+  reason: string;
+  timestamp: number;
 }
 
 export interface ProjectTask {
@@ -154,6 +161,8 @@ export interface ProjectTask {
   deadline?: number;
   area?: AssignmentArea;
   assignee?: string;
+  dependencyId?: string; // ID of the task that must be completed first
+  rescheduleHistory?: RescheduleEntry[];
 }
 
 export interface MeetingTopic {
@@ -199,6 +208,8 @@ export interface DevelopmentProject {
   meetingTopics?: MeetingTopic[];
   sensoryAnalysis?: SensoryAnalysis;
   areaAssignments?: AreaAssignment[];
+  rescheduleHistory?: RescheduleEntry[];
+  isViewed?: boolean;
 }
 
 export type AuditStatus = 'ok' | 'desvio' | 'arreglado' | 'problema';
