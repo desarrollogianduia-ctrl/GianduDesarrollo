@@ -105,6 +105,7 @@ import { TrialManager } from "./components/TrialManager";
 import { WasteManager } from "./components/WasteManager";
 import { CalendarView } from "./components/CalendarView";
 import { RDPerformanceReport } from "./components/RDPerformanceReport";
+import { TaskAgendaView } from "./components/TaskAgendaView";
 import {
   Ingredient,
   Recipe,
@@ -166,6 +167,7 @@ import {
   subscribeCalendarEvents,
   saveCalendarEvent,
   deleteCalendarEvent,
+  batchImportData,
 } from "./lib/dataService";
 import { COMMON_ALLERGENS, CONVERSION_FACTORS } from "./constants";
 
@@ -213,7 +215,8 @@ type AppView =
   | "trial_manager"
   | "gestion_costos"
   | "rd_report"
-  | "calendario";
+  | "calendario"
+  | "agenda_tareas";
 
 interface ExpandableTextProps {
   text?: string;
@@ -616,6 +619,7 @@ export default function App() {
   const [devFilterPriority, setDevFilterPriority] = useState<
     ProjectPriority | "todos"
   >("todos");
+  const [devFilterViewed, setDevFilterViewed] = useState<"todos" | "vistos" | "no_vistos">("todos");
   const [devStatusFilter, setDevStatusFilter] = useState<
     "activos" | "archivados"
   >("activos");
@@ -656,6 +660,35 @@ export default function App() {
   const [rescheduleNewDate, setRescheduleNewDate] = useState("");
   const [rescheduleReason, setRescheduleReason] = useState("");
   const [notifications, setNotifications] = useState<{id: string, text: string, type: 'info' | 'warning'}[]>([]);
+  const [toastList, setToastList] = useState<{ id: string; text: string; type: 'success' | 'error' | 'info' | 'warning' }[]>([]);
+
+  const showToast = (text: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+    const id = `toast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    setToastList(prev => [...prev.slice(-4), { id, text, type }]);
+    setTimeout(() => {
+      setToastList(prev => prev.filter(t => t.id !== id));
+    }, 4500);
+  };
+
+  useEffect(() => {
+    const handleToastEvent = (e: any) => {
+      if (e.detail?.message) {
+        showToast(e.detail.message, e.detail.type || 'info');
+      }
+    };
+    window.addEventListener('app-toast', handleToastEvent);
+
+    // Safe window.alert override to prevent iframe sandboxing errors
+    const originalAlert = window.alert;
+    window.alert = (msg?: any) => {
+      showToast(String(msg || ""), 'info');
+    };
+
+    return () => {
+      window.removeEventListener('app-toast', handleToastEvent);
+      window.alert = originalAlert;
+    };
+  }, []);
 
   // Auth Effect
   useEffect(() => {
@@ -712,6 +745,11 @@ export default function App() {
   // Sync Ingredients
   useEffect(() => {
     if (user) {
+      const onSyncError = (err: any) => {
+        console.warn("Firestore sync error:", err);
+        showToast("Atención: Permisos de Firestore limitados para esta cuenta. Operando en modo local.", "warning");
+      };
+
       const unsubscribe = subscribeIngredients((data) => {
         // Guarantee that built-in baseline raw materials are always available
         const merged = [...data];
@@ -721,7 +759,7 @@ export default function App() {
           }
         });
         setIngredients(merged);
-      });
+      }, onSyncError);
       return unsubscribe;
     } else {
       setIngredients(INITIAL_INGREDIENTS);
@@ -731,24 +769,28 @@ export default function App() {
   // Sync Recipes
   useEffect(() => {
     if (user) {
+      const onSyncError = (err: any) => {
+        console.warn("Firestore sync error:", err);
+      };
+
       const unsubRecipes = subscribeRecipes(user.uid, (data) => {
         setRecipes(data);
-      });
+      }, onSyncError);
       const unsubDevs = subscribeDevelopments(user.uid, (data) => {
         setDevelopments(data);
-      });
+      }, onSyncError);
       const unsubKnowledge = subscribeKnowledgeDocuments(user.uid, (data) => {
         setKnowledgeDocuments(data);
-      });
+      }, onSyncError);
       const unsubAudits = subscribeRecipeAudits((data) => {
         setRecipeAudits(data);
-      });
+      }, onSyncError);
       const unsubWastes = subscribeWastes((data) => {
         setWastes(data);
-      });
+      }, onSyncError);
       const unsubEvents = subscribeCalendarEvents((data) => {
         setEvents(data);
-      });
+      }, onSyncError);
       return () => {
         unsubRecipes();
         unsubDevs();
@@ -778,22 +820,8 @@ export default function App() {
     setIsSeeding(true);
     try {
       if (user) {
-        // Import to Firestore
-        if (data.ingredients) {
-          for (const ing of data.ingredients) {
-            await saveIngredient(ing);
-          }
-        }
-        if (data.recipes) {
-          for (const recipe of data.recipes) {
-            await saveRecipe(recipe, user.uid);
-          }
-        }
-        if (data.developments) {
-          for (const dev of data.developments) {
-            await saveDevelopment(dev, user.uid);
-          }
-        }
+        // High-speed batch import directly to Firestore
+        await batchImportData(data, user.uid);
       } else {
         // Import to local state
         if (data.ingredients) {
@@ -830,10 +858,11 @@ export default function App() {
           });
         }
       }
-      alert("Importación completada con éxito.");
-    } catch (error) {
+      const totalCount = (data.recipes?.length || 0) + (data.ingredients?.length || 0) + (data.developments?.length || 0);
+      showToast(`Importación completada con éxito (${totalCount} registros procesados).`, "success");
+    } catch (error: any) {
       console.error("Import Error:", error);
-      alert("Error al importar: " + (error as Error).message);
+      showToast("Error al importar: " + (error?.message || String(error)), "error");
     } finally {
       setIsSeeding(false);
     }
@@ -907,8 +936,11 @@ export default function App() {
           devFilterArea === "todos" || d.area === devFilterArea;
         const matchesPriority =
           devFilterPriority === "todos" || d.priority === devFilterPriority;
+        const matchesViewed =
+          devFilterViewed === "todos" ||
+          (devFilterViewed === "vistos" ? d.isViewed : !d.isViewed);
 
-        return matchesName && matchesArea && matchesPriority;
+        return matchesName && matchesArea && matchesPriority && matchesViewed;
       });
 
     if (devFilterMeetingMode) {
@@ -941,6 +973,7 @@ export default function App() {
     devFilterName,
     devFilterArea,
     devFilterPriority,
+    devFilterViewed,
     devStatusFilter,
     devFilterMeetingMode,
   ]);
@@ -3043,6 +3076,7 @@ export default function App() {
           {[
             { id: "dashboard", icon: LayoutDashboard, label: "Panel General" },
             { id: "developments", icon: GitMerge, label: "Tabla de Desarrollo" },
+            { id: "agenda_tareas", icon: BookOpen, label: "Agenda de Tareas" },
             { id: "recipes", icon: FlaskConical, label: "Formulación Técnica" },
             { id: "ingredients", icon: Database, label: "Almacén I+D" },
             { id: "trial_manager", icon: FlaskRound, label: "Laboratorio I+D" },
@@ -3208,6 +3242,7 @@ export default function App() {
               {view === "gestion_costos" && "Gestión de Costos"}
               {view === "calendario" && "Calendario I+D"}
               {view === "rd_report" && "Reporte de Performance I+D"}
+              {view === "agenda_tareas" && "Agenda Diaria de Tareas y Tiempos"}
             </h2>
             <div className="badge">LAB Hub v3.0</div>
           </div>
@@ -3280,6 +3315,15 @@ export default function App() {
                   <DashboardView 
                     developments={developments}
                     recipes={recipes}
+                    userId={user?.uid || ""}
+                    onUpdateDevelopment={async (dev) => {
+                      if (user) await saveDevelopment(dev, user.uid);
+                    }}
+                    onNavigateToAgenda={() => setView("agenda_tareas")}
+                    onNavigateToProject={(devId) => {
+                      setView("developments");
+                      setExpandedDevId(devId);
+                    }}
                   />
                 </motion.div>
               )}
@@ -3407,6 +3451,28 @@ export default function App() {
                     developments={developments}
                     recipes={recipes}
                     ingredients={ingredients}
+                  />
+                </motion.div>
+              )}
+
+              {view === "agenda_tareas" && user && (
+                <motion.div
+                  key="agenda_tareas"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  className="flex-1 h-full overflow-y-auto custom-scrollbar p-6 lg:p-8"
+                >
+                  <TaskAgendaView
+                    developments={developments}
+                    userId={user.uid}
+                    onUpdateDevelopment={async (dev) => {
+                      await saveDevelopment(dev, user.uid);
+                    }}
+                    onNavigateToProject={(devId) => {
+                      setView("developments");
+                      setExpandedDevId(devId);
+                    }}
                   />
                 </motion.div>
               )}
@@ -3546,6 +3612,15 @@ export default function App() {
                         <option value="alta">Alta</option>
                         <option value="media">Media</option>
                         <option value="low">Baja</option>
+                      </select>
+                      <select
+                        value={devFilterViewed}
+                        onChange={(e) => setDevFilterViewed(e.target.value as any)}
+                        className="bg-[#1e1e1e] border border-white/10 rounded-2xl py-3 px-4 text-sm focus:outline-none focus:border-[var(--accent)] transition-all cursor-pointer text-white"
+                      >
+                        <option value="todos">Vistos/No Vistos</option>
+                        <option value="vistos">Solo Vistos</option>
+                        <option value="no_vistos">Solo No Vistos</option>
                       </select>
                       <button
                         onClick={() => setDevFilterMeetingMode(!devFilterMeetingMode)}
@@ -4357,6 +4432,14 @@ export default function App() {
                                               <ListTodo size={16} /> Pendientes
                                               por Prueba
                                             </h4>
+                                            <button
+                                              onClick={() => setView("agenda_tareas")}
+                                              className="text-[9px] font-mono uppercase font-bold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 px-2 py-0.5 rounded-lg border border-amber-400/20 flex items-center gap-1 transition-all"
+                                              title="Abrir Bitácora / Hoja de Agenda de Pendientes"
+                                            >
+                                              <BookOpen size={11} />
+                                              Agenda
+                                            </button>
                                             <span className="text-[10px] text-white/30 uppercase font-mono">
                                               {
                                                 (dev.tasks || []).filter(
@@ -9529,6 +9612,46 @@ export default function App() {
               <button 
                 onClick={() => setNotifications(prev => prev.filter(item => item.id !== n.id))}
                 className="ml-auto p-1 hover:bg-white/5 rounded-lg"
+              >
+                <X size={14} />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Modern Floating Toast System */}
+      <div className="fixed bottom-6 left-6 sm:left-auto sm:right-6 z-[300] flex flex-col gap-2.5 pointer-events-none max-w-sm w-full">
+        <AnimatePresence>
+          {toastList.map((t) => (
+            <motion.div
+              key={t.id}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.9 }}
+              className={`pointer-events-auto p-4 rounded-2xl shadow-2xl border backdrop-blur-xl flex items-start gap-3.5 transition-all ${
+                t.type === 'error'
+                  ? 'bg-rose-950/90 border-rose-500/30 text-rose-100'
+                  : t.type === 'success'
+                  ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-100'
+                  : t.type === 'warning'
+                  ? 'bg-amber-950/90 border-amber-500/30 text-amber-100'
+                  : 'bg-neutral-900/90 border-white/10 text-white'
+              }`}
+            >
+              <div className="shrink-0 mt-0.5">
+                {t.type === 'error' && <AlertTriangle size={18} className="text-rose-400" />}
+                {t.type === 'success' && <Check size={18} className="text-emerald-400" />}
+                {t.type === 'warning' && <AlertCircle size={18} className="text-amber-400" />}
+                {t.type === 'info' && <Info size={18} className="text-amber-400" />}
+              </div>
+              <div className="flex-1 text-xs font-semibold leading-relaxed break-words">
+                {t.text}
+              </div>
+              <button
+                onClick={() => setToastList(prev => prev.filter(item => item.id !== t.id))}
+                className="text-white/40 hover:text-white transition-colors shrink-0 p-0.5"
+                title="Cerrar"
               >
                 <X size={14} />
               </button>

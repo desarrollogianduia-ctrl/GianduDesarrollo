@@ -14,12 +14,17 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "./firebase";
 import { Ingredient, Recipe, DevelopmentProject, KnowledgeDocument, RecipeAudit, WasteEntry, CalendarEvent } from "../types";
 
-export const subscribeRecipeAudits = (callback: (audits: RecipeAudit[]) => void) => {
+export const subscribeRecipeAudits = (callback: (audits: RecipeAudit[]) => void, onError?: (error: Error) => void) => {
   return onSnapshot(collection(db, "recipeAudits"), (snapshot) => {
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RecipeAudit));
     callback(data);
   }, (error) => {
-    handleFirestoreError(error, 'list', 'recipeAudits');
+    try {
+      handleFirestoreError(error, 'list', 'recipeAudits');
+    } catch (e: any) {
+      if (onError) onError(e);
+      else console.warn("recipeAudits subscription handled error:", e?.message);
+    }
   });
 };
 
@@ -35,14 +40,19 @@ export const saveRecipeAudit = async (audit: RecipeAudit) => {
   }
 };
 
-export const subscribeKnowledgeDocuments = (userId: string, callback: (docs: KnowledgeDocument[]) => void) => {
+export const subscribeKnowledgeDocuments = (userId: string, callback: (docs: KnowledgeDocument[]) => void, onError?: (error: Error) => void) => {
   // Shared access: removing ownerId filter
   const q = query(collection(db, "knowledge"));
   return onSnapshot(q, (snapshot) => {
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as KnowledgeDocument));
     callback(data);
   }, (error) => {
-    handleFirestoreError(error, 'list', 'knowledge');
+    try {
+      handleFirestoreError(error, 'list', 'knowledge');
+    } catch (e: any) {
+      if (onError) onError(e);
+      else console.warn("knowledge subscription handled error:", e?.message);
+    }
   });
 };
 
@@ -125,23 +135,33 @@ export const getIngredients = async (): Promise<Ingredient[]> => {
   }
 };
 
-export const subscribeIngredients = (callback: (ingredients: Ingredient[]) => void) => {
+export const subscribeIngredients = (callback: (ingredients: Ingredient[]) => void, onError?: (error: Error) => void) => {
   return onSnapshot(collection(db, "ingredients"), (snapshot) => {
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
     callback(data);
   }, (error) => {
-    handleFirestoreError(error, 'list', 'ingredients');
+    try {
+      handleFirestoreError(error, 'list', 'ingredients');
+    } catch (e: any) {
+      if (onError) onError(e);
+      else console.warn("ingredients subscription handled error:", e?.message);
+    }
   });
 };
 
-export const subscribeRecipes = (userId: string, callback: (recipes: Recipe[]) => void) => {
+export const subscribeRecipes = (userId: string, callback: (recipes: Recipe[]) => void, onError?: (error: Error) => void) => {
   // Shared access: removing ownerId filter
   const q = query(collection(db, "recipes"));
   return onSnapshot(q, (snapshot) => {
     const recipes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe));
     callback(recipes);
   }, (error) => {
-    handleFirestoreError(error, 'list', 'recipes');
+    try {
+      handleFirestoreError(error, 'list', 'recipes');
+    } catch (e: any) {
+      if (onError) onError(e);
+      else console.warn("recipes subscription handled error:", e?.message);
+    }
   });
 };
 
@@ -253,14 +273,19 @@ export const mergeIngredients = async (targetId: string, sourceIds: string[], re
   }
 };
 
-export const subscribeDevelopments = (userId: string, callback: (developments: DevelopmentProject[]) => void) => {
+export const subscribeDevelopments = (userId: string, callback: (developments: DevelopmentProject[]) => void, onError?: (error: Error) => void) => {
   // Shared access: removing createdBy filter
   const q = query(collection(db, "developments"));
   return onSnapshot(q, (snapshot) => {
     const developments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DevelopmentProject));
     callback(developments);
   }, (error) => {
-    handleFirestoreError(error, 'list', 'developments');
+    try {
+      handleFirestoreError(error, 'list', 'developments');
+    } catch (e: any) {
+      if (onError) onError(e);
+      else console.warn("developments subscription handled error:", e?.message);
+    }
   });
 };
 
@@ -324,12 +349,17 @@ export const reopenDevelopment = async (id: string, userId: string) => {
   }
 };
 
-export const subscribeWastes = (callback: (wastes: WasteEntry[]) => void) => {
+export const subscribeWastes = (callback: (wastes: WasteEntry[]) => void, onError?: (error: Error) => void) => {
   return onSnapshot(collection(db, "wastes"), (snapshot) => {
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WasteEntry));
     callback(data);
   }, (error) => {
-    handleFirestoreError(error, 'list', 'wastes');
+    try {
+      handleFirestoreError(error, 'list', 'wastes');
+    } catch (e: any) {
+      if (onError) onError(e);
+      else console.warn("wastes subscription handled error:", e?.message);
+    }
   });
 };
 
@@ -356,12 +386,17 @@ export const deleteWasteEntry = async (id: string) => {
   }
 };
 
-export const subscribeCalendarEvents = (callback: (events: CalendarEvent[]) => void) => {
+export const subscribeCalendarEvents = (callback: (events: CalendarEvent[]) => void, onError?: (error: Error) => void) => {
   return onSnapshot(collection(db, "events"), (snapshot) => {
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CalendarEvent));
     callback(data);
   }, (error) => {
-    handleFirestoreError(error, 'list', 'events');
+    try {
+      handleFirestoreError(error, 'list', 'events');
+    } catch (e: any) {
+      if (onError) onError(e);
+      else console.warn("events subscription handled error:", e?.message);
+    }
   });
 };
 
@@ -387,3 +422,66 @@ export const deleteCalendarEvent = async (id: string) => {
     throw error;
   }
 };
+
+export const batchImportData = async (
+  data: {
+    ingredients?: Ingredient[];
+    recipes?: Recipe[];
+    developments?: DevelopmentProject[];
+  },
+  userId: string
+) => {
+  const operations: Array<{ ref: any; data: any }> = [];
+
+  if (data.ingredients && data.ingredients.length > 0) {
+    data.ingredients.forEach((ing) => {
+      operations.push({
+        ref: doc(db, "ingredients", ing.id),
+        data: cleanData(ing),
+      });
+    });
+  }
+
+  if (data.recipes && data.recipes.length > 0) {
+    data.recipes.forEach((rec) => {
+      operations.push({
+        ref: doc(db, "recipes", rec.id),
+        data: cleanData({ ...rec, ownerId: userId }),
+      });
+    });
+  }
+
+  if (data.developments && data.developments.length > 0) {
+    data.developments.forEach((dev) => {
+      operations.push({
+        ref: doc(db, "developments", dev.id),
+        data: cleanData({ ...dev, createdBy: userId }),
+      });
+    });
+  }
+
+  // Firestore allows up to 500 writes per batch. We chunk by 400.
+  const CHUNK_SIZE = 400;
+  for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
+    const chunk = operations.slice(i, i + CHUNK_SIZE);
+    const batch = writeBatch(db);
+    chunk.forEach((op) => {
+      batch.set(op.ref, op.data);
+    });
+    try {
+      await batch.commit();
+    } catch (error) {
+      if (error instanceof FirestoreError) {
+        handleFirestoreError(error, "write", "batch_import");
+      }
+      throw error;
+    }
+  }
+
+  return {
+    ingredientsCount: data.ingredients?.length || 0,
+    recipesCount: data.recipes?.length || 0,
+    developmentsCount: data.developments?.length || 0,
+  };
+};
+

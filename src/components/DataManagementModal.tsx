@@ -10,7 +10,11 @@ import {
   CheckCircle2, 
   ArrowRight,
   Database,
-  Info
+  Info,
+  BookOpen,
+  Sparkles,
+  Loader2,
+  Layers
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Ingredient, Recipe, DevelopmentProject } from "../types";
@@ -125,37 +129,146 @@ export const DataManagementModal: React.FC<DataManagementModalProps> = ({
     XLSX.writeFile(wb, `gianduia-lab-export-${new Date().toISOString().split("T")[0]}.xlsx`);
   };
 
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
+
+  // Normalizes raw recipes from any format and extracts/links raw material ingredients
+  const normalizeImportedRecipes = (rawRecipes: any[], existingIngs: Ingredient[]): { recipes: Recipe[], newIngredients: Ingredient[] } => {
+    const ingMap = new Map<string, string>();
+    existingIngs.forEach(ing => {
+      if (ing.name) ingMap.set(ing.name.toLowerCase().trim(), ing.id);
+    });
+
+    const createdIngredients: Ingredient[] = [];
+
+    const processedRecipes: Recipe[] = rawRecipes.map((r: any) => {
+      const rawIngs = Array.isArray(r.ingredients) ? r.ingredients : [];
+      const recipeIngredients = rawIngs.map((ingItem: any) => {
+        let ingId = ingItem.ingredientId;
+        if (!ingId && ingItem.name) {
+          const lowerName = String(ingItem.name).toLowerCase().trim();
+          if (ingMap.has(lowerName)) {
+            ingId = ingMap.get(lowerName)!;
+          } else {
+            ingId = `ing_${Math.random().toString(36).substring(2, 9)}`;
+            const newIng: Ingredient = {
+              id: ingId,
+              name: String(ingItem.name).trim(),
+              energy: 0,
+              energyKJ: 0,
+              carbs: 0,
+              sugars: 0,
+              totalSugars: 0,
+              addedSugars: 0,
+              proteins: 0,
+              totalFats: 0,
+              saturatedFats: 0,
+              transFats: 0,
+              fiber: 0,
+              sodium: 0,
+              category: "especifico",
+              isGlutenFree: false
+            };
+            createdIngredients.push(newIng);
+            ingMap.set(lowerName, ingId);
+          }
+        }
+        return {
+          ingredientId: ingId || `ing_${Math.random().toString(36).substring(2, 9)}`,
+          amount: Number(ingItem.amount) || 0,
+          note: ingItem.unit || ingItem.note || "",
+          isRecipe: ingItem.isRecipe || false
+        };
+      });
+
+      const totalWeight = recipeIngredients.reduce((sum: number, item: any) => sum + (Number(item.amount) || 0), 0);
+      const finalWeight = Number(r.finalYield) || (totalWeight > 0 ? totalWeight : 1000);
+
+      return {
+        id: r.id || `rec_${Math.random().toString(36).substring(2, 9)}`,
+        name: r.name || "Receta sin nombre",
+        description: r.description || "",
+        type: (r.type || "semielaborado").toLowerCase() as any,
+        category: (r.category || "semielaborado").toLowerCase() as any,
+        ingredients: recipeIngredients,
+        servingSize: Number(r.servingSize) || 100,
+        totalYield: Number(r.totalYield) || totalWeight,
+        finalYield: finalWeight,
+        portionsPerPackage: Number(r.portionsPerPackage) || 1,
+        status: (r.status || "formulacion") as any,
+        ownerId: r.ownerId || "gianduia_system",
+        createdAt: Number(r.createdAt) || Date.now(),
+        updatedAt: Date.now()
+      };
+    });
+
+    return { recipes: processedRecipes, newIngredients: createdIngredients };
+  };
+
+  const handleLoadGianduiaLibrary = async () => {
+    setIsLoadingLibrary(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/recipes/library");
+      if (!res.ok) throw new Error("No se pudo obtener el recetario desde el servidor");
+      const data = await res.json();
+
+      if (!Array.isArray(data.recipes) || data.recipes.length === 0) {
+        throw new Error("No se encontraron recetas en los lotes técnicos");
+      }
+
+      const { recipes: normRecipes, newIngredients: normIngs } = normalizeImportedRecipes(data.recipes, ingredients);
+
+      setPreview({
+        ingredients: normIngs.length,
+        recipes: normRecipes.length,
+        developments: 0,
+        source: `Catálogo Oficial Gianduia (${data.totalFiles} lotes / ${normRecipes.length} recetas)`,
+        type: "json",
+        data: {
+          ingredients: normIngs,
+          recipes: normRecipes,
+          developments: []
+        }
+      });
+    } catch (err: any) {
+      console.error("Gianduia Library error:", err);
+      setError("Error al cargar el catálogo de Gianduia: " + (err.message || String(err)));
+    } finally {
+      setIsLoadingLibrary(false);
+    }
+  };
+
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
 
     setError(null);
     setPreview(null);
 
-    const fileName = file.name;
-    const isExcel = fileName.endsWith(".xlsx") || fileName.endsWith(".xls");
+    try {
+      const allNewIngredients: Ingredient[] = [];
+      const allRecipes: Recipe[] = [];
+      const allDevs: DevelopmentProject[] = [];
+      let sourceName = fileList.length === 1 ? fileList[0].name : `${fileList.length} archivos seleccionados`;
+      let fileType: "json" | "excel" = "json";
 
-    if (isExcel) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = new Uint8Array(event.target?.result as ArrayBuffer);
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        const fileName = file.name;
+        const isExcel = fileName.endsWith(".xlsx") || fileName.endsWith(".xls");
+
+        if (isExcel) {
+          fileType = "excel";
+          const buffer = await file.arrayBuffer();
+          const data = new Uint8Array(buffer);
           const workbook = XLSX.read(data, { type: "array" });
-          
-          const importedData: any = {
-            ingredients: [],
-            recipes: [],
-            developments: []
-          };
 
-          // Parsing logic for Excel sheets
-          // This is a simplified version, real mapping depends on the headers
           workbook.SheetNames.forEach(name => {
             const sheet = workbook.Sheets[name];
-            const json = XLSX.utils.sheet_to_json(sheet);
-            
-            if (name.toLowerCase().includes("ingredient")) {
-              importedData.ingredients = json.map((row: any) => {
+            const rows: any[] = XLSX.utils.sheet_to_json(sheet);
+
+            if (name.toLowerCase().includes("ingredient") || name.toLowerCase().includes("insumo")) {
+              rows.forEach((row: any) => {
                 const c = Number(row.Carbohidratos_g || row.carbs || 0);
                 const p = Number(row.Proteinas_g || row.proteins || 0);
                 const f = Number(row.GrasasTotales_g || row.totalFats || 0);
@@ -164,8 +277,8 @@ export const DataManagementModal: React.FC<DataManagementModalProps> = ({
                 const totSug = Number(row.AzucaresTotales_g ?? row.Azucares_g ?? row.totalSugars ?? row.sugars ?? 0);
                 const addSug = Number(row.AzucaresAnadidos_g ?? row.addedSugars ?? 0);
 
-                return {
-                  id: row.ID || row.id || `ing_${Math.random().toString(36).substr(2, 9)}`,
+                allNewIngredients.push({
+                  id: row.ID || row.id || `ing_${Math.random().toString(36).substring(2, 9)}`,
                   name: row.Nombre || row.name || row.Name || "Sin nombre",
                   energy: energyVal,
                   energyKJ: Number(row.Energia_kJ || row.energyKJ || Math.round(energyVal * 4.184)),
@@ -181,64 +294,74 @@ export const DataManagementModal: React.FC<DataManagementModalProps> = ({
                   sodium: Number(row.Sodio_mg || row.sodium || 0),
                   category: row.Categoria || row.category || "generico",
                   isGlutenFree: row.SinTACC === "SI" || row.isGlutenFree === true
-                };
+                });
+              });
+            } else if (name.toLowerCase().includes("receta") || name.toLowerCase().includes("recipe")) {
+              rows.forEach((row: any) => {
+                allRecipes.push({
+                  id: row.ID || row.id || `rec_${Math.random().toString(36).substring(2, 9)}`,
+                  name: row.Nombre || row.name || row.Name || "Sin nombre",
+                  type: (row.Tipo || row.type || "semielaborado") as any,
+                  category: (row.Categoria || row.category || "semielaborado") as any,
+                  status: (row.Estado || row.status || "formulacion") as any,
+                  finalYield: Number(row.RindeFinal_g || row.finalYield || 1000),
+                  totalYield: Number(row.RindeFinal_g || row.finalYield || 1000),
+                  servingSize: 100,
+                  portionsPerPackage: Number(row.Porciones || row.portionsPerPackage || 1),
+                  ingredients: []
+                });
               });
             }
-            
-            if (name.toLowerCase().includes("receta") || name.toLowerCase().includes("recipe")) {
-              importedData.recipes = json.map((row: any) => ({
-                id: row.ID || row.id || `rec_${Math.random().toString(36).substr(2, 9)}`,
-                name: row.Nombre || row.name || row.Name || "Sin nombre",
-                type: (row.Tipo || row.type || "semielaborado") as any,
-                category: (row.Categoria || row.category || "semielaborado") as any,
-                status: (row.Estado || row.status || "formulacion") as any,
-                finalYield: Number(row.RindeFinal_g || row.finalYield || 1000),
-                totalYield: Number(row.RindeFinal_g || row.finalYield || 1000),
-                servingSize: 100,
-                portionsPerPackage: Number(row.Porciones || row.portionsPerPackage || 1),
-                ingredients: [] // Ingredients will need to be mapped if they are in the same sheet or a separate one
-              }));
-            }
           });
+        } else {
+          // JSON
+          const text = await file.text();
+          const parsed = JSON.parse(text);
 
-          setPreview({
-            ingredients: importedData.ingredients.length,
-            recipes: importedData.recipes.length,
-            developments: importedData.developments.length,
-            source: fileName,
-            type: "excel",
-            data: importedData
-          });
-        } catch (err) {
-          setError("Error al procesar el archivo Excel. Asegúrate de que el formato sea correcto.");
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const data = JSON.parse(event.target?.result as string);
-          setPreview({
-            ingredients: data.ingredients?.length || 0,
-            recipes: data.recipes?.length || 0,
-            developments: data.developments?.length || 0,
-            source: fileName,
-            type: "json",
-            data: {
-              ingredients: data.ingredients,
-              recipes: data.recipes,
-              developments: data.developments
+          if (Array.isArray(parsed)) {
+            const first = parsed[0] || {};
+            if (first.ingredients || first.finalYield || first.servings || first.category) {
+              const { recipes: normRecipes, newIngredients: normIngs } = normalizeImportedRecipes(parsed, [...ingredients, ...allNewIngredients]);
+              allRecipes.push(...normRecipes);
+              allNewIngredients.push(...normIngs);
+            } else if (first.energy !== undefined || first.carbs !== undefined || first.proteins !== undefined) {
+              allNewIngredients.push(...parsed);
+            } else if (first.productName !== undefined) {
+              allDevs.push(...parsed);
             }
-          });
-        } catch (err) {
-          setError("Error al procesar el archivo JSON. El formato no es válido.");
+          } else if (typeof parsed === "object" && parsed !== null) {
+            if (Array.isArray(parsed.ingredients)) {
+              allNewIngredients.push(...parsed.ingredients);
+            }
+            if (Array.isArray(parsed.recipes)) {
+              const { recipes: normRecipes, newIngredients: normIngs } = normalizeImportedRecipes(parsed.recipes, [...ingredients, ...allNewIngredients]);
+              allRecipes.push(...normRecipes);
+              allNewIngredients.push(...normIngs);
+            }
+            if (Array.isArray(parsed.developments)) {
+              allDevs.push(...parsed.developments);
+            }
+          }
         }
-      };
-      reader.readAsText(file);
+      }
+
+      setPreview({
+        ingredients: allNewIngredients.length,
+        recipes: allRecipes.length,
+        developments: allDevs.length,
+        source: sourceName,
+        type: fileType,
+        data: {
+          ingredients: allNewIngredients,
+          recipes: allRecipes,
+          developments: allDevs
+        }
+      });
+    } catch (err: any) {
+      console.error("Import processing error:", err);
+      setError("Error al procesar el/los archivo(s): " + (err.message || String(err)));
     }
-    
-    // Clear input
+
     e.target.value = "";
   };
 
@@ -343,6 +466,7 @@ export const DataManagementModal: React.FC<DataManagementModalProps> = ({
                     <div className="relative group">
                       <input
                         type="file"
+                        multiple
                         accept=".json,.xlsx,.xls"
                         onChange={handleFileChange}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -352,11 +476,44 @@ export const DataManagementModal: React.FC<DataManagementModalProps> = ({
                           <Upload size={24} />
                         </div>
                         <div className="text-center">
-                          <span className="block text-xs font-bold text-white uppercase tracking-widest mb-1">Subir Archivo</span>
-                          <span className="block text-[9px] text-[var(--text-s)] uppercase tracking-widest">JSON o Excel</span>
+                          <span className="block text-xs font-bold text-white uppercase tracking-widest mb-1">Subir Archivo(s)</span>
+                          <span className="block text-[9px] text-[var(--text-s)] uppercase tracking-widest">JSON (individual o múltiples) o Excel</span>
                         </div>
                       </div>
                     </div>
+
+                    <div className="pt-1">
+                      <div className="relative flex py-2 items-center">
+                        <div className="flex-grow border-t border-white/5"></div>
+                        <span className="flex-shrink mx-3 text-[9px] font-black uppercase tracking-[2px] text-white/30">O catálogo del sistema</span>
+                        <div className="flex-grow border-t border-white/5"></div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleLoadGianduiaLibrary}
+                        disabled={isLoadingLibrary}
+                        className="w-full mt-2 p-4 bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-amber-500/10 hover:from-amber-500/20 hover:via-rose-500/20 hover:to-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 rounded-2xl flex items-center justify-between transition-all group"
+                      >
+                        <div className="flex items-center gap-3 text-left">
+                          <div className="p-2.5 bg-amber-400/20 text-amber-400 rounded-xl group-hover:scale-110 transition-transform">
+                            {isLoadingLibrary ? <Loader2 size={18} className="animate-spin" /> : <BookOpen size={18} />}
+                          </div>
+                          <div>
+                            <span className="block text-xs font-bold text-white uppercase tracking-wider">
+                              Catálogo Histórico Gianduia
+                            </span>
+                            <span className="block text-[9px] text-white/50 tracking-wider">
+                              256 Recetas Técnicas (27 Lotes Organizados)
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-amber-400 group-hover:translate-x-1 transition-transform">
+                          <span>{isLoadingLibrary ? "Cargando..." : "Cargar"}</span>
+                          <ArrowRight size={14} />
+                        </div>
+                      </button>
+                    </div>
+
                     {error && (
                       <div className="flex items-start gap-2 p-3 bg-rose-400/10 border border-rose-400/20 rounded-xl">
                         <AlertTriangle size={14} className="text-rose-400 shrink-0 mt-0.5" />

@@ -27,15 +27,28 @@ import {
 import { DevelopmentProject, Recipe, ProductArea } from '../types';
 import { format, isPast, addDays, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { DashboardTaskAgendaCard } from './DashboardTaskAgendaCard';
 
 interface DashboardViewProps {
   developments: DevelopmentProject[];
   recipes: Recipe[];
+  userId?: string;
+  onUpdateDevelopment?: (dev: DevelopmentProject) => Promise<void> | void;
+  onNavigateToAgenda?: () => void;
+  onNavigateToProject?: (devId: string) => void;
 }
 
 const COLORS = ['#FF6B81', '#4D96FF', '#6BCB77', '#FFD93D', '#B197FC', '#4DBFFF', '#8E9AAF'];
 
-export function DashboardView({ developments, recipes }: DashboardViewProps) {
+export function DashboardView({
+  developments,
+  recipes,
+  userId,
+  onUpdateDevelopment,
+  onNavigateToAgenda,
+  onNavigateToProject
+}: DashboardViewProps) {
+  const [isAgendaExpanded, setIsAgendaExpanded] = React.useState(false);
   const activeDevs = developments.filter(d => d.status !== 'archivado');
   
   const areaStats = useMemo(() => {
@@ -295,56 +308,20 @@ export function DashboardView({ developments, recipes }: DashboardViewProps) {
       </div>
 
       {/* Deadlines & Recent Events */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[var(--surface)] border border-[var(--border)] p-8 rounded-3xl space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-black uppercase tracking-[2px] flex items-center gap-2">
-              <Calendar size={18} className="text-[var(--accent)]" />
-              Próximos Vencimientos
-            </h3>
-            <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">Top 8 Prioritarias</span>
-          </div>
-          <div className="space-y-3">
-            {upcomingDeadlines.length > 0 ? (
-              upcomingDeadlines.map((item, i) => {
-                const daysLeft = Math.ceil((item.deadline - Date.now()) / (1000 * 60 * 60 * 24));
-                const isOverdue = daysLeft < 0;
+      {/* Bitácora y Hoja de Agenda de Tareas I+D - Ocupa todo el ancho ("toda la hoja") */}
+      <div className="w-full">
+        <DashboardTaskAgendaCard
+          developments={developments}
+          userId={userId}
+          onUpdateDevelopment={onUpdateDevelopment}
+          onNavigateToAgenda={onNavigateToAgenda}
+          onNavigateToProject={onNavigateToProject}
+          isExpandedWidth={true}
+        />
+      </div>
 
-                return (
-                  <div key={i} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                    isOverdue 
-                      ? 'bg-rose-500/10 border-rose-500/20 shadow-[0_0_20px_rgba(239,68,68,0.1)]' 
-                      : 'bg-white/5 border-white/5 hover:border-white/10'
-                  }`}>
-                    <div className="flex items-center gap-4">
-                      <div className={`w-2 h-10 rounded-full ${
-                        item.priority === 'alta' ? 'bg-red-500' : 
-                        item.priority === 'media' ? 'bg-amber-500' : 'bg-emerald-500'
-                      }`} />
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold text-white">{item.projectName}</p>
-                        <p className="text-[10px] text-white/40 max-w-[200px] truncate">{item.task}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${
-                        isOverdue ? 'text-rose-500' : 'text-white/60'
-                      }`}>
-                        {isOverdue ? 'Atrasado' : `En ${daysLeft} días`}
-                      </p>
-                      <p className="text-[10px] font-bold text-white/20">
-                        {new Date(item.deadline).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-10 opacity-20 italic text-sm">No hay vencimientos próximos.</div>
-            )}
-          </div>
-        </div>
-
+      {/* Atención Requerida y Resumen de Estado */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <div className="bg-[var(--surface)] border border-[var(--border)] p-8 rounded-3xl space-y-6">
           <h3 className="text-sm font-black uppercase tracking-[2px] flex items-center gap-2">
             <AlertCircle size={18} className="text-[var(--accent)]" />
@@ -369,6 +346,23 @@ export function DashboardView({ developments, recipes }: DashboardViewProps) {
             ) : (
               <div className="text-center py-10 opacity-20 italic text-sm">Todo está al día.</div>
             )}
+          </div>
+        </div>
+
+        <div className="bg-[var(--surface)] border border-[var(--border)] p-8 rounded-3xl space-y-6">
+          <h3 className="text-sm font-black uppercase tracking-[2px] flex items-center gap-2 text-white">
+            <Check size={18} className="text-emerald-400" />
+            Resumen Operativo
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+              <span className="text-[10px] uppercase font-bold text-white/40 block">Proyectos I+D Activos</span>
+              <span className="text-2xl font-black text-amber-400 mt-1 block font-mono">{activeDevs.length}</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+              <span className="text-[10px] uppercase font-bold text-white/40 block">Fórmulas en Catálogo</span>
+              <span className="text-2xl font-black text-blue-400 mt-1 block font-mono">{recipes.length}</span>
+            </div>
           </div>
         </div>
       </div>

@@ -153,6 +153,27 @@ export interface RescheduleEntry {
   timestamp: number;
 }
 
+export type TaskStatus = 'pendiente' | 'en_curso' | 'pausado' | 'finalizado';
+
+export type TimeLossReason =
+  | 'espera_insumo'
+  | 'equipo_ocupado'
+  | 'consulta_aprobacion'
+  | 'reunion_imprevista'
+  | 'urgencia_produccion'
+  | 'corte_operativo'
+  | 'otro';
+
+export interface TaskTimeCut {
+  id: string;
+  pausedAt: number; // timestamp
+  resumedAt?: number; // timestamp
+  durationMinutes?: number;
+  reason: TimeLossReason;
+  customReason?: string;
+  note?: string;
+}
+
 export interface ProjectTask {
   id: string;
   text: string;
@@ -163,6 +184,18 @@ export interface ProjectTask {
   assignee?: string;
   dependencyId?: string; // ID of the task that must be completed first
   rescheduleHistory?: RescheduleEntry[];
+  
+  // Advanced time and interruption tracking
+  status?: TaskStatus;
+  startTime?: string; // HH:mm format
+  endTime?: string;   // HH:mm format
+  startedAt?: number; // timestamp
+  completedAt?: number; // timestamp
+  timeCuts?: TaskTimeCut[];
+  totalWorkMinutes?: number;
+  totalLostMinutes?: number;
+  timeLossCategory?: TimeLossReason;
+  timeLossNote?: string;
 }
 
 export interface MeetingTopic {

@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { GoogleGenAI } from "@google/genai";
 import multer from "multer";
 import dotenv from "dotenv";
@@ -348,6 +349,45 @@ app.post("/api/ai/analyze-trials", async (req, res, next) => {
   } catch (error: any) {
     console.error("[AI] Analyze Trials Error:", error);
     next(error);
+  }
+});
+
+app.get("/api/recipes/library", (req, res) => {
+  try {
+    const rootDir = process.cwd();
+    const files = fs.readdirSync(rootDir).filter((f: string) => f.startsWith("recipes_import") && f.endsWith(".json"));
+
+    // Natural sort: recipes_import.json first, then recipes_import_2.json ...
+    files.sort((a: string, b: string) => {
+      const getNum = (name: string) => {
+        if (name === "recipes_import.json") return 1;
+        const match = name.match(/recipes_import_(\d+)\.json/);
+        return match ? parseInt(match[1], 10) : 9999;
+      };
+      return getNum(a) - getNum(b);
+    });
+
+    const allRecipes: any[] = [];
+    files.forEach((file: string) => {
+      try {
+        const content = fs.readFileSync(path.join(rootDir, file), "utf-8");
+        const list = JSON.parse(content);
+        if (Array.isArray(list)) {
+          allRecipes.push(...list);
+        }
+      } catch (err) {
+        console.error(`Error reading ${file}:`, err);
+      }
+    });
+
+    res.json({
+      totalFiles: files.length,
+      totalRecipes: allRecipes.length,
+      recipes: allRecipes
+    });
+  } catch (error: any) {
+    console.error("[RECIPES] Library read error:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
