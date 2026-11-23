@@ -99,13 +99,16 @@ import * as XLSX from "xlsx";
 import { DataManagementModal } from "./components/DataManagementModal";
 import { DashboardView } from "./components/DashboardView";
 import { NormativasView } from "./components/NormativasView";
-import { RecipeAuditView } from "./components/RecipeAuditView";
 import { AIAssistant } from "./components/AIAssistant";
 import { TrialManager } from "./components/TrialManager";
-import { WasteManager } from "./components/WasteManager";
 import { CalendarView } from "./components/CalendarView";
 import { RDPerformanceReport } from "./components/RDPerformanceReport";
 import { TaskAgendaView } from "./components/TaskAgendaView";
+import { DevelopmentReportModal } from "./components/DevelopmentReportModal";
+import {
+  DEVELOPMENT_TYPE_OPTIONS,
+  DossierDraft,
+} from "./utils/developmentReportPdf";
 import {
   Ingredient,
   Recipe,
@@ -116,6 +119,7 @@ import {
   AllergenEntry,
   AllergenType,
   DevelopmentProject,
+  DevelopmentCategoryType,
   ProductArea,
   ProjectPriority,
   ProjectStatus,
@@ -123,9 +127,6 @@ import {
   ProjectTask,
   MeetingTopic,
   KnowledgeDocument,
-  RecipeAudit,
-  WasteEntry,
-  WasteReason,
   CalendarEvent,
   RescheduleEntry,
 } from "./types";
@@ -159,11 +160,6 @@ import {
   subscribeKnowledgeDocuments,
   saveKnowledgeDocument,
   deleteKnowledgeDocument,
-  subscribeRecipeAudits,
-  saveRecipeAudit,
-  subscribeWastes,
-  saveWasteEntry,
-  deleteWasteEntry,
   subscribeCalendarEvents,
   saveCalendarEvent,
   deleteCalendarEvent,
@@ -211,9 +207,7 @@ type AppView =
   | "trial_formulas"
   | "asistente_formulacion"
   | "normativas"
-  | "conteo_ciclico"
   | "trial_manager"
-  | "gestion_costos"
   | "rd_report"
   | "calendario"
   | "agenda_tareas";
@@ -532,8 +526,6 @@ export default function App() {
   const [recipes, setRecipes] = useState<Recipe[]>([INITIAL_RECIPE]);
   const [developments, setDevelopments] = useState<DevelopmentProject[]>([]);
   const [knowledgeDocuments, setKnowledgeDocuments] = useState<KnowledgeDocument[]>([]);
-  const [recipeAudits, setRecipeAudits] = useState<RecipeAudit[]>([]);
-  const [wastes, setWastes] = useState<WasteEntry[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>(
     INITIAL_RECIPE.id,
@@ -589,6 +581,7 @@ export default function App() {
     priority: "media",
     status: "pendiente",
     estimatedTime: "",
+    developmentType: "nuevo_producto",
   });
   const [resolvingTrialProject, setResolvingTrialProject] =
     useState<DevelopmentProject | null>(null);
@@ -603,6 +596,8 @@ export default function App() {
   const [trialExecutionDate, setTrialExecutionDate] = useState<string>("");
   const [testingDate, setTestingDate] = useState<string>("");
   const [viewingNotesProject, setViewingNotesProject] =
+    useState<DevelopmentProject | null>(null);
+  const [reportProject, setReportProject] =
     useState<DevelopmentProject | null>(null);
   const [expandedDevId, setExpandedDevId] = useState<string | null>(null);
   const [editingDevCodeId, setEditingDevCodeId] = useState<string | null>(null);
@@ -719,10 +714,10 @@ export default function App() {
         }
         
         // Check task deadlines
-        (dev.tasks || []).forEach(task => {
+        (dev.tasks || []).forEach((task, tIdx) => {
           if (!task.completed && task.deadline && task.deadline >= todayTs && task.deadline < endOfToday) {
             newNotifications.push({
-              id: `task_${task.id}`,
+              id: `task_${dev.id}_${task.id}_${tIdx}`,
               text: `Tarea vence hoy: ${task.text} (${dev.productName})`,
               type: 'warning'
             });
@@ -782,12 +777,6 @@ export default function App() {
       const unsubKnowledge = subscribeKnowledgeDocuments(user.uid, (data) => {
         setKnowledgeDocuments(data);
       }, onSyncError);
-      const unsubAudits = subscribeRecipeAudits((data) => {
-        setRecipeAudits(data);
-      }, onSyncError);
-      const unsubWastes = subscribeWastes((data) => {
-        setWastes(data);
-      }, onSyncError);
       const unsubEvents = subscribeCalendarEvents((data) => {
         setEvents(data);
       }, onSyncError);
@@ -795,8 +784,6 @@ export default function App() {
         unsubRecipes();
         unsubDevs();
         unsubKnowledge();
-        unsubAudits();
-        unsubWastes();
         unsubEvents();
       };
     }
@@ -1008,8 +995,8 @@ export default function App() {
     const taskEvents: CalendarEvent[] = developments.flatMap((dev) =>
       (dev.tasks || [])
         .filter((t) => t.deadline && !t.completed)
-        .map((t) => ({
-          id: `task_${t.id}`,
+        .map((t, tIdx) => ({
+          id: `task_${dev.id}_${t.id}_${tIdx}`,
           title: `[${(t.area || "Gral").toUpperCase()}] ${t.text} (${dev.productName})`,
           startDate: t.deadline!,
           endDate: t.deadline! + 3600000,
@@ -2185,6 +2172,9 @@ export default function App() {
       updatedAt: Date.now(),
       startedAt: Date.now(),
       estimatedTime: newProject.estimatedTime,
+      developmentType:
+        (newProject.developmentType as DevelopmentCategoryType) ||
+        "nuevo_producto",
       createdBy: user.uid,
     };
     try {
@@ -2196,10 +2186,44 @@ export default function App() {
         priority: "media",
         status: "pendiente",
         estimatedTime: "",
+        developmentType: "nuevo_producto",
       });
     } catch (err) {
       console.error(err);
       alert("Error al crear el proyecto.");
+    }
+  };
+
+  const handleSaveDevelopmentDossier = async (
+    trialsToUpdate: DevelopmentProject[],
+    draft: DossierDraft,
+  ) => {
+    if (!user) return;
+    try {
+      const now = Date.now();
+      await Promise.all(
+        trialsToUpdate.map((trial) =>
+          saveDevelopment(
+            {
+              ...trial,
+              developmentType: draft.developmentType,
+              developmentTypeCustom: draft.developmentTypeCustom,
+              dossierRequester: draft.dossierRequester,
+              dossierReason: draft.dossierReason,
+              dossierProblem: draft.dossierProblem,
+              dossierSolution: draft.dossierSolution,
+              dossierConclusion: draft.dossierConclusion,
+              updatedAt: now,
+            },
+            user.uid,
+          ),
+        ),
+      );
+      showToast("Ficha técnica del informe guardada correctamente.", "success");
+    } catch (err) {
+      console.error("Error saving dossier:", err);
+      showToast("No se pudo guardar la ficha del informe.", "error");
+      throw err;
     }
   };
 
@@ -2577,7 +2601,7 @@ export default function App() {
       ? new Date(newTaskDeadline).getTime()
       : undefined;
     const newTask: ProjectTask = {
-      id: `task_${Date.now()}`,
+      id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       text: newTaskText.trim(),
       completed: false,
       createdAt: Date.now(),
@@ -2666,7 +2690,9 @@ export default function App() {
     }
   };
 
-  const handleResolveTrial = async (result: "formulation" | "new_trial") => {
+  const handleResolveTrial = async (
+    result: "formulation" | "finish_only" | "new_trial",
+  ) => {
     if (!resolvingTrialProject || !user) {
       alert("No se pudo identificar el proyecto o el usuario.");
       return;
@@ -2684,7 +2710,66 @@ export default function App() {
       const finalTestingDate =
         parsedTestDate && !isNaN(parsedTestDate) ? parsedTestDate : undefined;
 
-      if (result === "formulation") {
+      if (result === "finish_only") {
+        triggerConfirm(
+          "Finalizar (Sin Formular)",
+          "¿Seguro que deseas finalizar este desarrollo sin crear ni pasar una receta a Formulación Técnica? Se guardarán las observaciones, fechas y análisis sensorial registrados.",
+          async () => {
+            try {
+              const trimmedNotes = trialNotes.trim();
+              const updatedNotes = trimmedNotes
+                ? (resolvingTrialProject.notes
+                    ? resolvingTrialProject.notes + "\n"
+                    : "") +
+                  `Prueba ${resolvingTrialProject.trialLetter || "A"} (Finalizada): ${trimmedNotes}`
+                : resolvingTrialProject.notes || "";
+
+              const updated: DevelopmentProject = {
+                ...resolvingTrialProject,
+                status: "finalizado",
+                finishedAt: Date.now(),
+                trialExecutionDate:
+                  finalTrialExecutionDate ??
+                  resolvingTrialProject.trialExecutionDate,
+                testingDate:
+                  finalTestingDate ?? resolvingTrialProject.testingDate,
+                notes: updatedNotes,
+                sensoryAnalysis: sensoryTrialData,
+                updatedAt: Date.now(),
+                trialLetter: resolvingTrialProject.trialLetter || "A",
+                sequenceNumber: resolvingTrialProject.sequenceNumber || 1,
+                code: resolvingTrialProject.code || "DE-GI-GEN-000",
+              };
+
+              await saveDevelopment(updated, user.uid);
+              showToast(
+                "Desarrollo finalizado correctamente (sin formulación).",
+                "success",
+              );
+
+              setResolvingTrialProject(null);
+              setTrialNotes("");
+              setTrialExecutionDate("");
+              setTestingDate("");
+              setSensoryTrialData({
+                temperature: "",
+                texture: "",
+                flavor: "",
+                hardness: "",
+                decoration: "",
+              });
+            } catch (err) {
+              console.error("Error finishing development without recipe:", err);
+              alert(
+                "Error al finalizar el desarrollo: " +
+                  (err instanceof Error ? err.message : String(err)),
+              );
+            }
+          },
+          "info",
+          "Finalizar Sin Formular",
+        );
+      } else if (result === "formulation") {
         triggerConfirm(
           "Finalizar y Formular",
           "¿Seguro que deseas dar por aprobada esta versión? El proyecto se cerrará y se enviará permanentemente al catálogo de recetas de I+D.",
@@ -2872,10 +2957,20 @@ export default function App() {
           prodTrialEquipment: undefined,
           prodTrialStartTime: undefined,
           prodTrialEndTime: undefined,
-          tasks: resolvingTrialProject.tasks?.map((t) => ({
-            ...t,
-            completed: false,
-          })),
+          tasks: (() => {
+            const orig = resolvingTrialProject.tasks || [];
+            const ts = Date.now();
+            const idMap = new Map<string, string>();
+            orig.forEach((t, idx) => {
+              idMap.set(t.id, `task_${ts}_${idx}_${Math.random().toString(36).slice(2, 6)}`);
+            });
+            return orig.map((t) => ({
+              ...t,
+              id: idMap.get(t.id)!,
+              dependencyId: t.dependencyId ? idMap.get(t.dependencyId) || t.dependencyId : undefined,
+              completed: Boolean(t.completed),
+            }));
+          })(),
         };
         await saveDevelopment(newTrial, user.uid);
 
@@ -2981,7 +3076,20 @@ export default function App() {
               prodTrialEquipment: undefined,
               prodTrialStartTime: undefined,
               prodTrialEndTime: undefined,
-              tasks: dev.tasks?.map((t) => ({ ...t, completed: false })),
+              tasks: (() => {
+                const orig = dev.tasks || [];
+                const ts = Date.now();
+                const idMap = new Map<string, string>();
+                orig.forEach((t, idx) => {
+                  idMap.set(t.id, `task_${ts}_${idx}_${Math.random().toString(36).slice(2, 6)}`);
+                });
+                return orig.map((t) => ({
+                  ...t,
+                  id: idMap.get(t.id)!,
+                  dependencyId: t.dependencyId ? idMap.get(t.dependencyId) || t.dependencyId : undefined,
+                  completed: Boolean(t.completed),
+                }));
+              })(),
             },
             user.uid,
           );
@@ -3076,13 +3184,11 @@ export default function App() {
           {[
             { id: "dashboard", icon: LayoutDashboard, label: "Panel General" },
             { id: "developments", icon: GitMerge, label: "Tabla de Desarrollo" },
-            { id: "agenda_tareas", icon: BookOpen, label: "Agenda de Tareas" },
+            { id: "agenda_tareas", icon: BookOpen, label: "Agenda" },
             { id: "recipes", icon: FlaskConical, label: "Formulación Técnica" },
             { id: "ingredients", icon: Database, label: "Almacén I+D" },
             { id: "trial_manager", icon: FlaskRound, label: "Laboratorio I+D" },
             { id: "guide", icon: FileText, label: "Normativas" },
-            { id: "conteo_ciclico", icon: ClipboardCheck, label: "Conteo Cíclico" },
-            { id: "gestion_costos", icon: Trash2, label: "Gestión de Costos" },
             { id: "calendario", icon: Calendar, label: "Calendario I+D" },
             { id: "rd_report", icon: BarChart3, label: "Reporte I+D" },
             { id: "asistente_formulacion", icon: Sparkles, label: "Asistente Formulación" },
@@ -3239,7 +3345,6 @@ export default function App() {
               {view === "trial_manager" && "Laboratorio I+D (Pruebas)"}
               {view === "guide" && "Normativas"}
               {view === "asistente_formulacion" && "Asistente de Formulación AI"}
-              {view === "gestion_costos" && "Gestión de Costos"}
               {view === "calendario" && "Calendario I+D"}
               {view === "rd_report" && "Reporte de Performance I+D"}
               {view === "agenda_tareas" && "Agenda Diaria de Tareas y Tiempos"}
@@ -3359,29 +3464,6 @@ export default function App() {
                 </motion.div>
               )}
 
-              {view === "conteo_ciclico" && user && (
-                <motion.div
-                  key="conteo_ciclico"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="h-full overflow-y-auto custom-scrollbar p-8"
-                >
-                  <RecipeAuditView
-                    recipes={recipes}
-                    ingredients={ingredients}
-                    audits={recipeAudits}
-                    onSaveAudit={async (audit) => {
-                      await saveRecipeAudit(audit);
-                    }}
-                    onUpdateRecipe={async (recipe) => {
-                      await saveRecipe(recipe, user.uid);
-                    }}
-                    userId={user.uid}
-                  />
-                </motion.div>
-              )}
-
               {view === "guide" && (
                 <motion.div
                   key="normativas_legacy"
@@ -3391,29 +3473,6 @@ export default function App() {
                   className="h-full overflow-hidden"
                 >
                   <NormativasView />
-                </motion.div>
-              )}
-
-              {view === "gestion_costos" && user && (
-                <motion.div
-                  key="gestion_costos"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="h-full overflow-y-auto custom-scrollbar"
-                >
-                  <WasteManager 
-                    wastes={wastes}
-                    recipes={recipes}
-                    ingredients={ingredients}
-                    onSaveWaste={async (w) => {
-                      await saveWasteEntry(w);
-                    }}
-                    onDeleteWaste={async (id) => {
-                      await deleteWasteEntry(id);
-                    }}
-                    userId={user.uid}
-                  />
                 </motion.div>
               )}
 
@@ -3458,10 +3517,10 @@ export default function App() {
               {view === "agenda_tareas" && user && (
                 <motion.div
                   key="agenda_tareas"
-                  initial={{ opacity: 0, scale: 0.98 }}
+                  initial={{ opacity: 0, scale: 0.99 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  className="flex-1 h-full overflow-y-auto custom-scrollbar p-6 lg:p-8"
+                  exit={{ opacity: 0, scale: 0.99 }}
+                  className="flex-1 h-full overflow-hidden p-3 sm:p-4 lg:p-6 flex flex-col min-h-0"
                 >
                   <TaskAgendaView
                     developments={developments}
@@ -3781,9 +3840,9 @@ export default function App() {
                                   {(dev.tasks || []).length === 0 ? (
                                     <p className="text-xs text-white/10 italic">Sin tareas definidas para esta versión.</p>
                                   ) : (
-                                    (dev.tasks || []).map((task) => (
+                                    (dev.tasks || []).map((task, tIdx) => (
                                       <div 
-                                        key={task.id}
+                                        key={`${dev.id}_${task.id}_${tIdx}`}
                                         onClick={() => handleToggleTask(dev, task.id)}
                                         className={`flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer border group/task ${
                                           task.completed 
@@ -4394,6 +4453,20 @@ export default function App() {
                                       )}
 
                                       <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setReportProject(dev);
+                                        }}
+                                        className="px-3 py-2.5 bg-white/5 border border-white/10 text-white/75 rounded-2xl hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-white transition-all hover:-translate-y-0.5 flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                                        title="Armar Informe Técnico en PDF"
+                                      >
+                                        <FileText size={15} />
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                                          PDF
+                                        </span>
+                                      </button>
+
+                                      <button
                                         onClick={(e) =>
                                           handleDeleteDevelopment(dev.id)
                                         }
@@ -4470,14 +4543,14 @@ export default function App() {
                                                   // Secondary: Creation date (newer first)
                                                   return b.createdAt - a.createdAt;
                                                 })
-                                                .map((task) => {
+                                                .map((task, tIdx) => {
                                                   const isOverdue =
                                                     !task.completed &&
                                                     task.deadline &&
                                                     task.deadline < Date.now();
                                                   return (
                                                     <div
-                                                      key={task.id}
+                                                      key={`${dev.id}_${task.id}_${tIdx}`}
                                                       className="flex flex-col gap-1 group/task"
                                                     >
                                                       <div className="flex items-center gap-3">
@@ -4617,8 +4690,8 @@ export default function App() {
                                                 className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white/60 outline-none focus:border-[var(--accent)] appearance-none"
                                               >
                                                 <option value="" className="bg-[#121212]">Sin dependencia...</option>
-                                                {(dev.tasks || []).map(t => (
-                                                  <option key={t.id} value={t.id} className="bg-[#121212]">Depende de: {t.text.slice(0, 20)}...</option>
+                                                {(dev.tasks || []).map((t, tIdx) => (
+                                                  <option key={`${dev.id}_${t.id}_${tIdx}`} value={t.id} className="bg-[#121212]">Depende de: {t.text.slice(0, 20)}...</option>
                                                 ))}
                                               </select>
                                               <input
@@ -4836,7 +4909,7 @@ export default function App() {
                                               maxChars={180}
                                             />
                                           </div>
-                                          <div className="flex items-center gap-4 justify-between pt-4">
+                                          <div className="flex flex-wrap items-center gap-3 justify-between pt-4">
                                             <button
                                               onClick={() =>
                                                 setViewingNotesProject(dev)
@@ -4845,6 +4918,14 @@ export default function App() {
                                             >
                                               <Edit3 size={12} /> Editar Informe
                                               de Seguimiento
+                                            </button>
+                                            <button
+                                              onClick={() =>
+                                                setReportProject(dev)
+                                              }
+                                              className="text-xs text-white bg-white/10 hover:bg-[var(--accent)] transition-colors flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium"
+                                            >
+                                              <FileText size={13} /> Armar Informe PDF
                                             </button>
                                           </div>
                                         </div>
@@ -5240,22 +5321,46 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[10px] uppercase font-bold text-[var(--text-s)] tracking-widest">
-                          Tiempo Estimado
-                        </label>
-                        <input
-                          type="text"
-                          value={newProject.estimatedTime}
-                          onChange={(e) =>
-                            setNewProject({
-                              ...newProject,
-                              estimatedTime: e.target.value,
-                            })
-                          }
-                          placeholder="Ej: 2 semanas"
-                          className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl p-4 text-sm outline-none focus:border-[var(--accent)] transition-all"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase font-bold text-[var(--text-s)] tracking-widest">
+                            Tipo de Desarrollo
+                          </label>
+                          <select
+                            value={newProject.developmentType || "nuevo_producto"}
+                            onChange={(e) =>
+                              setNewProject({
+                                ...newProject,
+                                developmentType: e.target.value as DevelopmentCategoryType,
+                              })
+                            }
+                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl p-4 text-sm outline-none focus:border-[var(--accent)] transition-all appearance-none"
+                          >
+                            {DEVELOPMENT_TYPE_OPTIONS.map((opt) => (
+                              <option key={opt.id} value={opt.id}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase font-bold text-[var(--text-s)] tracking-widest">
+                            Tiempo Estimado
+                          </label>
+                          <input
+                            type="text"
+                            value={newProject.estimatedTime}
+                            onChange={(e) =>
+                              setNewProject({
+                                ...newProject,
+                                estimatedTime: e.target.value,
+                              })
+                            }
+                            placeholder="Ej: 2 semanas"
+                            className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl p-4 text-sm outline-none focus:border-[var(--accent)] transition-all"
+                          />
+                        </div>
                       </div>
 
                       <div className="pt-4">
@@ -5278,7 +5383,7 @@ export default function App() {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-[var(--surface)] border border-[var(--border)] w-full max-w-lg rounded-3xl p-0 flex flex-col overflow-hidden shadow-2xl max-h-[95vh]"
+                    className="bg-[var(--surface)] border border-[var(--border)] w-full max-w-2xl rounded-3xl p-0 flex flex-col overflow-hidden shadow-2xl max-h-[95vh]"
                   >
                     <div className="p-8 pb-4 flex items-center justify-between shrink-0">
                       <h3 className="text-xl font-light italic">
@@ -5395,17 +5500,17 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-4 border-t border-white/5">
                         <button
                           onClick={() => handleResolveTrial("new_trial")}
-                          className="bg-amber-500/10 border border-amber-500/30 text-amber-500 p-6 rounded-2xl hover:bg-amber-500/20 transition-all flex flex-col items-center gap-3 text-center"
+                          className="bg-amber-500/10 border border-amber-500/30 text-amber-500 p-5 rounded-2xl hover:bg-amber-500/20 transition-all flex flex-col items-center gap-3 text-center"
                         >
-                          <ArrowUp size={24} />
+                          <ArrowUp size={22} />
                           <div className="space-y-1">
                             <p className="text-xs font-bold uppercase tracking-widest">
                               Nueva Prueba
                             </p>
-                            <p className="text-[10px] opacity-60">
+                            <p className="text-[10px] opacity-65">
                               Crear nuevo renglón para versión{" "}
                               {String.fromCharCode(
                                 (
@@ -5418,15 +5523,31 @@ export default function App() {
                         </button>
 
                         <button
-                          onClick={() => handleResolveTrial("formulation")}
-                          className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 p-6 rounded-2xl hover:bg-emerald-500/20 transition-all flex flex-col items-center gap-3 text-center"
+                          onClick={() => handleResolveTrial("finish_only")}
+                          className="bg-sky-500/10 border border-sky-500/30 text-sky-400 p-5 rounded-2xl hover:bg-sky-500/20 transition-all flex flex-col items-center gap-3 text-center"
                         >
-                          <Check size={24} />
+                          <ClipboardCheck size={22} />
+                          <div className="space-y-1">
+                            <p className="text-xs font-bold uppercase tracking-widest">
+                              Finalizar (Sin Formular)
+                            </p>
+                            <p className="text-[10px] opacity-65">
+                              Cerrar desarrollo y guardar registro sin pasar a
+                              recetas.
+                            </p>
+                          </div>
+                        </button>
+
+                        <button
+                          onClick={() => handleResolveTrial("formulation")}
+                          className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 p-5 rounded-2xl hover:bg-emerald-500/20 transition-all flex flex-col items-center gap-3 text-center"
+                        >
+                          <Check size={22} />
                           <div className="space-y-1">
                             <p className="text-xs font-bold uppercase tracking-widest">
                               Finalizar y Formular
                             </p>
-                            <p className="text-[10px] opacity-60">
+                            <p className="text-[10px] opacity-65">
                               Prueba exitosa. Pasar a etapa de formulación
                               técnica.
                             </p>
@@ -5455,12 +5576,26 @@ export default function App() {
                           Código: {viewingNotesProject.code}
                         </p>
                       </div>
-                      <button
-                        onClick={() => setViewingNotesProject(null)}
-                        className="text-white/40 hover:text-white transition-all"
-                      >
-                        <X size={24} />
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const proj = viewingNotesProject;
+                            setViewingNotesProject(null);
+                            setReportProject(proj);
+                          }}
+                          className="px-4 py-2 rounded-xl bg-white/5 hover:bg-[var(--accent)] border border-white/10 text-xs font-semibold text-white transition-all flex items-center gap-1.5"
+                        >
+                          <FileText size={14} />
+                          <span>Informe PDF</span>
+                        </button>
+                        <button
+                          onClick={() => setViewingNotesProject(null)}
+                          className="text-white/40 hover:text-white transition-all"
+                        >
+                          <X size={24} />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
@@ -5726,6 +5861,17 @@ export default function App() {
                     </div>
                   </motion.div>
                 </div>
+              )}
+
+              {reportProject && (
+                <DevelopmentReportModal
+                  project={reportProject}
+                  allDevelopments={developments}
+                  recipes={recipes}
+                  ingredients={ingredients}
+                  onClose={() => setReportProject(null)}
+                  onSaveDossier={handleSaveDevelopmentDossier}
+                />
               )}
 
               {(view === "recipes" || view === "trial_formulas") && (

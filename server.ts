@@ -8,7 +8,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Health check
@@ -414,7 +414,7 @@ async function startServer() {
     try {
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
-        server: { middlewareMode: true },
+        server: { middlewareMode: true, hmr: false },
         appType: "spa",
       });
       app.use(vite.middlewares);
@@ -422,9 +422,17 @@ async function startServer() {
       console.error("[SERVER] Failed to load Vite:", e);
     }
     
-    app.listen(PORT, "0.0.0.0", () => {
+    const server = app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
+
+    const shutdown = () => {
+      server.close(() => {
+        process.exit(0);
+      });
+    };
+    process.on("SIGTERM", shutdown);
+    process.on("SIGINT", shutdown);
   } else {
     if (!process.env.VERCEL) {
       const distPath = path.join(process.cwd(), 'dist');
@@ -434,9 +442,17 @@ async function startServer() {
         res.sendFile(path.join(distPath, 'index.html'));
       });
 
-      app.listen(PORT, "0.0.0.0", () => {
+      const server = app.listen(PORT, "0.0.0.0", () => {
         console.log(`Server running on http://localhost:${PORT}`);
       });
+
+      const shutdown = () => {
+        server.close(() => {
+          process.exit(0);
+        });
+      };
+      process.on("SIGTERM", shutdown);
+      process.on("SIGINT", shutdown);
     }
   }
 }

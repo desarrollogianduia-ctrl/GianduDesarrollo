@@ -12,33 +12,7 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "./firebase";
-import { Ingredient, Recipe, DevelopmentProject, KnowledgeDocument, RecipeAudit, WasteEntry, CalendarEvent } from "../types";
-
-export const subscribeRecipeAudits = (callback: (audits: RecipeAudit[]) => void, onError?: (error: Error) => void) => {
-  return onSnapshot(collection(db, "recipeAudits"), (snapshot) => {
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RecipeAudit));
-    callback(data);
-  }, (error) => {
-    try {
-      handleFirestoreError(error, 'list', 'recipeAudits');
-    } catch (e: any) {
-      if (onError) onError(e);
-      else console.warn("recipeAudits subscription handled error:", e?.message);
-    }
-  });
-};
-
-export const saveRecipeAudit = async (audit: RecipeAudit) => {
-  const path = `recipeAudits/${audit.id}`;
-  try {
-    const auditRef = doc(db, "recipeAudits", audit.id);
-    const data = cleanData(audit);
-    await setDoc(auditRef, data);
-  } catch (error) {
-    if (error instanceof FirestoreError) handleFirestoreError(error, 'write', path);
-    throw error;
-  }
-};
+import { Ingredient, Recipe, DevelopmentProject, KnowledgeDocument, CalendarEvent } from "../types";
 
 export const subscribeKnowledgeDocuments = (userId: string, callback: (docs: KnowledgeDocument[]) => void, onError?: (error: Error) => void) => {
   // Shared access: removing ownerId filter
@@ -349,42 +323,6 @@ export const reopenDevelopment = async (id: string, userId: string) => {
   }
 };
 
-export const subscribeWastes = (callback: (wastes: WasteEntry[]) => void, onError?: (error: Error) => void) => {
-  return onSnapshot(collection(db, "wastes"), (snapshot) => {
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WasteEntry));
-    callback(data);
-  }, (error) => {
-    try {
-      handleFirestoreError(error, 'list', 'wastes');
-    } catch (e: any) {
-      if (onError) onError(e);
-      else console.warn("wastes subscription handled error:", e?.message);
-    }
-  });
-};
-
-export const saveWasteEntry = async (waste: WasteEntry) => {
-  const path = `wastes/${waste.id}`;
-  try {
-    const wasteRef = doc(db, "wastes", waste.id);
-    const data = cleanData(waste);
-    await setDoc(wasteRef, data);
-  } catch (error) {
-    if (error instanceof FirestoreError) handleFirestoreError(error, 'write', path);
-    throw error;
-  }
-};
-
-export const deleteWasteEntry = async (id: string) => {
-  const path = `wastes/${id}`;
-  try {
-    const wasteRef = doc(db, "wastes", id);
-    await deleteDoc(wasteRef);
-  } catch (error) {
-    if (error instanceof FirestoreError) handleFirestoreError(error, 'delete', path);
-    throw error;
-  }
-};
 
 export const subscribeCalendarEvents = (callback: (events: CalendarEvent[]) => void, onError?: (error: Error) => void) => {
   return onSnapshot(collection(db, "events"), (snapshot) => {

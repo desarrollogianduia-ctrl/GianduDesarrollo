@@ -10,7 +10,8 @@ import {
   Calendar,
   AlertCircle,
   ClipboardCheck,
-  ChevronRight
+  ChevronRight,
+  BookOpen
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -104,15 +105,12 @@ export function DashboardView({
       .slice(0, 8);
   }, [developments]);
 
-  const auditStats = useMemo(() => {
-    const auditable = recipes.filter(r => r.type !== 'base');
-    const audited = new Set(activeDevs.filter(d => d.status === 'finalizado').map(d => d.recipeId)).size; // simplified
-    return {
-      total: auditable.length,
-      audited: audited,
-      percent: auditable.length > 0 ? (audited / auditable.length) * 100 : 0
-    };
-  }, [recipes, activeDevs]);
+  const pendingTasksCount = useMemo(() => {
+    return activeDevs.reduce(
+      (acc, d) => acc + (d.tasks || []).filter(t => !t.completed && t.status !== 'finalizado').length,
+      0
+    );
+  }, [activeDevs]);
 
   return (
     <div className="space-y-8 pb-10">
@@ -134,11 +132,12 @@ export function DashboardView({
             color: 'text-blue-400' 
           },
           { 
-            label: 'Auditoría Cíclica', 
-            value: `${Math.round(auditStats.percent)}%`, 
-            sub: 'Cobertura de control',
+            label: 'Pendientes en Agenda', 
+            value: pendingTasksCount, 
+            sub: 'Tareas activas de I+D',
             icon: ClipboardCheck, 
-            color: 'text-purple-400' 
+            color: 'text-purple-400',
+            onClick: onNavigateToAgenda
           },
           { 
             label: 'Calendario I+D', 
@@ -307,8 +306,39 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* Deadlines & Recent Events */}
-      {/* Bitácora y Hoja de Agenda de Tareas I+D - Ocupa todo el ancho ("toda la hoja") */}
+      {/* Banner de acceso rápido a la Pestaña Agenda a Pantalla Completa */}
+      {onNavigateToAgenda && (
+        <div className="w-full bg-gradient-to-r from-amber-500/15 via-[#231e17] to-amber-500/10 border-2 border-amber-500/30 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-400 text-stone-950 flex items-center justify-center font-bold shadow-md shrink-0">
+              <BookOpen size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-amber-200 uppercase tracking-wider">
+                  Pestaña de Agenda Diaria
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-mono font-bold">
+                  Pantalla Completa
+                </span>
+              </div>
+              <p className="text-xs text-white/60">
+                Abre la libreta en tamaño completo para girar hojas como una agenda real, sin tener que scrolear la página.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onNavigateToAgenda}
+            className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-black text-xs uppercase tracking-wider shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+          >
+            <BookOpen size={16} />
+            <span>Abrir Hoja de Agenda</span>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Bitácora y Hoja de Agenda de Tareas I+D */}
       <div className="w-full">
         <DashboardTaskAgendaCard
           developments={developments}

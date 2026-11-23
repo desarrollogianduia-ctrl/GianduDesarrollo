@@ -225,9 +225,9 @@ export function CalendarView({ events, tasks = [], onSaveEvent, onDeleteEvent, u
                         + {dayEvents.length - 3} más
                       </div>
                     )}
-                    {dayEvents.length < 3 && dayTasks.slice(0, 3 - dayEvents.length).map(task => (
+                    {dayEvents.length < 3 && dayTasks.slice(0, 3 - dayEvents.length).map((task, tIdx) => (
                       <div 
-                        key={task.id}
+                        key={`${task.id}_${tIdx}`}
                         className={`text-[9px] px-2 py-1 rounded-md truncate border border-amber-500/20 bg-amber-500/10 text-amber-200/80 ${task.completed ? 'opacity-50 line-through' : ''}`}
                       >
                         {task.text}
@@ -323,9 +323,9 @@ export function CalendarView({ events, tasks = [], onSaveEvent, onDeleteEvent, u
                   Tareas del Día
                 </h4>
                 <div className="space-y-2">
-                  {selectedDateTasks.map(task => (
+                  {selectedDateTasks.map((task, tIdx) => (
                     <div 
-                      key={task.id}
+                      key={`${task.id}_${tIdx}`}
                       className={`flex items-center gap-3 p-3 rounded-2xl bg-white/[0.02] border border-white/5 ${task.completed ? 'opacity-40' : ''}`}
                     >
                       <div className={`w-1 h-8 rounded-full ${task.completed ? 'bg-white/10' : 'bg-amber-500/50'}`} />

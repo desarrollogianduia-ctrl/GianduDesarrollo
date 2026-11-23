@@ -213,6 +213,15 @@ export interface SensoryAnalysis {
   decoration?: string;
 }
 
+export type DevelopmentCategoryType =
+  | 'nuevo_producto'
+  | 'mejora_producto'
+  | 'reemplazo_insumo'
+  | 'optimizacion_costos'
+  | 'escalado_industrial'
+  | 'terceros'
+  | 'otro';
+
 export interface DevelopmentProject {
   id: string;
   code: string;
@@ -243,79 +252,14 @@ export interface DevelopmentProject {
   areaAssignments?: AreaAssignment[];
   rescheduleHistory?: RescheduleEntry[];
   isViewed?: boolean;
-}
-
-export type AuditStatus = 'ok' | 'desvio' | 'arreglado' | 'problema';
-export type RNPAStatus = 'al_dia' | 'vencido' | 'pendiente' | 'no_aplica';
-export type MPStatus = 'al_dia' | 'faltante_ficha' | 'faltante_cert' | 'no_aplica';
-export type ProcedureStatus = 'ok' | 'siguen_hoja' | 'modificar' | 'faltante';
-
-export interface RecipeAudit {
-  id: string;
-  recipeId: string;
-  recipeName: string;
-  recipeType: RecipeType;
-  date: number;
-  auditorId: string;
-  status: AuditStatus;
-  notes: string;
-  isUpdated: boolean;
-  rnpaStatus: RNPAStatus;
-  mpStatus: MPStatus;
-  procedureStatus: ProcedureStatus;
-  improvements?: string;
-  deviations?: string;
-  findings?: string;
-  nextReviewDate?: number;
-  systemCount?: number;
-  physicalCount?: number;
-  adjustmentReason?: string;
-}
-
-export type WasteReason = 'proceso_calor' | 'proceso_fisico' | 'otro';
-export type WastePriority = 'alta' | 'media' | 'baja';
-export type WasteStatus = 'pendiente' | 'en_cola' | 'completado';
-
-export interface ProductionStage {
-  id: string;
-  name: string;
-  timeMinutes: number;
-  observations?: string;
-  improvement?: string;
-}
-
-export interface InclusionEntry {
-  name: string;
-  initialWeight: number;
-  finalWeight: number;
-  usedWeight: number;
-}
-
-export interface WasteEntry {
-  id: string;
-  date: number;
-  productId: string;
-  productName: string;
-  amount: number; // Calculated: initial - final
-  unit: string;
-  reason: WasteReason;
-  area: ProductArea;
-  ownerId: string;
-  status: WasteStatus;
-  priority: WastePriority;
-  notes?: string;
-  productionTime?: number;
-  initialWeight?: number;
-  finalWeight?: number;
-  stages?: ProductionStage[];
-  categoryDetails?: {
-    containerType?: string;
-    batchNumber?: string;
-    shift?: 'mañana' | 'tarde' | 'noche';
-    inclusions?: InclusionEntry[];
-    inclusionAmount?: number;
-    inclusionName?: string;
-  };
+  // Structured dossier fields for standardized PDF development reports
+  developmentType?: DevelopmentCategoryType;
+  developmentTypeCustom?: string;
+  dossierRequester?: string;
+  dossierReason?: string;
+  dossierProblem?: string;
+  dossierSolution?: string;
+  dossierConclusion?: string;
 }
 
 export type EventType = 'reunion' | 'tarea' | 'hito' | 'otro';

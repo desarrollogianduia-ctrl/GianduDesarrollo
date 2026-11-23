@@ -29,7 +29,8 @@ import {
   ThumbsUp,
   History,
   PenTool,
-  Bookmark
+  Bookmark,
+  X
 } from 'lucide-react';
 import { DevelopmentProject, ProjectTask, TaskStatus, TimeLossReason, TaskTimeCut, AssignmentArea } from '../types';
 
@@ -69,13 +70,16 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
   // Mode: Display Agenda (Default) vs Display Lista
   const [displayMode, setDisplayMode] = useState<'agenda' | 'lista'>('agenda');
 
-  // Agenda Mode: 'todas' (Default: todas las tareas en una hoja continua) vs 'paginada' (carillas para girar)
-  const [sheetMode, setSheetMode] = useState<'todas' | 'paginada'>('todas');
+  // Agenda Mode: 'paginada' (Default: Carillas para girar sin scroll) vs 'todas' (Hoja continua)
+  const [sheetMode, setSheetMode] = useState<'todas' | 'paginada'>('paginada');
   
-  // Page number for the notebook agenda (tasks per page = 8 when paginated)
+  // Page number for the notebook agenda (tasks per page = 6 to fit perfectly on screen without scroll)
   const [currentPage, setCurrentPage] = useState(0);
   const [pageDirection, setPageDirection] = useState<'next' | 'prev'>('next');
-  const TASKS_PER_PAGE = 8;
+  const TASKS_PER_PAGE = 6;
+
+  // Loss Breakdown Drawer/Modal
+  const [showLossBreakdownModal, setShowLossBreakdownModal] = useState(false);
 
   // Filters
   const [selectedProjectId, setSelectedProjectId] = useState<string>('todos');
@@ -417,7 +421,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
       return;
     }
 
-    const newTaskId = `task_${Date.now()}`;
+    const newTaskId = `task_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const newTask: ProjectTask = {
       id: newTaskId,
       text: newText.trim(),
@@ -477,183 +481,142 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
     });
   }, []);
 
+  // Keyboard navigation for turning pages like a real agenda
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      if (displayMode === 'agenda' && sheetMode === 'paginada') {
+        if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+          handleTurnNextPage();
+        } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+          handleTurnPrevPage();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [displayMode, sheetMode, currentPage, totalPages]);
+
   return (
-    <div className="flex flex-col h-full space-y-6 select-text">
-      {/* ========================================================================= */}
-      {/* 1. TOP HEADER & VIEW MODE SWITCHER                                         */}
-      {/* ========================================================================= */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-[var(--surface)] border border-white/10 p-5 rounded-3xl shadow-xl shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-lg shadow-amber-500/10 shrink-0">
-            <BookOpen size={24} />
+    <div className="flex flex-col h-full w-full min-h-0 overflow-hidden space-y-2 select-text">
+      {/* 1. COMPACT EXECUTIVE TOP BAR (Single Line) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-[var(--surface)] border border-white/10 px-4 py-2 rounded-2xl shrink-0 shadow-md">
+        {/* Title & Calligraphic Date */}
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-sm">
+            <BookOpen size={18} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black uppercase tracking-[2px] text-amber-400">
-                Bitácora de Laboratorio
+              <span className="text-xs font-black uppercase tracking-[1.5px] text-white">
+                Agenda Diaria de Tareas
               </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
-              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">
-                Gestión de Tareas y Tiempos
-              </span>
-            </div>
-            <h2 className="text-2xl font-serif italic text-white flex items-center gap-3">
-              Agenda Diaria de Pendientes
-              <span className="text-xs font-mono font-normal not-italic px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/60">
+              <span className="text-[10px] font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full font-bold">
                 {filteredTasks.length} pendientes
               </span>
-            </h2>
+            </div>
+            <p className="text-sm text-amber-200/90 font-bold capitalize leading-none" style={{ fontFamily: 'Caveat, Kalam, cursive' }}>
+              {todayFormatted}
+            </p>
           </div>
         </div>
 
-        {/* Display Switcher: Display Agenda (Default) vs Display Lista */}
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-          <div className="bg-black/50 p-1.5 rounded-2xl border border-white/10 flex items-center gap-1.5 shadow-inner">
+        {/* Center: Compact Metric Pills */}
+        <div className="hidden lg:flex items-center gap-2 bg-black/40 border border-white/5 px-3 py-1.5 rounded-xl text-xs font-mono">
+          <div className="flex items-center gap-1.5 text-emerald-400 font-bold pr-2.5 border-r border-white/10">
+            <Clock size={13} />
+            <span>{formatMins(timeMetrics.totalWorkMinutes)} activo</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-rose-400 font-bold pr-2.5 border-r border-white/10">
+            <TrendingDown size={13} />
+            <span>{formatMins(timeMetrics.totalLostMinutes)} en cortes ({timeMetrics.totalCutsCount})</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-amber-300 font-bold">
+            <Flame size={13} />
+            <span>{timeMetrics.efficiency}% foco</span>
+          </div>
+        </div>
+
+        {/* Right: ¿En qué se pierde tiempo? + Mode Switcher */}
+        <div className="flex items-center gap-2 ml-auto">
+          {/* Lost time breakdown button */}
+          <button
+            onClick={() => setShowLossBreakdownModal(true)}
+            className="px-3 py-1.5 bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+            title="Ver análisis detallado: ¿En qué se pierde tiempo? ¿En qué no?"
+          >
+            <AlertTriangle size={13} className="text-rose-400" />
+            <span>¿En qué se pierde tiempo?</span>
+            {timeMetrics.totalLostMinutes > 0 && (
+              <span className="text-[10px] font-mono bg-rose-500/30 px-1.5 py-0.2 rounded text-rose-200 font-bold">
+                {timeMetrics.totalLostMinutes}m
+              </span>
+            )}
+          </button>
+
+          {/* Display Switcher: Agenda vs Lista */}
+          <div className="bg-black/50 p-1 rounded-xl border border-white/10 flex items-center gap-1">
             <button
               onClick={() => setDisplayMode('agenda')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 displayMode === 'agenda'
-                  ? 'bg-amber-400 text-black shadow-lg shadow-amber-400/30 font-bold scale-[1.02]'
-                  : 'text-white/40 hover:text-white'
+                  ? 'bg-amber-400 text-stone-950 font-black shadow-md'
+                  : 'text-white/50 hover:text-white'
               }`}
             >
-              <BookOpen size={16} />
-              <span>Display Agenda</span>
+              <BookOpen size={14} />
+              <span>Hoja Agenda</span>
             </button>
             <button
               onClick={() => setDisplayMode('lista')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 displayMode === 'lista'
-                  ? 'bg-amber-400 text-black shadow-lg shadow-amber-400/30 font-bold scale-[1.02]'
-                  : 'text-white/40 hover:text-white'
+                  ? 'bg-amber-400 text-stone-950 font-black shadow-md'
+                  : 'text-white/50 hover:text-white'
               }`}
             >
-              <List size={16} />
-              <span>Display Lista</span>
+              <List size={14} />
+              <span>Lista</span>
             </button>
           </div>
 
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-all"
+              className="p-1.5 bg-white/5 hover:bg-white/10 rounded-xl text-white/50 hover:text-white transition-all"
               title="Volver"
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={18} />
             </button>
           )}
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 2. ANALYTICS: "¿EN QUÉ SE PIERDE TIEMPO? ¿EN QUÉ NO?"                     */}
-      {/* ========================================================================= */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
-        {/* Card 1: Tiempo Activo */}
-        <div className="bg-[var(--surface)] border border-white/5 p-5 rounded-3xl flex items-center gap-4 relative overflow-hidden group hover:border-emerald-500/30 transition-all">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-            <Clock size={22} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[9px] uppercase font-bold text-white/40 tracking-[2px]">Tiempo Activo</p>
-            <p className="text-2xl font-bold font-mono text-emerald-400 truncate">{formatMins(timeMetrics.totalWorkMinutes)}</p>
-            <p className="text-[10px] text-white/30 truncate">{timeMetrics.totalTasksCompleted} tareas completadas</p>
-          </div>
-        </div>
-
-        {/* Card 2: Tiempo Perdido por Interrupciones */}
-        <div className="bg-[var(--surface)] border border-white/5 p-5 rounded-3xl flex items-center gap-4 relative overflow-hidden group hover:border-rose-500/30 transition-all">
-          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
-            <TrendingDown size={22} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[9px] uppercase font-bold text-white/40 tracking-[2px]">Tiempo Perdido</p>
-            <p className="text-2xl font-bold font-mono text-rose-400 truncate">{formatMins(timeMetrics.totalLostMinutes)}</p>
-            <p className="text-[10px] text-rose-400/70 font-semibold truncate">
-              {timeMetrics.totalCutsCount} {timeMetrics.totalCutsCount === 1 ? 'corte registrado' : 'cortes registrados'}
-            </p>
-          </div>
-        </div>
-
-        {/* Card 3: Eficiencia Neta */}
-        <div className="bg-[var(--surface)] border border-white/5 p-5 rounded-3xl flex items-center gap-4 relative overflow-hidden group hover:border-amber-500/30 transition-all">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-            <Flame size={22} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[9px] uppercase font-bold text-white/40 tracking-[2px]">Foco Productivo</p>
-            <p className="text-2xl font-bold font-mono text-amber-400 truncate">{timeMetrics.efficiency}%</p>
-            <p className="text-[10px] text-white/30 truncate">{timeMetrics.zeroCutTasks} tareas sin cortes</p>
-          </div>
-        </div>
-
-        {/* Card 4: ¿En qué se pierde tiempo? ¿En qué no? */}
-        <div className="bg-[var(--surface)] border border-white/5 p-4 rounded-3xl flex flex-col justify-between">
-          <div className="flex items-center justify-between pb-1 border-b border-white/5">
-            <p className="text-[9px] uppercase font-bold text-white/40 tracking-[2px] flex items-center gap-1.5">
-              <AlertTriangle size={12} className="text-amber-400" />
-              ¿En qué se pierde tiempo?
-            </p>
-            <span className="text-[8px] font-mono text-white/30 uppercase">Demoras</span>
-          </div>
-
-          <div className="space-y-1.5 my-1.5">
-            {timeMetrics.sortedReasons.length > 0 ? (
-              timeMetrics.sortedReasons.slice(0, 2).map((r, i) => {
-                const itemConfig = REASON_CONFIG[r.reason] || REASON_CONFIG.otro;
-                const percent = timeMetrics.totalLostMinutes > 0
-                  ? Math.round((r.minutes / timeMetrics.totalLostMinutes) * 100)
-                  : 0;
-                return (
-                  <div key={i} className="flex items-center justify-between text-xs gap-2">
-                    <span className="text-white/70 truncate text-[10px] font-medium flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
-                      {itemConfig.label}
-                    </span>
-                    <span className="font-mono text-rose-400 font-bold text-[10px] shrink-0">
-                      {r.minutes}m ({percent}%)
-                    </span>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-                <ThumbsUp size={11} /> ¡Cero demoras registradas!
-              </p>
-            )}
-          </div>
-
-          <div className="pt-1 border-t border-white/5 flex items-center justify-between text-[9px] text-white/40">
-            <span className="text-emerald-400/80 font-semibold flex items-center gap-1">
-              <CheckCircle2 size={10} /> En qué NO:
-            </span>
-            <span className="truncate max-w-[150px] italic">
-              {timeMetrics.zeroReasons.length > 0
-                ? `${REASON_CONFIG[timeMetrics.zeroReasons[0]]?.label || 'Sin cortes'}`
-                : 'Todas las áreas registraron pausas'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* 3. FILTERS & SEARCH                                                       */}
-      {/* ========================================================================= */}
-      <div className="flex flex-wrap items-center gap-3 bg-[var(--surface)] border border-white/5 p-4 rounded-2xl shrink-0">
-        <div className="flex-1 min-w-[200px]">
+      {/* 2. COMPACT FILTER BAR */}
+      <div className="flex flex-wrap items-center gap-2 bg-[var(--surface)] border border-white/5 px-3 py-1.5 rounded-2xl shrink-0">
+        <div className="flex-1 min-w-[160px]">
           <input
             type="text"
             placeholder="Buscar pendiente, proyecto o responsable..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white placeholder:text-white/30 outline-none focus:border-amber-400/50"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-white/30 outline-none focus:border-amber-400/50"
           />
         </div>
 
         <select
           value={selectedProjectId}
-          onChange={(e) => setSelectedProjectId(e.target.value)}
-          className="bg-[#181818] border border-white/10 rounded-xl px-3 py-2 text-xs text-white/80 outline-none focus:border-amber-400/50 cursor-pointer"
+          onChange={(e) => {
+            setSelectedProjectId(e.target.value);
+            setCurrentPage(0);
+          }}
+          className="bg-[#181818] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white/80 outline-none focus:border-amber-400/50 cursor-pointer max-w-[200px] truncate"
         >
           <option value="todos">Todos los Proyectos ({activeDevs.length})</option>
           {activeDevs.map(d => (
@@ -665,8 +628,11 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
 
         <select
           value={selectedArea}
-          onChange={(e) => setSelectedArea(e.target.value)}
-          className="bg-[#181818] border border-white/10 rounded-xl px-3 py-2 text-xs text-white/80 outline-none focus:border-amber-400/50 cursor-pointer"
+          onChange={(e) => {
+            setSelectedArea(e.target.value);
+            setCurrentPage(0);
+          }}
+          className="bg-[#181818] border border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-white/80 outline-none focus:border-amber-400/50 cursor-pointer"
         >
           <option value="todos">Todas las Áreas</option>
           <option value="desarrollo">Desarrollo</option>
@@ -678,12 +644,15 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
           <option value="logistica">Logística</option>
         </select>
 
-        <div className="flex items-center gap-1 bg-black/30 p-1 rounded-xl border border-white/5">
+        <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
           {(['todos', 'pendientes', 'en_curso', 'pausados', 'finalizados'] as const).map(st => (
             <button
               key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+              onClick={() => {
+                setStatusFilter(st);
+                setCurrentPage(0);
+              }}
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
                 statusFilter === st
                   ? 'bg-amber-400/20 text-amber-300 font-black border border-amber-400/30'
                   : 'text-white/40 hover:text-white'
@@ -695,85 +664,85 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 4. MAIN DISPLAY AREA: AGENDA HOJA (NOTEBOOK) OR LISTA                     */}
-      {/* ========================================================================= */}
+      {/* 3. MAIN DISPLAY AREA: AGENDA HOJA (NOTEBOOK) OR LISTA */}
       <div className="flex-1 min-h-0 flex flex-col">
         {displayMode === 'agenda' ? (
           /* ========================================================================= */
           /* DISPLAY AGENDA: HOJA DE CUADERNO / AGENDA CON TINTA Y EFECTO DE HOJEO    */
           /* ========================================================================= */
-          <div className="flex-1 flex flex-col items-center justify-start min-h-0 relative">
-            {/* Agenda Book Exterior / Binding Container */}
-            <div className="w-full max-w-5xl h-full flex flex-col bg-[#161410] border-2 border-[#2c261e] rounded-[36px] p-3 sm:p-6 shadow-[0_25px_70px_rgba(0,0,0,0.85)] relative overflow-hidden">
+          <div className="flex-1 min-h-0 w-full flex flex-col relative overflow-hidden">
+            {/* Agenda Book Exterior / Binding Container - Takes 100% of available space */}
+            <div className="w-full h-full flex flex-col bg-[#14120e] border-2 border-[#2f271c] rounded-2xl sm:rounded-3xl p-2 sm:p-4 shadow-[0_20px_70px_rgba(0,0,0,0.85)] relative overflow-hidden">
               
               {/* Top Agenda Navigation Header (Girar Hojas & Modo de Hoja) */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#2d271f] z-20">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[#2d271f] z-20 shrink-0">
                 {/* Book Spine Details */}
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-1.5 items-center">
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#383126] border border-[#524838] shadow-inner" />
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#383126] border border-[#524838] shadow-inner" />
-                    <span className="w-3.5 h-3.5 rounded-full bg-[#383126] border border-[#524838] shadow-inner" />
+                <div className="flex items-center gap-2.5">
+                  <div className="flex gap-1 items-center">
+                    <span className="w-3 h-3 rounded-full bg-[#383126] border border-[#524838] shadow-inner" />
+                    <span className="w-3 h-3 rounded-full bg-[#383126] border border-[#524838] shadow-inner" />
+                    <span className="w-3 h-3 rounded-full bg-[#383126] border border-[#524838] shadow-inner" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <PenTool size={14} className="text-amber-400/80" />
-                    <span className="font-serif italic text-amber-200/80 text-sm font-semibold tracking-wide">
+                    <PenTool size={14} className="text-amber-400/90" />
+                    <span className="font-serif italic text-amber-200/90 text-sm font-semibold tracking-wide">
                       Bitácora de Laboratorio Gianduia
                     </span>
                   </div>
                 </div>
 
-                {/* Hoja Mode: "Todas en esta hoja" (Default) vs "Paginada (Girar Hojas)" */}
+                {/* Hoja Mode & Page Turn Buttons */}
                 <div className="flex items-center gap-2">
-                  <div className="bg-black/50 p-1 rounded-xl border border-white/5 flex items-center gap-1 text-[10px]">
+                  <div className="bg-black/60 p-1 rounded-xl border border-white/5 flex items-center gap-1 text-[10px]">
+                    <button
+                      onClick={() => setSheetMode('paginada')}
+                      className={`px-3 py-1 rounded-lg font-mono uppercase font-bold transition-all cursor-pointer ${
+                        sheetMode === 'paginada'
+                          ? 'bg-amber-400 text-stone-950 font-black shadow-md'
+                          : 'text-white/40 hover:text-white'
+                      }`}
+                      title="Modo Agenda Real: Dar vuelta carillas sin scrolear"
+                    >
+                      📖 Girar Hojas
+                    </button>
                     <button
                       onClick={() => setSheetMode('todas')}
-                      className={`px-2.5 py-1 rounded-lg font-mono uppercase font-bold transition-all ${
+                      className={`px-3 py-1 rounded-lg font-mono uppercase font-bold transition-all cursor-pointer ${
                         sheetMode === 'todas'
-                          ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+                          ? 'bg-amber-400 text-stone-950 font-black shadow-md'
                           : 'text-white/40 hover:text-white'
                       }`}
                       title="Ver todas las tareas en una sola hoja continua"
                     >
-                      Todas en una Hoja
-                    </button>
-                    <button
-                      onClick={() => setSheetMode('paginada')}
-                      className={`px-2.5 py-1 rounded-lg font-mono uppercase font-bold transition-all ${
-                        sheetMode === 'paginada'
-                          ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
-                          : 'text-white/40 hover:text-white'
-                      }`}
-                      title="Dividir en hojas de agenda para girar de página en página"
-                    >
-                      Girar Hojas
+                      📜 Hoja Única
                     </button>
                   </div>
 
-                  {/* Page Turning Controls (Active in paginada mode or when many tasks) */}
-                  <div className="flex items-center gap-1.5 bg-black/60 p-1 rounded-xl border border-[#3e3428]">
+                  {/* Page Turning Controls */}
+                  <div className="flex items-center gap-1 bg-black/70 p-1 rounded-xl border border-[#443828] shadow-sm">
                     <button
                       onClick={handleTurnPrevPage}
                       disabled={sheetMode === 'todas' || validPage === 0}
-                      className="p-1.5 rounded-lg text-white/50 hover:text-white disabled:opacity-20 disabled:hover:text-white/50 transition-all"
-                      title="Girar hoja anterior (⬅)"
+                      className="p-1.5 rounded-lg text-white/50 hover:text-white disabled:opacity-20 disabled:hover:text-white/50 transition-all cursor-pointer"
+                      title="Girar hoja anterior (⬅ o Flecha Izquierda)"
                     >
                       <ChevronLeft size={18} />
                     </button>
 
-                    <span className="text-[11px] font-mono text-amber-300 px-2 font-bold whitespace-nowrap">
-                      {sheetMode === 'todas' ? `Hoja Única (${filteredTasks.length})` : `Hoja ${validPage + 1} de ${totalPages}`}
+                    <span className="text-xs font-mono text-amber-300 px-2 font-bold whitespace-nowrap">
+                      {sheetMode === 'todas'
+                        ? `Todas (${filteredTasks.length})`
+                        : `Hoja ${validPage + 1} de ${totalPages}`}
                     </span>
 
                     <button
                       onClick={handleTurnNextPage}
                       disabled={sheetMode === 'todas' || validPage >= totalPages - 1}
-                      className="p-1.5 rounded-lg text-amber-400 hover:text-amber-300 disabled:opacity-20 disabled:hover:text-amber-400 transition-all flex items-center gap-1 font-mono text-xs font-bold px-2"
-                      title="Girar hoja siguiente (➔)"
+                      className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-stone-950 disabled:opacity-20 disabled:hover:bg-amber-400 transition-all flex items-center gap-1 font-mono text-xs font-black cursor-pointer shadow"
+                      title="Girar a la siguiente hoja de agenda (➔ o Flecha Derecha)"
                     >
-                      <span>Girar</span>
-                      <ChevronRight size={18} />
+                      <span>Girar Hoja</span>
+                      <ChevronRight size={16} />
                     </button>
                   </div>
                 </div>
@@ -814,11 +783,11 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                   </div>
                 </div>
 
-                {/* Ruled Notebook Paper Body with Repeating Lines */}
+                {/* Ruled Notebook Paper Body with Repeating Lines - Fits without scrolling in paginada mode */}
                 <div 
-                  className="flex-1 overflow-y-auto custom-scrollbar p-6 pl-24 pr-8 relative z-0 flex flex-col"
+                  className={`flex-1 ${sheetMode === 'todas' ? 'overflow-y-auto custom-scrollbar' : 'overflow-hidden'} p-3 sm:p-5 pl-24 sm:pl-28 pr-4 sm:pr-8 relative z-0 flex flex-col justify-between`}
                   style={{
-                    backgroundImage: 'repeating-linear-gradient(transparent, transparent 47px, rgba(40, 60, 110, 0.08) 48px)',
+                    backgroundImage: 'repeating-linear-gradient(transparent, transparent 52px, rgba(35, 55, 110, 0.08) 53px)',
                     backgroundPosition: '0 8px'
                   }}
                 >
@@ -827,7 +796,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                       key={sheetMode === 'todas' ? 'sheet_all' : `sheet_${validPage}`}
                       initial={{
                         opacity: 0,
-                        rotateY: pageDirection === 'next' ? 12 : -12,
+                        rotateY: pageDirection === 'next' ? 14 : -14,
                         transformOrigin: 'left center'
                       }}
                       animate={{
@@ -837,26 +806,26 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                       }}
                       exit={{
                         opacity: 0,
-                        rotateY: pageDirection === 'next' ? -12 : 12,
+                        rotateY: pageDirection === 'next' ? -14 : 14,
                         transformOrigin: 'left center'
                       }}
-                      transition={{ duration: 0.32, ease: "easeOut" }}
-                      className="space-y-3.5 pb-6"
+                      transition={{ duration: 0.28, ease: "easeOut" }}
+                      className="space-y-2 sm:space-y-3 pb-2 flex-1 flex flex-col justify-start"
                     >
                       {currentSheetTasks.length === 0 ? (
-                        <div className="py-28 text-center">
+                        <div className="py-20 text-center flex flex-col items-center justify-center">
                           <p 
-                            className="text-2xl text-[#6b7792] font-semibold"
+                            className="text-3xl text-[#596886] font-bold"
                             style={{ fontFamily: 'Caveat, Kalam, cursive' }}
                           >
                             Esta carilla está en blanco. No hay pendientes anotados.
                           </p>
-                          <p className="text-xs text-[#8f9baa] mt-2 font-mono">
-                            Escribe una tarea debajo para plasmarla en tinta sobre esta hoja.
+                          <p className="text-xs text-[#7d8b9e] mt-2 font-mono">
+                            Escribe una tarea debajo para plasmarla en tinta sobre esta carilla.
                           </p>
                         </div>
                       ) : (
-                        currentSheetTasks.map((task) => {
+                        currentSheetTasks.map((task, idx) => {
                           const isCompleted = task.completed || task.status === 'finalizado';
                           const isRunning = task.status === 'en_curso';
                           const isPaused = task.status === 'pausado';
@@ -865,27 +834,27 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
 
                           return (
                             <div
-                              key={task.id}
-                              className={`group relative flex flex-col md:flex-row items-start md:items-center justify-between gap-3 py-2.5 px-3 rounded-xl border border-transparent hover:border-[#304060]/10 hover:bg-white/40 transition-all ${
-                                isCompleted ? 'opacity-60' : ''
-                              } ${isJustInked ? 'bg-amber-100/50 animate-pulse' : ''}`}
+                              key={`${task.projectId}_${task.id}_${idx}`}
+                              className={`group relative flex flex-col md:flex-row items-start md:items-center justify-between gap-3 py-2 px-3 rounded-xl border border-transparent hover:border-[#304060]/15 hover:bg-white/50 transition-all ${
+                                isCompleted ? 'opacity-55' : ''
+                              } ${isJustInked ? 'bg-amber-100/60 ring-2 ring-amber-400' : ''}`}
                             >
                               {/* Left: Handwritten Checkbox & Ink Strike-through Task */}
                               <div className="flex items-start gap-3.5 flex-1 min-w-0">
                                 {/* Hand-drawn style ink checkbox */}
                                 <button
                                   onClick={() => handleToggleTask(task)}
-                                  className={`w-6 h-6 mt-1 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 cursor-pointer ${
+                                  className={`w-7 h-7 sm:w-8 sm:h-8 mt-0.5 rounded-xl border-2 flex items-center justify-center transition-all shrink-0 cursor-pointer ${
                                     isCompleted
-                                      ? 'bg-[#152e55] border-[#152e55] text-[#fcfaf4] shadow-sm scale-95'
-                                      : 'border-[#3d4d6e]/50 hover:border-[#152e55] bg-white/50 hover:scale-105'
+                                      ? 'bg-[#12284c] border-[#12284c] text-[#fcfaf4] shadow-sm scale-95'
+                                      : 'border-[#2d4168] hover:border-[#12284c] bg-white/70 hover:scale-105 shadow-sm'
                                   }`}
                                   title={isCompleted ? "Desmarcar (Quitar tachado)" : "Tachar tarea con tinta (Finalizada)"}
                                 >
                                   {isCompleted ? (
-                                    <Check size={16} strokeWidth={3} className="text-[#fcfaf4]" />
+                                    <Check size={18} strokeWidth={3.5} className="text-[#fcfaf4]" />
                                   ) : (
-                                    <div className="w-1.5 h-1.5 rounded-full bg-current opacity-0 group-hover:opacity-40" />
+                                    <div className="w-2 h-2 rounded-full bg-[#12284c] opacity-0 group-hover:opacity-40" />
                                   )}
                                 </button>
 
@@ -893,16 +862,17 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                                   {/* Task written in ink with striking line */}
                                   <div className="relative inline-block max-w-full">
                                     <span
-                                      className={`text-xl tracking-normal leading-snug transition-all ${
+                                      className={`text-2xl sm:text-[27px] tracking-normal leading-snug transition-all ${
                                         isCompleted
-                                          ? 'line-through text-[#63708a] italic'
-                                          : 'text-[#122342] font-semibold'
+                                          ? 'line-through text-[#616f88] italic'
+                                          : 'text-[#10223f] font-bold'
                                       }`}
                                       style={{
                                         fontFamily: 'Caveat, Kalam, cursive',
-                                        fontSize: '1.35rem',
-                                        textDecorationThickness: isCompleted ? '2.5px' : 'auto',
-                                        textDecorationColor: '#122342'
+                                        fontSize: '1.5rem',
+                                        lineHeight: '1.2',
+                                        textDecorationThickness: isCompleted ? '3.5px' : 'auto',
+                                        textDecorationColor: '#10223f'
                                       }}
                                     >
                                       {task.text}
@@ -911,12 +881,12 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
 
                                   {/* Project, Area & Interruption Badges */}
                                   <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#2d4168] bg-[#2d4168]/10 px-2 py-0.5 rounded-md">
+                                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#223555] bg-[#223555]/10 px-2 py-0.5 rounded-md">
                                       {task.projectName} ({task.projectCode})
                                     </span>
 
                                     {task.area && (
-                                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#735316] bg-[#f5e5c0] px-2 py-0.5 rounded-md">
+                                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#705014] bg-[#f5e5c0] px-2 py-0.5 rounded-md">
                                         {task.area}
                                       </span>
                                     )}
@@ -927,7 +897,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                                       </span>
                                     )}
 
-                                    {/* Number of cuts / interruptions ("si se fue cortando varias veces") */}
+                                    {/* Number of cuts / interruptions */}
                                     {cutsCount > 0 && (
                                       <button
                                         onClick={() => setViewingCutsTask(task)}
@@ -936,7 +906,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                                       >
                                         <AlertTriangle size={10} className="text-rose-600" />
                                         Cortada {cutsCount} {cutsCount === 1 ? 'vez' : 'veces'} ({task.totalLostMinutes || 15}m perdidos)
-                                        <span className="underline ml-0.5">Ver</span>
+                                        <span className="underline ml-0.5 font-black">Ver</span>
                                       </button>
                                     )}
                                   </div>
@@ -946,7 +916,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                               {/* Right: Time Controls (Hora de Inicio, Fin, Iniciar, Pausar, Finalizar) */}
                               <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
                                 {/* Time Fields: Hora Inicio y Fin */}
-                                <div className="flex items-center gap-1 bg-[#ede6d4]/80 border border-[#d2c8b2] px-2.5 py-1 rounded-xl shadow-inner">
+                                <div className="flex items-center gap-1 bg-[#ede6d4]/90 border border-[#d2c8b2] px-2.5 py-1 rounded-xl shadow-inner">
                                   <Clock size={12} className="text-[#55637e]" />
                                   <input
                                     type="time"
@@ -970,7 +940,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                                   <div className="flex items-center gap-1.5">
                                     <button
                                       onClick={() => setActivePauseTaskId({ devId: task.projectId, taskId: task.id })}
-                                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-mono font-bold text-[10px] uppercase shadow-md transition-all animate-pulse"
+                                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-mono font-bold text-[10px] uppercase shadow-md transition-all animate-pulse cursor-pointer"
                                       title="Pausar o registrar interrupción / corte de tarea"
                                     >
                                       <Pause size={12} />
@@ -978,7 +948,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                                     </button>
                                     <button
                                       onClick={() => handleFinishTask(task)}
-                                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-mono font-bold text-[10px] uppercase shadow-md transition-all"
+                                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-mono font-bold text-[10px] uppercase shadow-md transition-all cursor-pointer"
                                       title="Finalizar tarea y tachar con tinta"
                                     >
                                       <Check size={12} />
@@ -989,7 +959,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                                   <div className="flex items-center gap-1.5">
                                     <button
                                       onClick={() => handleResumeTask(task)}
-                                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-mono font-bold text-[10px] uppercase shadow-md transition-all"
+                                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-mono font-bold text-[10px] uppercase shadow-md transition-all cursor-pointer"
                                       title="Reanudar tarea"
                                     >
                                       <Play size={12} />
@@ -997,7 +967,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                                     </button>
                                     <button
                                       onClick={() => setActivePauseTaskId({ devId: task.projectId, taskId: task.id })}
-                                      className="p-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 border border-rose-300 text-rose-800 text-[10px] font-mono font-bold"
+                                      className="p-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 border border-rose-300 text-rose-800 text-[10px] font-mono font-bold cursor-pointer"
                                       title="Añadir otro corte a esta tarea"
                                     >
                                       + Corte
@@ -1007,7 +977,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                                   <div className="flex items-center gap-1.5">
                                     <button
                                       onClick={() => handleStartTask(task)}
-                                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#152e55] hover:bg-[#203f74] text-white font-mono font-bold text-[10px] uppercase shadow-md transition-all"
+                                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#152e55] hover:bg-[#203f74] text-white font-mono font-bold text-[10px] uppercase shadow-md transition-all cursor-pointer"
                                       title="Iniciar tarea (Registra hora de inicio automática)"
                                     >
                                       <Play size={12} />
@@ -1015,7 +985,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                                     </button>
                                     <button
                                       onClick={() => handleFinishTask(task)}
-                                      className="p-1.5 rounded-xl border border-[#3d4d6e]/40 hover:bg-emerald-100 hover:text-emerald-800 text-[#3d4d6e] transition-all"
+                                      className="p-1.5 rounded-xl border border-[#3d4d6e]/40 hover:bg-emerald-100 hover:text-emerald-800 text-[#3d4d6e] transition-all cursor-pointer"
                                       title="Marcar finalizada directamente"
                                     >
                                       <Check size={13} />
@@ -1032,27 +1002,53 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                           );
                         })
                       )}
+
+                      {/* Blank ruled guide lines filler to visually complete the page */}
+                      {sheetMode === 'paginada' && currentSheetTasks.length > 0 && currentSheetTasks.length < TASKS_PER_PAGE && (
+                        Array.from({ length: TASKS_PER_PAGE - currentSheetTasks.length }).map((_, emptyIdx) => (
+                          <div
+                            key={`empty_${emptyIdx}`}
+                            className="hidden sm:flex items-center gap-3 py-2.5 px-3 opacity-20 select-none pointer-events-none"
+                          >
+                            <div className="w-7 h-7 rounded-xl border border-dashed border-[#55637e] opacity-40 shrink-0" />
+                            <div className="flex-1 border-b border-dashed border-[#55637e]/30 h-4" />
+                          </div>
+                        ))
+                      )}
+
+                      {/* Dog-ear Page Flip Button in Bottom-Right Corner */}
+                      {sheetMode === 'paginada' && validPage < totalPages - 1 && (
+                        <div className="flex justify-end pt-1 pr-1 mt-auto">
+                          <button
+                            onClick={handleTurnNextPage}
+                            className="text-xs font-mono font-bold text-[#142646] hover:text-black bg-[#ece4d2] hover:bg-[#e0d6c0] border border-[#cfc3a7] px-3.5 py-1 rounded-xl shadow-sm hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+                            title="Dar vuelta la hoja a la siguiente carilla"
+                          >
+                            <span>Dar vuelta la hoja ➔ (Pág {validPage + 2})</span>
+                          </button>
+                        </div>
+                      )}
                     </motion.div>
                   </AnimatePresence>
                 </div>
 
-                {/* Bottom of the Sheet: Write in Ink New Task ("se van escribiendo cosas en tinta") */}
-                <div className="bg-[#eee8da] border-t border-[#d8d0bd] p-4 pl-24 pr-8 flex flex-col md:flex-row items-center gap-3 shrink-0 z-10">
+                {/* Bottom of the Sheet: Write in Ink New Task */}
+                <div className="bg-[#eee8da] border-t border-[#d8d0bd] p-3 pl-24 sm:pl-28 pr-6 flex flex-col md:flex-row items-center gap-2.5 shrink-0 z-10">
                   <div className="flex-1 w-full flex items-center gap-2">
                     <span 
-                      className="text-xl text-[#142646] font-bold"
+                      className="text-lg text-[#142646] font-bold whitespace-nowrap"
                       style={{ fontFamily: 'Caveat, Kalam, cursive' }}
                     >
                       Escribir en tinta:
                     </span>
                     <input
                       type="text"
-                      placeholder="Escribir nuevo pendiente para registrar en la hoja..."
+                      placeholder="Escribir nuevo pendiente para plasmar en esta hoja..."
                       value={newText}
                       onChange={(e) => setNewText(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddDirectTask()}
-                      className="flex-1 bg-white/80 border border-[#c9c0ae] rounded-xl px-4 py-2 text-base text-[#122342] placeholder:italic outline-none focus:border-[#152e55] focus:bg-white transition-all shadow-inner"
-                      style={{ fontFamily: 'Caveat, Kalam, cursive', fontSize: '1.25rem' }}
+                      className="flex-1 bg-white/90 border border-[#c9c0ae] rounded-xl px-4 py-1.5 text-base text-[#122342] placeholder:italic outline-none focus:border-[#152e55] focus:bg-white transition-all shadow-inner"
+                      style={{ fontFamily: 'Caveat, Kalam, cursive', fontSize: '1.35rem' }}
                     />
                   </div>
 
@@ -1060,7 +1056,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                     <select
                       value={targetDevId}
                       onChange={(e) => setTargetDevId(e.target.value)}
-                      className="bg-white/90 border border-[#c9c0ae] rounded-xl px-3 py-2 text-xs text-[#1e2a40] font-mono outline-none"
+                      className="bg-white/90 border border-[#c9c0ae] rounded-xl px-2.5 py-1.5 text-xs text-[#1e2a40] font-mono outline-none max-w-[160px] truncate"
                     >
                       {activeDevs.map(d => (
                         <option key={d.id} value={d.id}>
@@ -1072,7 +1068,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                     <select
                       value={newArea}
                       onChange={(e) => setNewArea(e.target.value as any)}
-                      className="bg-white/90 border border-[#c9c0ae] rounded-xl px-3 py-2 text-xs text-[#1e2a40] font-mono outline-none"
+                      className="bg-white/90 border border-[#c9c0ae] rounded-xl px-2.5 py-1.5 text-xs text-[#1e2a40] font-mono outline-none"
                     >
                       <option value="">Área...</option>
                       <option value="desarrollo">Desarrollo</option>
@@ -1084,7 +1080,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                       <option value="logistica">Logística</option>
                     </select>
 
-                    <div className="flex items-center gap-1 bg-white/90 border border-[#c9c0ae] px-2 py-1.5 rounded-xl">
+                    <div className="flex items-center gap-1 bg-white/90 border border-[#c9c0ae] px-2 py-1 rounded-xl">
                       <Clock size={12} className="text-[#59647a]" />
                       <input
                         type="time"
@@ -1099,9 +1095,9 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                     <button
                       onClick={handleAddDirectTask}
                       disabled={isAddingInking || !newText.trim()}
-                      className="px-5 py-2 rounded-xl bg-[#152e55] hover:bg-[#203f74] disabled:opacity-40 text-white font-mono text-xs font-bold uppercase tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-1.5 rounded-xl bg-[#152e55] hover:bg-[#203f74] disabled:opacity-40 text-white font-mono text-xs font-bold uppercase tracking-wider shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
                     >
-                      <Plus size={16} />
+                      <Plus size={15} />
                       <span>{isAddingInking ? "Escribiendo..." : "Anotar"}</span>
                     </button>
                   </div>
@@ -1119,7 +1115,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
                 <p className="text-white/40 italic">No hay tareas que coincidan con los filtros aplicados.</p>
               </div>
             ) : (
-              filteredTasks.map(task => {
+              filteredTasks.map((task, idx) => {
                 const isCompleted = task.completed || task.status === 'finalizado';
                 const isRunning = task.status === 'en_curso';
                 const isPaused = task.status === 'pausado';
@@ -1127,7 +1123,7 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
 
                 return (
                   <div
-                    key={task.id}
+                    key={`${task.projectId}_${task.id}_${idx}`}
                     className={`bg-[var(--surface)] border border-white/5 hover:border-white/10 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all ${
                       isCompleted ? 'opacity-40' : ''
                     }`}
@@ -1250,6 +1246,135 @@ export const TaskAgendaView: React.FC<TaskAgendaViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* ========================================================================= */}
+      {/* 4. MODAL: ANÁLISIS DETALLADO "¿EN QUÉ SE PIERDE TIEMPO? ¿EN QUÉ NO?"      */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {showLossBreakdownModal && (
+          <div className="fixed inset-0 z-[450] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLossBreakdownModal(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.92, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 15 }}
+              className="bg-[#18181b] border border-white/10 rounded-3xl p-6 max-w-xl w-full shadow-2xl relative z-10 space-y-6"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-rose-500/10 text-rose-400 rounded-xl">
+                    <TrendingDown size={22} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white uppercase tracking-wider">
+                      ¿En qué se pierde tiempo en el Laboratorio?
+                    </h3>
+                    <p className="text-xs text-white/40">
+                      Balance de demoras, interrupciones y focos productivos
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowLossBreakdownModal(false)}
+                  className="text-white/40 hover:text-white p-1 rounded-lg cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* 3 Overview stat cards */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white/5 border border-white/5 p-3 rounded-2xl">
+                  <span className="text-[10px] uppercase font-bold text-white/40 block">Tiempo Activo</span>
+                  <span className="text-xl font-bold font-mono text-emerald-400">{formatMins(timeMetrics.totalWorkMinutes)}</span>
+                  <span className="text-[10px] text-white/40 block">{timeMetrics.totalTasksCompleted} completadas</span>
+                </div>
+                <div className="bg-white/5 border border-white/5 p-3 rounded-2xl">
+                  <span className="text-[10px] uppercase font-bold text-white/40 block">Tiempo Perdido</span>
+                  <span className="text-xl font-bold font-mono text-rose-400">{formatMins(timeMetrics.totalLostMinutes)}</span>
+                  <span className="text-[10px] text-rose-400/80 block">{timeMetrics.totalCutsCount} cortes</span>
+                </div>
+                <div className="bg-white/5 border border-white/5 p-3 rounded-2xl">
+                  <span className="text-[10px] uppercase font-bold text-white/40 block">Foco Neto</span>
+                  <span className="text-xl font-bold font-mono text-amber-400">{timeMetrics.efficiency}%</span>
+                  <span className="text-[10px] text-white/40 block">{timeMetrics.zeroCutTasks} sin cortes</span>
+                </div>
+              </div>
+
+              {/* Breakdown by reasons */}
+              <div className="space-y-3">
+                <h4 className="text-xs uppercase font-bold text-white/50 tracking-wider">
+                  Causas principales de demoras e interrupciones:
+                </h4>
+                <div className="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                  {timeMetrics.sortedReasons.length > 0 ? (
+                    timeMetrics.sortedReasons.map((r, i) => {
+                      const itemConfig = REASON_CONFIG[r.reason] || REASON_CONFIG.otro;
+                      const IconComp = itemConfig.icon;
+                      const percent = timeMetrics.totalLostMinutes > 0
+                        ? Math.round((r.minutes / timeMetrics.totalLostMinutes) * 100)
+                        : 0;
+
+                      return (
+                        <div key={i} className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-semibold text-white flex items-center gap-2">
+                              <IconComp size={15} className={itemConfig.color} />
+                              {itemConfig.label}
+                            </span>
+                            <span className="font-mono text-rose-400 font-bold">
+                              {r.minutes} min ({percent}%)
+                            </span>
+                          </div>
+                          <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-rose-500 rounded-full transition-all duration-500"
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-6 text-emerald-400 font-mono text-xs flex flex-col items-center gap-2">
+                      <ThumbsUp size={24} />
+                      <span>¡Cero demoras ni cortes registrados en los pendientes!</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* En qué NO se pierde tiempo */}
+              <div className="bg-emerald-500/10 border border-emerald-500/20 p-3.5 rounded-2xl flex items-center justify-between text-xs">
+                <span className="text-emerald-300 font-bold flex items-center gap-2">
+                  <CheckCircle2 size={16} /> ¿En qué NO se pierde tiempo?
+                </span>
+                <span className="text-emerald-200/90 font-mono italic">
+                  {timeMetrics.zeroReasons.length > 0
+                    ? `${timeMetrics.zeroReasons.map(z => REASON_CONFIG[z]?.label).slice(0, 2).join(', ')}`
+                    : 'Todas las áreas registraron pausas'}
+                </span>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLossBreakdownModal(false)}
+                  className="w-full py-3 bg-white/10 hover:bg-white/15 text-white font-bold uppercase text-xs tracking-wider rounded-xl transition-all cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ========================================================================= */}
       {/* 5. MODAL: REGISTRAR CORTE / PAUSA ("SI SE FUE CORTANDO VARIAS VECES")     */}

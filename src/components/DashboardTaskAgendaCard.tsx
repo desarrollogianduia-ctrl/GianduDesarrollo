@@ -524,10 +524,11 @@ export const DashboardTaskAgendaCard: React.FC<DashboardTaskAgendaCardProps> = (
           {onNavigateToAgenda && (
             <button
               onClick={onNavigateToAgenda}
-              className="px-3 py-1.5 rounded-xl bg-[var(--accent)]/15 border border-[var(--accent)]/30 text-[var(--accent)] hover:bg-[var(--accent)]/25 text-xs font-bold transition-all flex items-center gap-1.5"
-              title="Abrir la Agenda completa a pantalla completa"
+              className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-black text-xs transition-all flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 cursor-pointer"
+              title="Abrir la pestaña de Agenda completa (Hoja en pantalla completa sin scroll)"
             >
-              <span>Agenda Completa</span>
+              <BookOpen size={14} />
+              <span>Abrir Pestaña Agenda</span>
               <ExternalLink size={12} />
             </button>
           )}
@@ -778,7 +779,7 @@ export const DashboardTaskAgendaCard: React.FC<DashboardTaskAgendaCardProps> = (
                         </p>
                       </div>
                     ) : (
-                      currentDisplayedTasks.map(task => {
+                      currentDisplayedTasks.map((task, idx) => {
                         const cuts = task.timeCuts || [];
                         const isCut = cuts.length > 0;
                         const isPaused = task.status === 'pausado';
@@ -787,7 +788,7 @@ export const DashboardTaskAgendaCard: React.FC<DashboardTaskAgendaCardProps> = (
 
                         return (
                           <div
-                            key={task.id}
+                            key={`${task.projectId}_${task.id}_${idx}`}
                             className={`group relative p-4 rounded-2xl transition-all border ${
                               isCompleted
                                 ? 'bg-amber-100/35 border-stone-200/70'
@@ -1069,14 +1070,14 @@ export const DashboardTaskAgendaCard: React.FC<DashboardTaskAgendaCardProps> = (
               No hay tareas que coincidan con el filtro actual.
             </div>
           ) : (
-            filteredTasks.map(task => {
+            filteredTasks.map((task, idx) => {
               const cuts = task.timeCuts || [];
               const isCut = cuts.length > 0;
               const isPaused = task.status === 'pausado';
 
               return (
                 <div
-                  key={task.id}
+                  key={`${task.projectId}_${task.id}_${idx}`}
                   className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                     task.completed
                       ? 'bg-white/5 border-white/5 opacity-60'

@@ -50,41 +50,30 @@
     },
     "DevelopmentProject": {
       "title": "Proyecto de Desarrollo",
-      "description": "Gestión de estado y prioridad de un nuevo producto",
+      "description": "Gestión de estado, pruebas y dossier técnico de un desarrollo I+D",
       "type": "object",
       "properties": {
+        "code": { "type": "string" },
         "productName": { "type": "string" },
         "area": { "type": "string" },
         "priority": { "type": "string" },
         "status": { "type": "string" },
+        "trialLetter": { "type": "string" },
+        "sequenceNumber": { "type": "number" },
+        "estimatedTime": { "type": "string" },
+        "developmentType": { "type": "string" },
+        "developmentTypeCustom": { "type": "string" },
+        "dossierRequester": { "type": "string" },
+        "dossierReason": { "type": "string" },
+        "dossierProblem": { "type": "string" },
+        "dossierSolution": { "type": "string" },
+        "dossierConclusion": { "type": "string" },
         "recipeId": { "type": "string" },
         "createdBy": { "type": "string" },
         "createdAt": { "type": "number" },
         "updatedAt": { "type": "number" }
       },
       "required": ["productName", "area", "priority", "status", "createdBy"]
-    },
-    "RecipeAudit": {
-      "title": "Auditoría de Receta",
-      "description": "Registro de conteo cíclico y revisión de recetas",
-      "type": "object",
-      "properties": {
-        "recipeId": { "type": "string" },
-        "recipeName": { "type": "string" },
-        "date": { "type": "number" },
-        "auditorId": { "type": "string" },
-        "status": { "type": "string", "enum": ["ok", "desvio", "arreglado", "problema"] },
-        "notes": { "type": "string" },
-        "isUpdated": { "type": "boolean" },
-        "rnpaStatus": { "type": "string" },
-        "mpStatus": { "type": "string" },
-        "procedureStatus": { "type": "string" },
-        "improvements": { "type": "string" },
-        "deviations": { "type": "string" },
-        "findings": { "type": "string" },
-        "nextReviewDate": { "type": "number" }
-      },
-      "required": ["recipeId", "date", "auditorId", "status"]
     }
   },
   "firestore": {
@@ -99,10 +88,6 @@
     "/developments/{devId}": {
       "schema": "DevelopmentProject",
       "description": "Proyectos de desarrollo I+D"
-    },
-    "/recipeAudits/{auditId}": {
-      "schema": "RecipeAudit",
-      "description": "Logs de revisiones y conteos cíclicos"
     }
   }
 }
