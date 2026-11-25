@@ -68,6 +68,18 @@
         "dossierProblem": { "type": "string" },
         "dossierSolution": { "type": "string" },
         "dossierConclusion": { "type": "string" },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string", "maxLength": 120 },
+              "url": { "type": "string", "maxLength": 1000 },
+              "createdAt": { "type": "number" }
+            }
+          }
+        },
         "recipeId": { "type": "string" },
         "createdBy": { "type": "string" },
         "createdAt": { "type": "number" },

@@ -92,6 +92,8 @@ import {
   Clock,
   BookOpen,
   WifiOff,
+  Link2,
+  ExternalLink,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
@@ -119,6 +121,7 @@ import {
   AllergenEntry,
   AllergenType,
   DevelopmentProject,
+  DevelopmentReference,
   DevelopmentCategoryType,
   ProductArea,
   ProjectPriority,
@@ -211,6 +214,59 @@ type AppView =
   | "rd_report"
   | "calendario"
   | "agenda_tareas";
+
+function normalizeReferenceUrl(rawUrl: string): string | null {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  if (
+    lower.startsWith("javascript:") ||
+    lower.startsWith("data:") ||
+    lower.startsWith("vbscript:") ||
+    lower.startsWith("file:")
+  ) {
+    return null;
+  }
+  const withProtocol = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+  try {
+    const parsed = new URL(withProtocol);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    if (
+      !parsed.hostname ||
+      (!parsed.hostname.includes(".") && parsed.hostname !== "localhost")
+    ) {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+function getSafeExternalUrl(rawUrl?: string): string | null {
+  if (!rawUrl) return null;
+  try {
+    const parsed = new URL(rawUrl);
+    return parsed.protocol === "http:" || parsed.protocol === "https:"
+      ? parsed.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function getReferenceDomainLabel(rawUrl: string): string {
+  try {
+    const parsed = new URL(rawUrl);
+    return parsed.hostname.replace(/^www\./i, "");
+  } catch {
+    return rawUrl;
+  }
+}
 
 interface ExpandableTextProps {
   text?: string;
@@ -599,7 +655,21 @@ export default function App() {
     useState<DevelopmentProject | null>(null);
   const [reportProject, setReportProject] =
     useState<DevelopmentProject | null>(null);
+  const [referencingProjectId, setReferencingProjectId] =
+    useState<string | null>(null);
+  const [inlineRefTitle, setInlineRefTitle] = useState("");
+  const [inlineRefUrl, setInlineRefUrl] = useState("");
+  const [modalRefTitle, setModalRefTitle] = useState("");
+  const [modalRefUrl, setModalRefUrl] = useState("");
+  const [editingRefId, setEditingRefId] = useState<string | null>(null);
+  const [editingRefTitle, setEditingRefTitle] = useState("");
+  const [editingRefUrl, setEditingRefUrl] = useState("");
   const [expandedDevId, setExpandedDevId] = useState<string | null>(null);
+  useEffect(() => {
+    setInlineRefTitle("");
+    setInlineRefUrl("");
+    setEditingRefId(null);
+  }, [expandedDevId]);
   const [editingDevCodeId, setEditingDevCodeId] = useState<string | null>(null);
   const [codeEditRequest, setCodeEditRequest] = useState<string | null>(null);
   const [adminPassInput, setAdminPassInput] = useState("");
@@ -2668,6 +2738,78 @@ export default function App() {
     );
   };
 
+  const handleAddReference = async (
+    dev: DevelopmentProject,
+    titleInput: string,
+    urlInput: string,
+  ): Promise<boolean> => {
+    if (!user) return false;
+    const cleanTitle = titleInput.trim().slice(0, 120);
+    if (!cleanTitle) {
+      showToast("Ingresá un título corto para la referencia.", "warning");
+      return false;
+    }
+    const safeUrl = normalizeReferenceUrl(urlInput);
+    if (!safeUrl || safeUrl.length > 1000) {
+      showToast("Ingresá un link válido (ej: https://...).", "warning");
+      return false;
+    }
+    const newRef: DevelopmentReference = {
+      id: `ref_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      title: cleanTitle,
+      url: safeUrl,
+      createdAt: Date.now(),
+    };
+    const updatedRefs = [...(dev.references || []), newRef];
+    await saveDevelopment(
+      { ...dev, references: updatedRefs, updatedAt: Date.now() },
+      user.uid,
+    );
+    showToast("Referencia agregada.", "success");
+    return true;
+  };
+
+  const handleUpdateReference = async (
+    dev: DevelopmentProject,
+    refId: string,
+    titleInput: string,
+    urlInput: string,
+  ): Promise<boolean> => {
+    if (!user) return false;
+    const cleanTitle = titleInput.trim().slice(0, 120);
+    if (!cleanTitle) {
+      showToast("El título de la referencia no puede estar vacío.", "warning");
+      return false;
+    }
+    const safeUrl = normalizeReferenceUrl(urlInput);
+    if (!safeUrl || safeUrl.length > 1000) {
+      showToast("Ingresá un link válido (ej: https://...).", "warning");
+      return false;
+    }
+    const updatedRefs = (dev.references || []).map((r) =>
+      r.id === refId ? { ...r, title: cleanTitle, url: safeUrl } : r,
+    );
+    await saveDevelopment(
+      { ...dev, references: updatedRefs, updatedAt: Date.now() },
+      user.uid,
+    );
+    showToast("Referencia actualizada.", "success");
+    return true;
+  };
+
+  const handleDeleteReference = async (
+    dev: DevelopmentProject,
+    refId: string,
+  ) => {
+    if (!user) return;
+    const updatedRefs = (dev.references || []).filter((r) => r.id !== refId);
+    await saveDevelopment(
+      { ...dev, references: updatedRefs, updatedAt: Date.now() },
+      user.uid,
+    );
+    showToast("Referencia eliminada.", "info");
+  };
+
   const hasPendingTasks = (dev: DevelopmentProject) => {
     return (dev.tasks || []).some((t) => !t.completed);
   };
@@ -2971,6 +3113,9 @@ export default function App() {
               completed: Boolean(t.completed),
             }));
           })(),
+          references: resolvingTrialProject.references
+            ? resolvingTrialProject.references.map((r) => ({ ...r }))
+            : undefined,
         };
         await saveDevelopment(newTrial, user.uid);
 
@@ -3090,6 +3235,9 @@ export default function App() {
                   completed: Boolean(t.completed),
                 }));
               })(),
+              references: dev.references
+                ? dev.references.map((r) => ({ ...r }))
+                : undefined,
             },
             user.uid,
           );
@@ -3308,7 +3456,7 @@ export default function App() {
         };
         return null;
       })()}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+      <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden relative">
         {/* Top Header Barra de Estado */}
         <header className="h-[60px] px-8 flex items-center justify-between bg-[var(--bg)] border-b border-[var(--border)] shrink-0 z-30">
           <div className="flex items-center gap-4">
@@ -3367,7 +3515,7 @@ export default function App() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 min-w-0 overflow-hidden flex flex-col">
           {authLoading ? (
               <div className="flex h-full items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
@@ -3542,7 +3690,7 @@ export default function App() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="flex-1 h-full overflow-y-auto custom-scrollbar flex flex-col p-8 space-y-8 min-w-0 w-full max-w-full overflow-x-hidden"
+                  className="flex-1 h-full overflow-y-auto custom-scrollbar flex flex-col p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 min-w-0 w-full max-w-full overflow-x-hidden"
                 >
                   <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
                     <div className="space-y-1">
@@ -3615,8 +3763,8 @@ export default function App() {
                     ))}
                   </div>
 
-                  <div className="flex flex-col md:flex-row gap-4 items-center bg-white/5 border border-white/10 p-6 rounded-[32px] shrink-0">
-                    <div className="relative flex-1 w-full">
+                  <div className="flex flex-col xl:flex-row gap-3 items-stretch xl:items-center bg-white/5 border border-white/10 p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] shrink-0 min-w-0">
+                    <div className="relative flex-1 min-w-[200px] w-full">
                       <Search
                         className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20"
                         size={18}
@@ -3629,7 +3777,7 @@ export default function App() {
                         className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-[var(--accent)] transition-all text-white"
                       />
                     </div>
-                    <div className="flex gap-4 w-full md:w-auto">
+                    <div className="flex flex-wrap items-center gap-2.5 w-full xl:w-auto">
                       <select
                         value={devStatusFilter}
                         onChange={(e) =>
@@ -3902,46 +4050,46 @@ export default function App() {
                     </motion.div>
                   )}
 
-                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[32px] overflow-hidden shadow-2xl shrink-0 w-full max-w-full min-w-0">
-                    <div className="overflow-x-auto custom-scrollbar w-full">
-                      <table className="w-full text-left border-collapse min-w-[1360px]">
-                        <thead>
+                  <div className="@container bg-[var(--surface)] border border-[var(--border)] rounded-2xl sm:rounded-[32px] overflow-hidden shadow-2xl shrink-0 w-full max-w-full min-w-0">
+                    <div className="w-full overflow-x-auto custom-scrollbar">
+                      <table className="block @6xl:table w-full text-left border-collapse">
+                        <thead className="hidden @6xl:table-header-group">
                           <tr className="bg-white/5 border-b border-[var(--border)]">
-                            <th className="px-6 py-5 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.2em] text-center w-[80px]">
+                            <th className="px-2.5 @7xl:px-4 py-4 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.16em] text-center w-[52px]">
                               Visto
                             </th>
-                            <th className="px-6 py-5 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.2em] whitespace-nowrap">
+                            <th className="px-2.5 @7xl:px-4 py-4 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.16em] whitespace-nowrap">
                               Código
                             </th>
-                            <th className="px-6 py-5 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.2em]">
+                            <th className="px-2.5 @7xl:px-4 py-4 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.16em]">
                               Producto
                             </th>
-                            <th className="px-6 py-5 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.2em] whitespace-nowrap">
+                            <th className="px-2.5 @7xl:px-4 py-4 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.16em] whitespace-nowrap">
                               Ingreso / Fin
                             </th>
-                            <th className="px-6 py-5 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.2em] whitespace-nowrap">
-                              Realización / Testeo
+                            <th className="px-2.5 @7xl:px-4 py-4 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.16em] whitespace-nowrap">
+                              Realiz. / Testeo
                             </th>
-                            <th className="px-6 py-5 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.2em] whitespace-nowrap">
+                            <th className="px-2.5 @7xl:px-4 py-4 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.16em] whitespace-nowrap">
                               Receta Técnica
                             </th>
-                            <th className="px-10 py-5 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.2em] text-center">
+                            <th className="px-2.5 @7xl:px-4 py-4 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.16em] text-center">
                               Prioridad
                             </th>
-                            <th className="px-6 py-5 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.2em] text-center">
+                            <th className="px-2.5 @7xl:px-4 py-4 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.16em] text-center">
                               Estado
                             </th>
-                            <th className="px-6 py-5 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.2em] text-right">
+                            <th className="px-2.5 @7xl:px-4 py-4 text-[9px] uppercase font-bold text-[var(--accent)] tracking-[0.16em] text-right">
                               Acciones
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[var(--border)]">
+                        <tbody className="block @6xl:table-row-group divide-y divide-[var(--border)]">
                           {filteredDevelopments.length === 0 ? (
-                            <tr>
+                            <tr className="block @6xl:table-row">
                               <td
                                 colSpan={9}
-                                className="p-20 text-center text-[var(--text-s)] font-light italic text-xl"
+                                className="block @6xl:table-cell p-12 sm:p-20 text-center text-[var(--text-s)] font-light italic text-lg sm:text-xl"
                               >
                                 No hay proyectos que coincidan con los filtros.
                               </td>
@@ -3951,10 +4099,10 @@ export default function App() {
                               <React.Fragment key={dev.id}>
                                 <tr
                                   onClick={(e) => {
-                                    // Only expand if we are not clicking an action button
+                                    // Only expand if we are not clicking an action button or link
                                     if (
                                       (e.target as HTMLElement).closest(
-                                        "button",
+                                        "button, a, select, input",
                                       )
                                     )
                                       return;
@@ -3962,9 +4110,9 @@ export default function App() {
                                       expandedDevId === dev.id ? null : dev.id,
                                     );
                                   }}
-                                  className={`hover:bg-white/[0.03] group/row transition-all cursor-pointer ${expandedDevId === dev.id ? "bg-white/[0.02]" : ""}`}
+                                  className={`flex flex-wrap items-center gap-x-4 gap-y-3 p-4 @6xl:p-0 @6xl:table-row hover:bg-white/[0.03] group/row transition-all cursor-pointer ${expandedDevId === dev.id ? "bg-white/[0.02]" : ""}`}
                                 >
-                                  <td className="px-6 py-6 text-center" onClick={(e) => e.stopPropagation()}>
+                                  <td className="p-0 @6xl:px-2.5 @7xl:px-4 @6xl:py-5 text-center shrink-0 @6xl:table-cell" onClick={(e) => e.stopPropagation()}>
                                     <button 
                                       onClick={() => handleToggleViewed(dev)}
                                       className={`w-6 h-6 rounded-lg border-2 transition-all flex items-center justify-center mx-auto ${dev.isViewed ? 'bg-emerald-500 border-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'border-white/10 hover:border-white/30 text-transparent'}`}
@@ -3972,7 +4120,7 @@ export default function App() {
                                       <Check size={14} strokeWidth={4} />
                                     </button>
                                   </td>
-                                  <td className="px-6 py-6">
+                                  <td className="p-0 @6xl:px-2.5 @7xl:px-4 @6xl:py-5 @6xl:table-cell min-w-0">
                                     <div className="flex flex-col gap-2">
                                       <div className="flex items-center gap-2 group/code">
                                         {editingDevCodeId === dev.id ? (
@@ -4135,8 +4283,8 @@ export default function App() {
                                       </div>
                                     </div>
                                   </td>
-                                  <td className="px-6 py-6">
-                                    <div className="font-medium text-base text-white group-hover/row:text-[var(--accent)] transition-colors font-serif">
+                                  <td className="p-0 @6xl:px-2.5 @7xl:px-4 @6xl:py-5 @6xl:table-cell flex-1 min-w-[140px]">
+                                    <div className="font-medium text-sm sm:text-base text-white group-hover/row:text-[var(--accent)] transition-colors font-serif leading-snug">
                                       {dev.productName}
                                     </div>
                                     <select
@@ -4153,7 +4301,7 @@ export default function App() {
                                         );
                                       }}
                                       onClick={(e) => e.stopPropagation()}
-                                      className="text-[9px] text-white/30 uppercase tracking-[0.3em] font-bold mt-1 bg-transparent border-none outline-none cursor-pointer hover:text-[var(--accent)] transition-colors appearance-none"
+                                      className="text-[9px] text-white/30 uppercase tracking-[0.22em] font-bold mt-1 bg-transparent border-none outline-none cursor-pointer hover:text-[var(--accent)] transition-colors appearance-none"
                                     >
                                       {PROJECT_AREAS.map((a) => (
                                         <option
@@ -4165,17 +4313,65 @@ export default function App() {
                                         </option>
                                       ))}
                                     </select>
+                                    {(dev.references || []).length > 0 && (
+                                      <div
+                                        className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1.5"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {(dev.references || [])
+                                          .slice(0, 2)
+                                          .map((ref) => {
+                                            const safeHref = getSafeExternalUrl(
+                                              ref.url,
+                                            );
+                                            if (!safeHref) return null;
+                                            return (
+                                              <a
+                                                key={ref.id}
+                                                href={safeHref}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                title={`${ref.title} (${safeHref})`}
+                                                className="inline-flex items-center gap-1 text-[11px] text-sky-400 hover:text-sky-300 hover:underline transition-colors max-w-[160px]"
+                                              >
+                                                <Link2
+                                                  size={11}
+                                                  className="shrink-0"
+                                                />
+                                                <span className="truncate">
+                                                  {ref.title}
+                                                </span>
+                                              </a>
+                                            );
+                                          })}
+                                        {(dev.references || []).length > 2 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setReferencingProjectId(dev.id);
+                                              setModalRefTitle("");
+                                              setModalRefUrl("");
+                                              setEditingRefId(null);
+                                            }}
+                                            className="text-[10px] font-bold text-white/50 hover:text-sky-400 transition-colors"
+                                          >
+                                            +{(dev.references || []).length - 2}{" "}
+                                            más
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
                                   </td>
-                                  <td className="px-6 py-6">
+                                  <td className="p-0 @6xl:px-2.5 @7xl:px-4 @6xl:py-5 @6xl:table-cell whitespace-nowrap">
                                     <div className="flex flex-col gap-1">
-                                      <div className="text-[10px] text-emerald-400 font-mono flex items-center gap-2">
+                                      <div className="text-[10px] text-emerald-400 font-mono flex items-center gap-1.5">
                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40" />
                                         {(window as any).formatTinyDate(
                                           dev.startedAt || dev.createdAt,
                                         )}
                                       </div>
                                       {dev.finishedAt && (
-                                        <div className="text-[10px] text-amber-400 font-mono flex items-center gap-2">
+                                        <div className="text-[10px] text-amber-400 font-mono flex items-center gap-1.5">
                                           <div className="w-1.5 h-1.5 rounded-full bg-amber-500/40" />
                                           {(window as any).formatTinyDate(
                                             dev.finishedAt,
@@ -4184,11 +4380,11 @@ export default function App() {
                                       )}
                                     </div>
                                   </td>
-                                  <td className="px-6 py-6 font-mono">
+                                  <td className="p-0 @6xl:px-2.5 @7xl:px-4 @6xl:py-5 @6xl:table-cell font-mono whitespace-nowrap">
                                     <div className="flex flex-col gap-1">
                                       {dev.trialExecutionDate && (
-                                        <div className="flex items-center gap-2 group/date">
-                                          <div className="text-[10px] text-rose-400 flex items-center gap-2">
+                                        <div className="flex items-center gap-1.5 group/date">
+                                          <div className="text-[10px] text-rose-400 flex items-center gap-1.5">
                                             <FlaskConical
                                               size={10}
                                               className="opacity-50"
@@ -4207,7 +4403,7 @@ export default function App() {
                                         </div>
                                       )}
                                       {dev.testingDate && (
-                                        <div className="text-[10px] text-purple-400 flex items-center gap-2">
+                                        <div className="text-[10px] text-purple-400 flex items-center gap-1.5">
                                           <ClipboardCheck
                                             size={10}
                                             className="opacity-50"
@@ -4220,13 +4416,13 @@ export default function App() {
                                       {!dev.trialExecutionDate &&
                                         !dev.testingDate && (
                                           <span className="text-white/10 text-[10px] tracking-tighter">
-                                            Sin fechas registradas
+                                            Sin fechas
                                           </span>
                                         )}
                                     </div>
                                   </td>
                                   <td
-                                    className="px-6 py-6"
+                                    className="p-0 @6xl:px-2.5 @7xl:px-4 @6xl:py-5 @6xl:table-cell"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <div className="flex flex-col items-start gap-1">
@@ -4245,7 +4441,7 @@ export default function App() {
                                                   dev,
                                                 )
                                               }
-                                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold uppercase tracking-wider transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer ${
+                                              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer whitespace-nowrap ${
                                                 isTech
                                                   ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white"
                                                   : "bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white"
@@ -4272,7 +4468,7 @@ export default function App() {
                                               dev,
                                             )
                                           }
-                                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-white text-[11px] font-bold uppercase tracking-wider transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-white text-[10px] font-bold uppercase tracking-wider transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer whitespace-nowrap"
                                           title="Crear y armar receta en Módulo de Formulación Técnica"
                                         >
                                           <Plus size={12} />
@@ -4282,7 +4478,7 @@ export default function App() {
                                     </div>
                                   </td>
                                   <td
-                                    className="px-10 py-6 text-center whitespace-nowrap"
+                                    className="p-0 @6xl:px-2.5 @7xl:px-4 @6xl:py-5 @6xl:table-cell text-center whitespace-nowrap"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <select
@@ -4299,7 +4495,7 @@ export default function App() {
                                           user.uid,
                                         );
                                       }}
-                                      className={`inline-block px-4 py-1.5 rounded-full text-[9px] font-bold uppercase border bg-transparent outline-none cursor-pointer appearance-none text-center ${PROJECT_PRIORITIES.find((p) => p.id === dev.priority)?.color || ""}`}
+                                      className={`inline-block px-3 py-1 rounded-full text-[9px] font-bold uppercase border bg-transparent outline-none cursor-pointer appearance-none text-center ${PROJECT_PRIORITIES.find((p) => p.id === dev.priority)?.color || ""}`}
                                     >
                                       {PROJECT_PRIORITIES.map((p) => (
                                         <option
@@ -4313,7 +4509,7 @@ export default function App() {
                                     </select>
                                   </td>
                                   <td
-                                    className="px-6 py-6 text-center whitespace-nowrap"
+                                    className="p-0 @6xl:px-2.5 @7xl:px-4 @6xl:py-5 @6xl:table-cell text-center whitespace-nowrap"
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <div className="flex flex-col items-center gap-2">
@@ -4325,7 +4521,7 @@ export default function App() {
                                             e.target.value as ProjectStatus,
                                           )
                                         }
-                                        className={`text-[9px] font-bold uppercase px-4 py-1.5 rounded-full border bg-transparent outline-none cursor-pointer appearance-none text-center ${
+                                        className={`text-[9px] font-bold uppercase px-3 py-1 rounded-full border bg-transparent outline-none cursor-pointer appearance-none text-center ${
                                           dev.status === "pendiente"
                                             ? "text-white/40 border-white/10"
                                             : dev.status === "en_progreso"
@@ -4362,18 +4558,18 @@ export default function App() {
                                       </select>
                                     </div>
                                   </td>
-                                  <td className="px-6 py-6">
-                                    <div className="flex items-center justify-end gap-3">
+                                  <td className="p-0 pt-2 border-t border-white/5 w-full @6xl:w-auto @6xl:border-t-0 @6xl:px-2.5 @7xl:px-4 @6xl:py-5 @6xl:table-cell">
+                                    <div className="flex flex-wrap items-center justify-end gap-1.5 @7xl:gap-2">
                                       {dev.status === "archivado" ? (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1.5">
                                           <button
                                             onClick={(e) =>
                                               handleUnarchiveProject(dev.id)
                                             }
-                                            className="px-4 py-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-2xl hover:bg-emerald-500 hover:text-white transition-all hover:-translate-y-1 flex items-center gap-2 shadow-md"
+                                            className="px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-xl hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap"
                                             title="Desarchivar Proyecto"
                                           >
-                                            <RotateCcw size={16} />
+                                            <RotateCcw size={14} />
                                             <span className="text-[10px] font-bold uppercase tracking-wider">
                                               Restaurar
                                             </span>
@@ -4385,10 +4581,10 @@ export default function App() {
                                             onClick={(e) =>
                                               handleStartProjectFormulation(dev)
                                             }
-                                            className="p-3 bg-white/5 border border-white/10 text-white/60 rounded-2xl hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-white transition-all hover:-translate-y-1"
+                                            className="p-2 bg-white/5 border border-white/10 text-white/60 rounded-xl hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-white transition-all shrink-0"
                                             title="Ir a Formulación"
                                           >
-                                            <FlaskConical size={16} />
+                                            <FlaskConical size={15} />
                                           </button>
                                           <button
                                             onClick={(e) => {
@@ -4414,25 +4610,25 @@ export default function App() {
                                                     ?.decoration || "",
                                               });
                                             }}
-                                            className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-2xl hover:bg-emerald-500 hover:text-white transition-all hover:-translate-y-1 flex items-center gap-2"
+                                            className="px-2.5 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-xl hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-1 whitespace-nowrap shrink-0"
                                             title="Resolver Prueba"
                                           >
-                                            <Check size={16} />
+                                            <Check size={15} />
                                             <span className="text-[10px] font-bold uppercase">
                                               OK
                                             </span>
                                           </button>
                                         </>
                                       ) : (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1.5">
                                           <button
                                             onClick={(e) =>
                                               handleReopenProject(dev)
                                             }
-                                            className="px-4 py-3 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-all hover:-translate-y-1 flex items-center gap-2 shadow-sm"
+                                            className="px-2.5 py-2 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all flex items-center gap-1 shadow-sm whitespace-nowrap"
                                             title="Reabrir Proyecto"
                                           >
-                                            <Undo2 size={16} />
+                                            <Undo2 size={14} />
                                             <span className="text-[10px] font-bold uppercase tracking-wider">
                                               Reabrir
                                             </span>
@@ -4441,10 +4637,10 @@ export default function App() {
                                             onClick={(e) =>
                                               handleArchiveProject(dev.id)
                                             }
-                                            className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-2xl hover:bg-amber-500 hover:text-white transition-all hover:-translate-y-1 flex items-center gap-2"
+                                            className="px-2.5 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl hover:bg-amber-500 hover:text-white transition-all flex items-center gap-1 whitespace-nowrap"
                                             title="Archivar"
                                           >
-                                            <History size={16} />
+                                            <History size={14} />
                                             <span className="text-[10px] font-bold uppercase">
                                               Archiv.
                                             </span>
@@ -4455,12 +4651,35 @@ export default function App() {
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          setReferencingProjectId(dev.id);
+                                          setModalRefTitle("");
+                                          setModalRefUrl("");
+                                          setEditingRefId(null);
+                                        }}
+                                        className={`px-2 py-2 border rounded-xl transition-all flex items-center gap-1 whitespace-nowrap shrink-0 ${
+                                          (dev.references || []).length > 0
+                                            ? "bg-sky-500/10 border-sky-500/25 text-sky-400 hover:bg-sky-500 hover:text-white"
+                                            : "bg-white/5 border-white/10 text-white/60 hover:bg-sky-500/20 hover:border-sky-500/30 hover:text-sky-300"
+                                        }`}
+                                        title="Referencias y Links del desarrollo"
+                                      >
+                                        <Link2 size={14} />
+                                        {(dev.references || []).length > 0 && (
+                                          <span className="text-[10px] font-mono font-bold tabular-nums">
+                                            {(dev.references || []).length}
+                                          </span>
+                                        )}
+                                      </button>
+
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
                                           setReportProject(dev);
                                         }}
-                                        className="px-3 py-2.5 bg-white/5 border border-white/10 text-white/75 rounded-2xl hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-white transition-all hover:-translate-y-0.5 flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                                        className="px-2.5 py-2 bg-white/5 border border-white/10 text-white/75 rounded-xl hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-white transition-all flex items-center gap-1 whitespace-nowrap shrink-0"
                                         title="Armar Informe Técnico en PDF"
                                       >
-                                        <FileText size={15} />
+                                        <FileText size={14} />
                                         <span className="text-[10px] font-bold uppercase tracking-wider">
                                           PDF
                                         </span>
@@ -4470,10 +4689,10 @@ export default function App() {
                                         onClick={(e) =>
                                           handleDeleteDevelopment(dev.id)
                                         }
-                                        className="p-3 text-white/10 hover:text-rose-500 transition-all hover:bg-rose-500/10 rounded-2xl"
+                                        className="p-2 text-white/15 hover:text-rose-500 transition-all hover:bg-rose-500/10 rounded-xl shrink-0"
                                         title="Eliminar Desarrollo"
                                       >
-                                        <Trash2 size={16} />
+                                        <Trash2 size={15} />
                                       </button>
 
                                       <button
@@ -4484,21 +4703,21 @@ export default function App() {
                                               : dev.id,
                                           )
                                         }
-                                        className={`p-2 transition-transform ${expandedDevId === dev.id ? "rotate-180 text-[var(--accent)]" : "text-white/20"}`}
+                                        className={`p-1.5 transition-transform shrink-0 ${expandedDevId === dev.id ? "rotate-180 text-[var(--accent)]" : "text-white/20"}`}
                                       >
-                                        <ChevronDown size={20} />
+                                        <ChevronDown size={18} />
                                       </button>
                                     </div>
                                   </td>
                                 </tr>
 
                                 {expandedDevId === dev.id && (
-                                  <tr className="bg-white/[0.01]">
+                                  <tr className="block @6xl:table-row bg-white/[0.01]">
                                     <td
                                       colSpan={9}
-                                      className="px-12 py-10 border-b border-[var(--border)]"
+                                      className="block @6xl:table-cell p-4 sm:p-6 @6xl:px-8 @6xl:py-8 border-b border-[var(--border)]"
                                     >
-                                      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 @6xl:grid-cols-5 gap-6">
                                         <div className="space-y-6">
                                           <div className="flex items-center justify-between">
                                             <h4 className="text-sm font-bold uppercase tracking-widest text-[var(--accent)] flex items-center gap-2">
@@ -4927,6 +5146,237 @@ export default function App() {
                                             >
                                               <FileText size={13} /> Armar Informe PDF
                                             </button>
+                                          </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                          <div className="flex items-center justify-between gap-2">
+                                            <h4 className="text-sm font-bold uppercase tracking-widest text-[var(--accent)] flex items-center gap-2">
+                                              <Link2 size={16} /> Referencias
+                                            </h4>
+                                            <span className="text-[10px] text-white/30 uppercase font-mono tabular-nums">
+                                              {(dev.references || []).length}{" "}
+                                              links
+                                            </span>
+                                          </div>
+
+                                          <div className="space-y-2.5 max-h-[260px] overflow-y-auto custom-scrollbar pr-1">
+                                            {(dev.references || []).length ===
+                                            0 ? (
+                                              <p className="text-xs text-white/20 italic p-4 border border-dashed border-white/10 rounded-2xl">
+                                                No hay referencias cargadas.
+                                              </p>
+                                            ) : (
+                                              (dev.references || []).map(
+                                                (ref) => {
+                                                  const safeHref =
+                                                    getSafeExternalUrl(ref.url);
+                                                  const isEditing =
+                                                    editingRefId === ref.id;
+                                                  if (isEditing) {
+                                                    return (
+                                                      <div
+                                                        key={ref.id}
+                                                        className="bg-white/5 border border-sky-500/30 rounded-2xl p-3 space-y-2"
+                                                      >
+                                                        <input
+                                                          type="text"
+                                                          value={editingRefTitle}
+                                                          onChange={(e) =>
+                                                            setEditingRefTitle(
+                                                              e.target.value,
+                                                            )
+                                                          }
+                                                          placeholder="Título corto..."
+                                                          maxLength={120}
+                                                          className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-sky-400"
+                                                        />
+                                                        <input
+                                                          type="text"
+                                                          value={editingRefUrl}
+                                                          onChange={(e) =>
+                                                            setEditingRefUrl(
+                                                              e.target.value,
+                                                            )
+                                                          }
+                                                          placeholder="https://..."
+                                                          maxLength={1000}
+                                                          className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-1.5 text-xs font-mono outline-none focus:border-sky-400"
+                                                        />
+                                                        <div className="flex justify-end gap-2">
+                                                          <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                              setEditingRefId(
+                                                                null,
+                                                              )
+                                                            }
+                                                            className="px-2.5 py-1 text-[10px] font-bold uppercase text-white/50 hover:text-white"
+                                                          >
+                                                            Cancelar
+                                                          </button>
+                                                          <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                              const ok =
+                                                                await handleUpdateReference(
+                                                                  dev,
+                                                                  ref.id,
+                                                                  editingRefTitle,
+                                                                  editingRefUrl,
+                                                                );
+                                                              if (ok) {
+                                                                setEditingRefId(
+                                                                  null,
+                                                                );
+                                                              }
+                                                            }}
+                                                            className="px-3 py-1 bg-sky-500 text-white rounded-lg text-[10px] font-bold uppercase"
+                                                          >
+                                                            Guardar
+                                                          </button>
+                                                        </div>
+                                                      </div>
+                                                    );
+                                                  }
+                                                  return (
+                                                    <div
+                                                      key={ref.id}
+                                                      className="flex items-start justify-between gap-2 bg-white/5 border border-white/5 hover:border-sky-500/30 p-3 rounded-2xl transition-all group/ref"
+                                                    >
+                                                      {safeHref ? (
+                                                        <a
+                                                          href={safeHref}
+                                                          target="_blank"
+                                                          rel="noopener noreferrer"
+                                                          className="flex-1 min-w-0 space-y-0.5 group/link"
+                                                        >
+                                                          <div className="text-xs font-medium text-white group-hover/link:text-sky-400 transition-colors flex items-center gap-1.5">
+                                                            <span className="truncate">
+                                                              {ref.title}
+                                                            </span>
+                                                            <ExternalLink
+                                                              size={11}
+                                                              className="shrink-0 opacity-60"
+                                                            />
+                                                          </div>
+                                                          <p className="text-[10px] font-mono text-white/35 truncate">
+                                                            {getReferenceDomainLabel(
+                                                              safeHref,
+                                                            )}
+                                                          </p>
+                                                        </a>
+                                                      ) : (
+                                                        <div className="flex-1 min-w-0">
+                                                          <p className="text-xs text-white/60 truncate">
+                                                            {ref.title}
+                                                          </p>
+                                                          <p className="text-[10px] text-rose-400/70">
+                                                            Link no válido
+                                                          </p>
+                                                        </div>
+                                                      )}
+                                                      <div className="flex items-center gap-1 shrink-0">
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            setEditingRefId(
+                                                              ref.id,
+                                                            );
+                                                            setEditingRefTitle(
+                                                              ref.title,
+                                                            );
+                                                            setEditingRefUrl(
+                                                              ref.url,
+                                                            );
+                                                          }}
+                                                          className="p-1 text-white/25 hover:text-sky-400 transition-colors"
+                                                          title="Editar referencia"
+                                                        >
+                                                          <Edit3 size={12} />
+                                                        </button>
+                                                        <button
+                                                          type="button"
+                                                          onClick={() =>
+                                                            handleDeleteReference(
+                                                              dev,
+                                                              ref.id,
+                                                            )
+                                                          }
+                                                          className="p-1 text-white/25 hover:text-rose-500 transition-colors"
+                                                          title="Eliminar referencia"
+                                                        >
+                                                          <Trash2 size={12} />
+                                                        </button>
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                },
+                                              )
+                                            )}
+                                          </div>
+
+                                          <div className="flex flex-col gap-2 pt-4 border-t border-white/5">
+                                            <input
+                                              type="text"
+                                              placeholder="Título corto (ej: Ficha, Muestra...)"
+                                              value={inlineRefTitle}
+                                              onChange={(e) =>
+                                                setInlineRefTitle(
+                                                  e.target.value,
+                                                )
+                                              }
+                                              maxLength={120}
+                                              className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs outline-none focus:border-[var(--accent)] transition-all"
+                                            />
+                                            <div className="flex gap-2">
+                                              <input
+                                                type="text"
+                                                placeholder="Link (https://...)"
+                                                value={inlineRefUrl}
+                                                onChange={(e) =>
+                                                  setInlineRefUrl(
+                                                    e.target.value,
+                                                  )
+                                                }
+                                                onKeyDown={async (e) => {
+                                                  if (e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    const ok =
+                                                      await handleAddReference(
+                                                        dev,
+                                                        inlineRefTitle,
+                                                        inlineRefUrl,
+                                                      );
+                                                    if (ok) {
+                                                      setInlineRefTitle("");
+                                                      setInlineRefUrl("");
+                                                    }
+                                                  }
+                                                }}
+                                                maxLength={1000}
+                                                className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs font-mono outline-none focus:border-[var(--accent)] transition-all"
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={async () => {
+                                                  const ok =
+                                                    await handleAddReference(
+                                                      dev,
+                                                      inlineRefTitle,
+                                                      inlineRefUrl,
+                                                    );
+                                                  if (ok) {
+                                                    setInlineRefTitle("");
+                                                    setInlineRefUrl("");
+                                                  }
+                                                }}
+                                                className="px-3 py-2 bg-[var(--accent)] text-white rounded-xl hover:brightness-110 transition-all shadow-lg shadow-[var(--accent)]/20 shrink-0"
+                                                title="Agregar referencia"
+                                              >
+                                                <Plus size={16} />
+                                              </button>
+                                            </div>
                                           </div>
                                         </div>
                                       </div>
@@ -5862,6 +6312,238 @@ export default function App() {
                   </motion.div>
                 </div>
               )}
+
+              {(() => {
+                const activeReferencingProject = referencingProjectId
+                  ? developments.find((d) => d.id === referencingProjectId) ||
+                    null
+                  : null;
+                if (!activeReferencingProject) return null;
+                const refs = activeReferencingProject.references || [];
+                return (
+                  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 sm:p-6">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="bg-[var(--surface)] border border-[var(--border)] w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+                    >
+                      <div className="p-6 border-b border-white/5 flex items-center justify-between gap-4 shrink-0">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 text-sky-400">
+                            <Link2 size={16} />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">
+                              Referencias del Desarrollo
+                            </span>
+                          </div>
+                          <h3 className="text-lg font-medium text-white truncate mt-1">
+                            {activeReferencingProject.productName}{" "}
+                            <span className="text-xs font-mono text-white/40 ml-1">
+                              {activeReferencingProject.code}
+                            </span>
+                          </h3>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReferencingProjectId(null);
+                            setEditingRefId(null);
+                          }}
+                          className="p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-xl transition-all shrink-0"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+
+                      <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
+                        <form
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            const ok = await handleAddReference(
+                              activeReferencingProject,
+                              modalRefTitle,
+                              modalRefUrl,
+                            );
+                            if (ok) {
+                              setModalRefTitle("");
+                              setModalRefUrl("");
+                            }
+                          }}
+                          className="space-y-3 bg-white/[0.03] border border-white/10 rounded-2xl p-4"
+                        >
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-white/50">
+                            Agregar nueva referencia
+                          </p>
+                          <div className="space-y-2.5">
+                            <input
+                              type="text"
+                              placeholder="Título corto (ej: Ficha proveedor, Muestra de mercado...)"
+                              value={modalRefTitle}
+                              onChange={(e) => setModalRefTitle(e.target.value)}
+                              maxLength={120}
+                              className="w-full bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm outline-none focus:border-sky-400 transition-all"
+                            />
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="https://..."
+                                value={modalRefUrl}
+                                onChange={(e) => setModalRefUrl(e.target.value)}
+                                maxLength={1000}
+                                className="flex-1 min-w-0 bg-[var(--bg)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm font-mono outline-none focus:border-sky-400 transition-all"
+                              />
+                              <button
+                                type="submit"
+                                className="px-4 py-2.5 bg-[var(--accent)] hover:brightness-110 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shrink-0 transition-all"
+                              >
+                                <Plus size={15} />
+                                <span>Agregar</span>
+                              </button>
+                            </div>
+                          </div>
+                        </form>
+
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-white/40 px-1">
+                            <span>Links guardados</span>
+                            <span className="font-mono tabular-nums">
+                              {refs.length}
+                            </span>
+                          </div>
+
+                          {refs.length === 0 ? (
+                            <p className="text-xs text-white/30 italic p-6 text-center border border-dashed border-white/10 rounded-2xl">
+                              Todavía no hay referencias asignadas a este desarrollo.
+                            </p>
+                          ) : (
+                            refs.map((ref) => {
+                              const safeHref = getSafeExternalUrl(ref.url);
+                              const isEditing = editingRefId === ref.id;
+                              if (isEditing) {
+                                return (
+                                  <div
+                                    key={ref.id}
+                                    className="bg-white/5 border border-sky-500/30 rounded-2xl p-4 space-y-2.5"
+                                  >
+                                    <input
+                                      type="text"
+                                      value={editingRefTitle}
+                                      onChange={(e) =>
+                                        setEditingRefTitle(e.target.value)
+                                      }
+                                      placeholder="Título corto"
+                                      maxLength={120}
+                                      className="w-full bg-[var(--bg)] border border-white/10 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-sky-400"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={editingRefUrl}
+                                      onChange={(e) =>
+                                        setEditingRefUrl(e.target.value)
+                                      }
+                                      placeholder="https://..."
+                                      maxLength={1000}
+                                      className="w-full bg-[var(--bg)] border border-white/10 rounded-xl px-3.5 py-2 text-xs font-mono outline-none focus:border-sky-400"
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingRefId(null)}
+                                        className="px-3 py-1.5 text-xs text-white/50 hover:text-white"
+                                      >
+                                        Cancelar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={async () => {
+                                          const ok =
+                                            await handleUpdateReference(
+                                              activeReferencingProject,
+                                              ref.id,
+                                              editingRefTitle,
+                                              editingRefUrl,
+                                            );
+                                          if (ok) setEditingRefId(null);
+                                        }}
+                                        className="px-4 py-1.5 bg-sky-500 text-white rounded-xl text-xs font-bold"
+                                      >
+                                        Guardar
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div
+                                  key={ref.id}
+                                  className="flex items-center justify-between gap-3 bg-white/5 border border-white/10 hover:border-sky-500/30 rounded-2xl p-3.5 transition-all"
+                                >
+                                  {safeHref ? (
+                                    <a
+                                      href={safeHref}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex-1 min-w-0 space-y-0.5 group/link"
+                                    >
+                                      <div className="text-sm font-medium text-white group-hover/link:text-sky-400 transition-colors flex items-center gap-1.5">
+                                        <span className="truncate">
+                                          {ref.title}
+                                        </span>
+                                        <ExternalLink
+                                          size={13}
+                                          className="shrink-0 opacity-60"
+                                        />
+                                      </div>
+                                      <p className="text-[11px] font-mono text-white/40 truncate">
+                                        {safeHref}
+                                      </p>
+                                    </a>
+                                  ) : (
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm text-white/60 truncate">
+                                        {ref.title}
+                                      </p>
+                                      <p className="text-[11px] text-rose-400">
+                                        Link inválido
+                                      </p>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingRefId(ref.id);
+                                        setEditingRefTitle(ref.title);
+                                        setEditingRefUrl(ref.url);
+                                      }}
+                                      className="p-2 text-white/35 hover:text-sky-400 hover:bg-white/5 rounded-xl transition-all"
+                                      title="Editar referencia"
+                                    >
+                                      <Edit3 size={14} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleDeleteReference(
+                                          activeReferencingProject,
+                                          ref.id,
+                                        )
+                                      }
+                                      className="p-2 text-white/35 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                                      title="Eliminar referencia"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                );
+              })()}
 
               {reportProject && (
                 <DevelopmentReportModal

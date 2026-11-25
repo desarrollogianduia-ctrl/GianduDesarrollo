@@ -222,6 +222,13 @@ export type DevelopmentCategoryType =
   | 'terceros'
   | 'otro';
 
+export interface DevelopmentReference {
+  id: string;
+  title: string;
+  url: string;
+  createdAt: number;
+}
+
 export interface DevelopmentProject {
   id: string;
   code: string;
@@ -251,6 +258,7 @@ export interface DevelopmentProject {
   sensoryAnalysis?: SensoryAnalysis;
   areaAssignments?: AreaAssignment[];
   rescheduleHistory?: RescheduleEntry[];
+  references?: DevelopmentReference[];
   isViewed?: boolean;
   // Structured dossier fields for standardized PDF development reports
   developmentType?: DevelopmentCategoryType;
